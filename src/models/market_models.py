@@ -229,3 +229,80 @@ class ErrorResponse(BaseModel):
     type: str
     timestamp: datetime
     request_id: Optional[str] = None
+
+
+class StockPrice(BaseModel):
+    """Current stock price data."""
+    symbol: str
+    name: Optional[str] = None
+    last_price: float
+    change: float
+    change_percent: float
+    volume: int
+    high: float
+    low: float
+    open: float
+    previous_close: float
+    timestamp: datetime
+    market_status: MarketStatus
+
+
+class MultiStockPricesRequest(BaseModel):
+    """Request for multiple stock prices."""
+    symbols: List[str] = Field(min_items=1, max_items=100)
+    include_fundamentals: bool = Field(default=False)
+    include_technical_indicators: bool = Field(default=False)
+
+
+class MultiStockPricesResponse(BaseModel):
+    """Response for multiple stock prices."""
+    prices: Dict[str, StockPrice]
+    market_status: MarketStatus
+    timestamp: datetime
+    request_id: Optional[str] = None
+
+
+class HistoricalPriceData(BaseModel):
+    """Enhanced historical price data with additional metrics."""
+    symbol: str
+    interval: str
+    from_date: datetime
+    to_date: datetime
+    data: List[HistoricalCandle]
+    total_candles: int
+    price_change: float
+    price_change_percent: float
+    volume_average: float
+    high_52_week: float
+    low_52_week: float
+    timestamp: datetime
+
+
+class MarketOverview(BaseModel):
+    """Market overview with key metrics."""
+    timestamp: datetime
+    market_status: MarketStatus
+    major_indices: List[MarketIndex]
+    top_gainers: List[StockPrice]
+    top_losers: List[StockPrice]
+    most_active: List[StockPrice]
+    sector_performance: Dict[str, float]
+    market_breadth: Dict[str, int]  # advances, declines, unchanged
+    volatility_index: float
+
+
+class WatchlistRequest(BaseModel):
+    """Watchlist request."""
+    name: str
+    symbols: List[str] = Field(min_items=1, max_items=50)
+    
+    
+class WatchlistResponse(BaseModel):
+    """Watchlist response with current prices."""
+    name: str
+    symbols: List[str]
+    prices: Dict[str, StockPrice]
+    total_value: float
+    total_change: float
+    total_change_percent: float
+    timestamp: datetime

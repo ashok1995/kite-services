@@ -21,8 +21,12 @@ from kiteconnect import KiteConnect, KiteTicker
 from config.settings import get_settings
 from core.logging_config import get_logger
 from models.market_models import (
-    MarketStatus, MarketContext, InstrumentData, 
+    MarketStatus, InstrumentData, 
     TechnicalIndicators, MarketSentiment
+)
+from models.unified_seed_model import (
+    MarketContext, SectorContext, TechnicalContext,
+    MarketRegime, VolatilityRegime, TrendStrength, SectorMomentum
 )
 from core.kite_client import KiteClient
 from services.yahoo_finance_service import YahooFinanceService as YahooClient

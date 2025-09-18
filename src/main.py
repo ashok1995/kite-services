@@ -25,7 +25,7 @@ from config.settings import get_settings
 from core.logging_config import setup_logging, get_logger
 # from core.database import init_database, close_database  # Not implemented yet
 from core.service_manager import ServiceManager
-from api import market_routes, trading_routes, position_routes, websocket_routes
+from api import market_routes, trading_routes, position_routes, websocket_routes, consolidated_routes, auth_routes
 
 
 # Initialize settings and logging
@@ -182,7 +182,9 @@ def setup_routes(app: FastAPI):
         }
     
     # Include API routes
-    app.include_router(market_routes.router, prefix="/api/market", tags=["Market"])
+    app.include_router(auth_routes.router, prefix="/api/auth", tags=["Authentication"])
+    app.include_router(consolidated_routes.router, prefix="/api/market", tags=["Consolidated Market API"])
+    app.include_router(market_routes.router, prefix="/api/market/legacy", tags=["Legacy Market"])
     app.include_router(trading_routes.router, prefix="/api/trading", tags=["Trading"])
     app.include_router(position_routes.router, prefix="/api/positions", tags=["Positions"])
     app.include_router(websocket_routes.router, prefix="/ws", tags=["WebSocket"])

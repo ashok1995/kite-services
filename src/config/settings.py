@@ -9,8 +9,8 @@ Supports environment variables, .env files, and default values.
 import os
 from pathlib import Path
 from typing import Optional, List
-from pydantic import BaseSettings, Field
-from pydantic_settings import BaseSettings as PydanticBaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class KiteConfig(BaseSettings):
@@ -90,7 +90,7 @@ class ServiceConfig(BaseSettings):
     name: str = Field("kite-services", env="SERVICE_NAME")
     version: str = Field("1.0.0", env="SERVICE_VERSION")
     host: str = Field("0.0.0.0", env="SERVICE_HOST")
-    port: int = Field(8080, env="SERVICE_PORT")
+    port: int = Field(8079, env="SERVICE_PORT")  # DEV on 8079, PROD on 8179
     workers: int = Field(1, env="SERVICE_WORKERS")
     
     # Environment
@@ -133,7 +133,7 @@ class MonitoringConfig(BaseSettings):
     alert_email: Optional[str] = Field(None, env="ALERT_EMAIL")
 
 
-class Settings(PydanticBaseSettings):
+class Settings(BaseSettings):
     """Main application settings."""
     
     # Sub-configurations
