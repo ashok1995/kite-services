@@ -1,192 +1,203 @@
-# Kite Services - Independent Market Context & Trading Service
+# Kite Services - Trading API
 
-## 🎯 **Overview**
+A comprehensive FastAPI-based trading services API for stock market data, analysis, and intelligent trading decisions.
 
-Independent service that provides comprehensive market context using Kite Connect and Yahoo Finance APIs, with intelligent trading decisions, position tracking, and stop-loss/target management with performance-based updates.
+## Features
 
-## 🏗️ **Architecture**
+- 🔐 **Authentication**: Kite Connect OAuth integration
+- 📊 **Market Data**: Real-time quotes, historical data, market status
+- 🧠 **Market Intelligence**: Context analysis, sentiment, technical indicators
+- 💰 **Trading Support**: Position tracking, holdings, opportunities
+- 📈 **Monitoring**: Comprehensive logging, metrics, health checks
+- 🐳 **Docker**: Production-ready containerization
+- 🚀 **CI/CD**: Automated testing and deployment pipeline
 
-### **Core Services**
-- **Market Context Service** - Real-time market data from Kite + Yahoo Finance
-- **Intelligent Trading Engine** - Smart trading decisions with contextual analysis
-- **Position Tracking Service** - Real-time position monitoring and management
-- **Stop-loss & Target Manager** - Dynamic updates based on performance metrics
-- **Performance Analytics** - Trading performance tracking and optimization
+## Quick Start
 
-### **Key Features**
-- ✅ Real-time market data streaming (Kite WebSocket)
-- ✅ Yahoo Finance integration for broader market context
-- ✅ Intelligent position tracking with risk management
-- ✅ Dynamic stop-loss and target adjustments
-- ✅ Performance-based decision making
-- ✅ Paper trading with ML optimization
-- ✅ Contextual bandit for trading decisions
-- ✅ Comprehensive logging and monitoring
+### Development
 
-## 🚀 **Quick Start**
-
-### **Prerequisites**
-- Python 3.11+
-- Kite Connect API credentials
-- Virtual environment
-
-### **Installation**
 ```bash
-# Clone and setup
-cd kite-services
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# Install dependencies
+poetry install
 
-# Configure environment
-cp env/env.example .env
-# Edit .env with your Kite API credentials
+# Run development server
+cd src
+python main.py
 
-# Run the service
-python src/main.py
+# Server runs on http://localhost:8079
 ```
 
-### **Docker Deployment**
-```bash
-# Development
-docker-compose -f docker-compose.dev.yml up -d
+### Production
 
-# Production
-docker-compose -f docker-compose.prod.yml up -d
+```bash
+# Using Docker Compose
+docker compose -f docker-compose.prod.yml up -d
+
+# Server runs on http://localhost:8179
 ```
 
-## 📡 **API Endpoints**
+## API Endpoints
 
-### **Market Context**
-- `GET /api/market/context` - Current market context
-- `GET /api/market/status` - Market status and hours
-- `GET /api/market/instruments/{symbol}` - Instrument details
+### Core
+- `GET /` - Service information
+- `GET /health` - Health check
+- `GET /health?detailed=true` - Detailed health with metrics
+- `GET /metrics` - Application metrics
+- `GET /docs` - API documentation (dev only)
 
-### **Trading Intelligence**
-- `POST /api/trading/analyze` - Analyze trading opportunities
-- `GET /api/trading/positions` - Current positions
-- `POST /api/trading/execute` - Execute trading decisions
-- `GET /api/trading/performance` - Performance metrics
+### Authentication
+- `POST /api/auth/login` - Login with request token
+- `GET /api/auth/status` - Authentication status
 
-### **Position Management**
-- `GET /api/positions/active` - Active positions
-- `PUT /api/positions/{id}/stoploss` - Update stop-loss
-- `PUT /api/positions/{id}/target` - Update target
-- `GET /api/positions/{id}/performance` - Position performance
+### Market Data
+- `GET /api/market/status` - Market status
+- `GET /api/market/instruments` - Available instruments
+- `POST /api/market/quotes` - Get quotes
+- `POST /api/market/data` - Universal market data
 
-### **Real-time Data**
-- `WS /ws/market-data` - Real-time market data stream
-- `WS /ws/positions` - Position updates stream
-- `WS /ws/alerts` - Trading alerts stream
+### Analysis
+- `POST /api/analysis/context` - Market context
+- `POST /api/analysis/stock` - Stock analysis
+- `POST /api/analysis/context/enhanced` - Enhanced context
+- `POST /api/opportunities/quick` - Quick opportunities
 
-## 🔧 **Configuration**
+### Trading
+- `GET /api/trading/status` - Trading status (positions, holdings)
 
-### **Environment Variables**
-```bash
-# Kite API
-KITE_API_KEY=your_api_key
-KITE_API_SECRET=your_api_secret
-KITE_ACCESS_TOKEN=your_access_token
+## Configuration
 
-# Yahoo Finance
-YAHOO_API_KEY=your_yahoo_key  # Optional
+### Environment Variables
 
-# Service Configuration
-SERVICE_PORT=8080
-LOG_LEVEL=INFO
-ENVIRONMENT=development
+See `config/production.env.example` for all configuration options.
 
-# Database
-DATABASE_URL=sqlite:///data/kite_services.db
+Key variables:
+- `KITE_API_KEY` - Kite Connect API key
+- `KITE_ACCESS_TOKEN` - Kite Connect access token
+- `SERVICE_PORT` - Server port (8079=dev, 8179=prod)
+- `ENVIRONMENT` - development or production
+- `LOG_LEVEL` - DEBUG, INFO, WARNING, ERROR
+- `LOG_FORMAT` - json or text
 
-# Trading Configuration
-INITIAL_CAPITAL=100000
-MAX_POSITIONS=10
-POSITION_SIZE_PERCENT=0.1
-STOP_LOSS_PERCENT=0.05
-TAKE_PROFIT_PERCENT=0.15
-```
+## Development
 
-## 📊 **Service Architecture**
+### Project Structure
 
 ```
 kite-services/
-├── src/
-│   ├── api/                    # FastAPI routes
-│   │   ├── market_routes.py
-│   │   ├── trading_routes.py
-│   │   ├── position_routes.py
-│   │   └── websocket_routes.py
-│   ├── services/               # Core business logic
-│   │   ├── market_context.py
-│   │   ├── intelligent_trading.py
-│   │   ├── position_tracker.py
-│   │   ├── stoploss_manager.py
-│   │   └── performance_analyzer.py
-│   ├── models/                 # Pydantic models
-│   │   ├── market_models.py
-│   │   ├── trading_models.py
-│   │   └── position_models.py
-│   ├── core/                   # Core utilities
-│   │   ├── kite_client.py
-│   │   ├── yahoo_client.py
-│   │   └── database.py
-│   ├── config/                 # Configuration
-│   │   ├── settings.py
-│   │   └── logging_config.py
-│   └── main.py                 # Application entry point
-├── tests/                      # Test suite
-├── docs/                       # Documentation
-├── logs/                       # Application logs
-├── data/                       # Data storage
-└── env/                        # Environment configs
+├── src/                    # Application source
+│   ├── api/               # API routes
+│   ├── core/              # Core services
+│   ├── services/          # Business logic
+│   ├── models/            # Data models
+│   └── config/            # Configuration
+├── tests/                 # Test suite
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
+│   └── e2e/              # End-to-end tests
+├── docs/                 # Documentation
+├── .github/workflows/    # CI/CD pipelines
+└── pyproject.toml        # Poetry dependencies
 ```
 
-## 🧪 **Testing**
+### Running Tests
 
 ```bash
-# Run all tests
-pytest
+# All tests
+poetry run pytest
 
-# Run specific test categories
-pytest tests/unit/
-pytest tests/integration/
-pytest tests/performance/
+# Unit tests only
+poetry run pytest tests/unit/
 
-# Run with coverage
-pytest --cov=src tests/
+# Integration tests
+poetry run pytest tests/integration/
+
+# E2E tests
+poetry run pytest tests/e2e/
+
+# With coverage
+poetry run pytest --cov=src --cov-report=html
 ```
 
-## 📈 **Monitoring & Logging**
+## CI/CD Pipeline
 
-- **Structured JSON Logging** - All operations logged with context
-- **Performance Metrics** - Real-time performance tracking
-- **Health Checks** - Service health monitoring
-- **Error Tracking** - Comprehensive error logging and alerts
+### Branch Strategy
 
-## 🔄 **Integration with Other Services**
+- **main/master**: Production deployments
+- **develop**: Image build + test stage
+- **feature/***: Tests only, no deployment
 
-This service is designed to work independently but can integrate with:
-- **Seed Stocks Service** - For recommendation inputs
-- **Strategy Service** - For trading strategy configurations
-- **Notification Service** - For alerts and updates
+### Pipeline Stages
 
-## 📝 **Development**
+1. **Lint** - Code quality checks
+2. **Unit Tests** - Component tests
+3. **Integration Tests** - Service integration
+4. **E2E Tests** - End-to-end validation
+5. **Build Image** - Docker image creation
+6. **Test Image** (develop only) - Container testing
+7. **Deploy Production** (main only) - Production deployment
+8. **Post-Deployment Tests** (main only) - Smoke tests
 
-### **Code Standards**
-- Python 3.11+ with type hints
-- Pydantic models for all data structures
-- Async/await for I/O operations
-- Comprehensive error handling
-- Structured logging
+See [CI/CD Pipeline Documentation](docs/CI_CD_PIPELINE.md) for details.
 
-### **Contributing**
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+## Monitoring
 
-## 📞 **Support**
+### Health Checks
 
-For issues and support, please check the documentation or create an issue in the repository.
+```bash
+# Basic health
+curl http://localhost:8179/health
+
+# Detailed health with metrics
+curl "http://localhost:8179/health?detailed=true"
+```
+
+### Metrics
+
+```bash
+# Application metrics
+curl http://localhost:8179/metrics
+```
+
+### Logging
+
+- **Format**: JSON (production), Text (development)
+- **Location**: `logs/kite_services.log`
+- **Rotation**: 10MB files, 5 backups
+- **Request IDs**: All requests tracked with unique IDs
+
+See [Production Monitoring Guide](docs/PRODUCTION_MONITORING.md) for details.
+
+## Deployment
+
+### Production Deployment
+
+Production deployments are automated via GitHub Actions when code is pushed to `main` branch.
+
+Manual deployment:
+```bash
+ssh root@203.57.85.72
+cd /opt/kite-services
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Environment URLs
+
+- **Development**: http://localhost:8079
+- **Production**: http://203.57.85.72:8179
+
+## Documentation
+
+- [API Documentation](docs/api.md)
+- [Architecture](docs/architecture.md)
+- [CI/CD Pipeline](docs/CI_CD_PIPELINE.md)
+- [Production Monitoring](docs/PRODUCTION_MONITORING.md)
+- [Git Setup](docs/GIT_SETUP.md)
+
+## License
+
+Private project - All rights reserved
+
+## Support
+
+For issues and questions, please open an issue in the repository.

@@ -10,6 +10,7 @@ import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 
 import uvicorn
@@ -23,9 +24,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config.settings import get_settings
 from core.logging_config import setup_logging, get_logger
-# from core.database import init_database, close_database  # Not implemented yet
-from core.service_manager import ServiceManager
-from api import market_routes, trading_routes, position_routes, websocket_routes, consolidated_routes, auth_routes
+from core.database import init_database, close_database
+from core.service_manager import ServiceManager, set_service_manager
+# Import consolidated API modules
+from api import auth, market_data, analysis, trading, analysis_enhanced, quick_opportunities
 
 
 # Initialize settings and logging
@@ -40,14 +42,15 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Kite Services...")
     
     try:
-        # Initialize database (placeholder)
-        # await init_database()
-        # logger.info("✅ Database initialized")
+        # Initialize database
+        await init_database()
+        logger.info("✅ Database initialized")
         
         # Initialize service manager
         service_manager = ServiceManager()
         await service_manager.initialize()
         app.state.service_manager = service_manager
+        set_service_manager(service_manager)  # Set global instance
         logger.info("✅ Service manager initialized")
         
         # Store settings in app state
@@ -68,8 +71,8 @@ async def lifespan(app: FastAPI):
             await app.state.service_manager.cleanup()
             logger.info("✅ Service manager cleaned up")
         
-        # await close_database()
-        # logger.info("✅ Database connections closed")
+        await close_database()
+        logger.info("✅ Database connections closed")
         
         logger.info("👋 Kite Services shut down complete")
 
@@ -78,8 +81,28 @@ def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
     
     app = FastAPI(
-        title="Kite Services",
-        description="Independent Market Context & Intelligent Trading Service",
+        title="Kite Services - Consolidated API",
+        description="""
+        **Ultra-Minimal Trading API with 8 Endpoints**
+        
+        🔐 **Authentication** (2 endpoints)
+        - POST /api/auth/login - Complete authentication flow
+        - GET /api/auth/status - Authentication status
+        
+        📊 **Market Data** (3 endpoints)  
+        - POST /api/market/data - Universal market data
+        - GET /api/market/status - Market status & health
+        - GET /api/market/instruments - Available instruments
+        
+        🧠 **Analysis** (2 endpoints)
+        - POST /api/analysis/context - Complete market context
+        - POST /api/analysis/intelligence - Stock intelligence
+        
+        💼 **Trading** (1 endpoint)
+        - GET /api/trading/status - Portfolio & positions
+        
+        **Consolidated from 60+ endpoints into 8 focused endpoints**
+        """,
         version=settings.service.version,
         lifespan=lifespan,
         docs_url="/docs" if settings.service.debug else None,
@@ -117,23 +140,64 @@ def setup_middleware(app: FastAPI):
             allowed_hosts=["localhost", "127.0.0.1", settings.service.host]
         )
     
-    # Request logging middleware
+    # Request logging middleware with request IDs and metrics
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
+        from core.logging_config import set_request_id, get_request_id
+        from core.monitoring import get_metrics_collector
+        
+        # Generate request ID
+        request_id = request.headers.get("X-Request-ID") or set_request_id()
+        set_request_id(request_id)
+        
         start_time = asyncio.get_event_loop().time()
         
         # Process request
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            # Log error
+            process_time = asyncio.get_event_loop().time() - start_time
+            logger.error(
+                "HTTP Request Error",
+                extra={
+                    "request_id": request_id,
+                    "method": request.method,
+                    "url": str(request.url),
+                    "error": str(e),
+                    "process_time": round(process_time, 4),
+                    "client_ip": request.client.host if request.client else None,
+                },
+                exc_info=True
+            )
+            raise
+        
+        # Calculate metrics
+        process_time = asyncio.get_event_loop().time() - start_time
+        duration_ms = process_time * 1000
+        
+        # Record metric
+        metrics = get_metrics_collector()
+        await metrics.record_request(
+            method=request.method,
+            path=str(request.url.path),
+            status_code=response.status_code,
+            duration_ms=duration_ms
+        )
+        
+        # Add request ID to response headers
+        response.headers["X-Request-ID"] = request_id
         
         # Log request
-        process_time = asyncio.get_event_loop().time() - start_time
-        logger.info(
+        log_level = "error" if response.status_code >= 500 else "warning" if response.status_code >= 400 else "info"
+        getattr(logger, log_level)(
             "HTTP Request",
             extra={
+                "request_id": request_id,
                 "method": request.method,
                 "url": str(request.url),
                 "status_code": response.status_code,
-                "process_time": round(process_time, 4),
+                "process_time_ms": round(duration_ms, 2),
                 "client_ip": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent"),
             }
@@ -145,10 +209,83 @@ def setup_middleware(app: FastAPI):
 def setup_routes(app: FastAPI):
     """Setup application routes."""
     
-    # Health check endpoint
+    # Health check endpoint with detailed monitoring
     @app.get("/health")
-    async def health_check():
-        """Health check endpoint."""
+    async def health_check(detailed: bool = False):
+        """Health check endpoint with optional detailed metrics."""
+        from core.monitoring import get_metrics_collector
+        
+        # Get service manager from app state
+        service_manager = app.state.service_manager if hasattr(app.state, 'service_manager') else None
+        
+        # Basic health
+        health_data = {
+            "status": "healthy",
+            "service": settings.service.name,
+            "version": settings.service.version,
+            "environment": settings.service.environment,
+            "timestamp": datetime.now().isoformat(),
+        }
+        
+        # Add service status
+        if service_manager:
+            try:
+                health_status = await service_manager.get_health_status()
+                health_data["services"] = health_status
+            except Exception as e:
+                logger.warning(f"Could not get service health status: {e}")
+                health_data["services"] = {"services": {}, "error": str(e)}
+        
+        # Add detailed metrics if requested
+        if detailed:
+            metrics = get_metrics_collector()
+            service_health = await metrics.get_health()
+            health_data.update({
+                "uptime_seconds": round(service_health.uptime_seconds, 2),
+                "total_requests": service_health.total_requests,
+                "successful_requests": service_health.successful_requests,
+                "failed_requests": service_health.failed_requests,
+                "average_response_time_ms": service_health.average_response_time_ms,
+                "error_rate_percent": service_health.error_rate,
+                "last_error": service_health.last_error,
+                "last_error_time": service_health.last_error_time.isoformat() if service_health.last_error_time else None,
+            })
+            health_data["status"] = service_health.status
+        
+        return health_data
+    
+    # Metrics endpoint
+    @app.get("/metrics")
+    async def get_metrics():
+        """Get application metrics."""
+        from core.monitoring import get_metrics_collector
+        
+        metrics = get_metrics_collector()
+        summary = await metrics.get_metrics_summary()
+        health = await metrics.get_health()
+        
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "uptime_seconds": round(health.uptime_seconds, 2),
+            "status": health.status,
+            "requests": {
+                "total": summary["total_requests"],
+                "per_minute": summary["requests_per_minute"],
+                "successful": health.successful_requests,
+                "failed": health.failed_requests,
+            },
+            "performance": {
+                "average_response_time_ms": summary["average_response_time_ms"],
+                "error_rate_percent": summary["error_rate_percent"],
+            },
+            "top_endpoints": summary["top_endpoints"],
+            "status_codes": summary["status_code_distribution"],
+        }
+    
+    # Health check endpoint (backward compatibility)
+    @app.get("/health/quick")
+    async def health_check_quick():
+        """Quick health check endpoint."""
         service_manager = getattr(app.state, 'service_manager', None)
         
         if service_manager:
@@ -168,6 +305,34 @@ def setup_routes(app: FastAPI):
                 "environment": settings.service.environment,
             }
     
+    # Metrics endpoint
+    @app.get("/metrics")
+    async def get_metrics():
+        """Get application metrics for monitoring."""
+        from core.monitoring import get_metrics_collector
+        
+        metrics = get_metrics_collector()
+        summary = await metrics.get_metrics_summary()
+        health = await metrics.get_health()
+        
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "uptime_seconds": round(health.uptime_seconds, 2),
+            "status": health.status,
+            "requests": {
+                "total": summary["total_requests"],
+                "per_minute": summary["requests_per_minute"],
+                "successful": health.successful_requests,
+                "failed": health.failed_requests,
+            },
+            "performance": {
+                "average_response_time_ms": summary["average_response_time_ms"],
+                "error_rate_percent": summary["error_rate_percent"],
+            },
+            "top_endpoints": summary["top_endpoints"],
+            "status_codes": summary["status_code_distribution"],
+        }
+    
     # Root endpoint
     @app.get("/")
     async def root():
@@ -178,16 +343,17 @@ def setup_routes(app: FastAPI):
             "environment": settings.service.environment,
             "docs_url": "/docs" if settings.service.debug else None,
             "health_url": "/health",
+            "metrics_url": "/metrics",
             "api_prefix": "/api"
         }
     
-    # Include API routes
-    app.include_router(auth_routes.router, prefix="/api/auth", tags=["Authentication"])
-    app.include_router(consolidated_routes.router, prefix="/api/market", tags=["Consolidated Market API"])
-    app.include_router(market_routes.router, prefix="/api/market/legacy", tags=["Legacy Market"])
-    app.include_router(trading_routes.router, prefix="/api/trading", tags=["Trading"])
-    app.include_router(position_routes.router, prefix="/api/positions", tags=["Positions"])
-    app.include_router(websocket_routes.router, prefix="/ws", tags=["WebSocket"])
+    # Include consolidated API routes (5 modules, 9+ endpoints total)
+    app.include_router(auth.router, prefix="/api")
+    app.include_router(market_data.router, prefix="/api") 
+    app.include_router(analysis.router, prefix="/api")
+    app.include_router(analysis_enhanced.router, prefix="/api")  # Enhanced hierarchical context
+    app.include_router(quick_opportunities.router, prefix="/api")  # Quick money-making opportunities
+    app.include_router(trading.router, prefix="/api")
 
 
 def setup_exception_handlers(app: FastAPI):
@@ -195,9 +361,27 @@ def setup_exception_handlers(app: FastAPI):
     
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
+        from core.logging_config import get_request_id
+        from core.monitoring import get_metrics_collector
+        
+        request_id = get_request_id()
+        
+        # Record error in metrics
+        try:
+            metrics = get_metrics_collector()
+            await metrics.record_request(
+                method=request.method,
+                path=str(request.url.path),
+                status_code=500,
+                duration_ms=0.0
+            )
+        except Exception:
+            pass  # Don't fail if metrics fail
+        
         logger.error(
             "Unhandled exception",
             extra={
+                "request_id": request_id,
                 "method": request.method,
                 "url": str(request.url),
                 "exception": str(exc),

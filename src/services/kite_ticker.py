@@ -16,8 +16,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from kiteconnect import KiteTicker
-from modules.core import BaseModule, ModuleStatus, ModuleHealth
-from services.logging.logger_factory import get_logger
+from core.logging_config import get_logger
 from config.settings import get_settings
 from services.kite_credentials_manager import get_kite_credentials_manager, KiteCredentials
 
@@ -59,11 +58,12 @@ class KiteTickerConfig:
         self.subscription_mode: str = "mode_quote"  # mode_ltp, mode_quote, mode_full
 
 
-class KiteTickerService(BaseModule):
+class KiteTickerService:
     """Kite ticker service for real-time price data."""
     
     def __init__(self):
-        super().__init__("kite_ticker")
+        self.module_name = "kite_ticker"
+        self.status = "initialized"
         
         # Initialize settings and credentials manager
         self.settings = get_settings()
@@ -111,12 +111,12 @@ class KiteTickerService(BaseModule):
             # Set up event handlers
             self._setup_event_handlers()
             
-            self.set_status(ModuleStatus.READY)
+            self.status = "ready"
             self.logger.info("Kite ticker service initialized successfully")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize Kite ticker service: {e}")
-            self.set_status(ModuleStatus.ERROR)
+            self.status = "error"
             raise
             
     async def cleanup(self) -> None:
@@ -138,25 +138,23 @@ class KiteTickerService(BaseModule):
             except asyncio.CancelledError:
                 pass
         
-        self.set_status(ModuleStatus.STOPPED)
+        self.status = "stopped"
         self.logger.info("Kite ticker service cleaned up successfully")
         
-    async def health_check(self) -> ModuleHealth:
+    async def health_check(self) -> Dict[str, Any]:
         """Check Kite ticker service health."""
-        dependencies = {
-            "kite_ticker": self.kite_ticker is not None,
-            "is_connected": self.is_connected,
-            "subscribed_tokens": len(self.subscribed_tokens),
-            "tick_data_count": len(self.tick_data),
-            "reconnect_attempts": self.reconnect_attempts
+        return {
+            "module_name": self.module_name,
+            "status": self.status,
+            "dependencies": {
+                "kite_ticker": self.kite_ticker is not None,
+                "is_connected": self.is_connected,
+                "subscribed_tokens": len(self.subscribed_tokens),
+                "tick_data_count": len(self.tick_data),
+                "reconnect_attempts": self.reconnect_attempts
+            },
+            "last_check": datetime.now().isoformat()
         }
-        
-        return ModuleHealth(
-            module_name=self.module_name,
-            status=self.status,
-            dependencies=dependencies,
-            last_check=datetime.now().isoformat()
-        )
         
     async def _load_credentials(self) -> None:
         """Load Kite API credentials."""

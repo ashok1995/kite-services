@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Kite Token Manager</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 700px;
+            margin: 30px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .prod-badge {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .status-box {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-label {
+            font-weight: 700;
+            color: #495057;
+        }
+        .status-value {
+            font-family: 'Courier New', monospace;
+            color: #212529;
+            font-weight: 600;
+        }
+        .status-valid { color: #28a745; }
+        .status-expired { color: #dc3545; }
+        
+        .input-group {
+            margin: 25px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: #495057;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            margin: 12px 8px 12px 0;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+        
+        .prod-url {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .result-box {
+            margin: 25px 0;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .result-success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border-left: 5px solid #28a745;
+            color: #155724;
+        }
+        .result-error {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            border-left: 5px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .access-token {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            margin: 15px 0;
+            font-size: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .endpoint-info {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border: 2px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .step-indicator {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="prod-badge">🚀 PRODUCTION</div>
+        <h1>🔐 Production Kite Token Manager</h1>
+        
+        <div class="endpoint-info">
+            <strong>🌐 Production Endpoint:</strong> http://localhost:8179<br>
+            <strong>🔧 Environment:</strong> Production Docker Container<br>
+            <strong>📊 Port:</strong> 8179 (Production Standard)<br>
+            <strong>💾 Token Storage:</strong> /app/data/ (Container Volume)<br>
+            <strong>✅ Status:</strong> Permission Issues Fixed
+        </div>
+        
+        <!-- Token Status -->
+        <div class="status-box">
+            <h3>📊 Current Production Token Status</h3>
+            <div id="token-status">
+                <div class="status-item">
+                    <span class="status-label">Loading production status...</span>
+                </div>
+            </div>
+            <button class="btn" onclick="checkStatus()">🔄 Refresh Status</button>
+        </div>
+        
+        <!-- Token Refresh -->
+        <div class="status-box">
+            <h3>🔄 Production Token Refresh</h3>
+            
+            <div class="step-indicator">
+                <strong>Step 1:</strong> Click to get Kite Connect login URL:
+            </div>
+            <button class="btn" onclick="openKiteLogin()">🔗 Open Kite Login (Production)</button>
+            <div id="login-url-display" class="prod-url" style="display: none;"></div>
+            
+            <div class="step-indicator">
+                <strong>Step 2:</strong> After login, paste the request token here:
+            </div>
+            <div class="input-group">
+                <label for="request-token-input">
+                    Request Token from Kite Connect Callback:
+                </label>
+                <input type="text" id="request-token-input" 
+                       placeholder="Paste request token from callback URL (e.g., qQDXpFOTSBW59mcej7cmRmM0xtBWA1Iw)"
+                       style="font-family: 'Courier New', monospace;">
+            </div>
+            
+            <button class="btn btn-success" onclick="submitRequestToken()">
+                ✅ Generate Production Access Token
+            </button>
+            
+            <div id="token-result" class="result-box"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8179'; // Production port
+        let loginUrl = '';
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Production Token Manager Initialized');
+            console.log('📡 API Base:', API_BASE);
+            checkStatus();
+        });
+
+        async function checkStatus() {
+            try {
+                console.log('📊 Checking production token status...');
+                const response = await fetch(`${API_BASE}/api/token/status`);
+                const data = await response.json();
+                
+                console.log('📊 Status response:', data);
+                
+                const statusContainer = document.getElementById('token-status');
+                const validClass = data.token_valid ? 'status-valid' : 'status-expired';
+                const validText = data.token_valid ? '✅ Valid' : '❌ Expired/Invalid';
+                const refreshText = data.needs_refresh ? '⚠️ Required' : '✅ Not Required';
+                
+                statusContainer.innerHTML = `
+                    <div class="status-item">
+                        <span class="status-label">Production Token Status:</span>
+                        <span class="status-value ${validClass}">${validText}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Token (Masked):</span>
+                        <span class="status-value">${data.token_masked || 'Not configured'}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Refresh Required:</span>
+                        <span class="status-value ${data.needs_refresh ? 'status-expired' : 'status-valid'}">${refreshText}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Production Environment:</span>
+                        <span class="status-value">Docker Container (Port 8179)</span>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Error checking status:', error);
+                document.getElementById('token-status').innerHTML = 
+                    '<div class="status-item"><span class="status-label">❌ Error loading production status</span></div>';
+            }
+        }
+
+        async function openKiteLogin() {
+            try {
+                console.log('🔗 Getting production login URL...');
+                const response = await fetch(`${API_BASE}/api/token/refresh-info`);
+                const data = await response.json();
+                
+                console.log('🔗 Refresh info response:', data);
+                
+                if (data.step_1 && data.step_1.login_url) {
+                    loginUrl = data.step_1.login_url;
+                    
+                    // Display the URL
+                    const urlDisplay = document.getElementById('login-url-display');
+                    urlDisplay.textContent = loginUrl;
+                    urlDisplay.style.display = 'block';
+                    
+                    // Open in new tab
+                    window.open(loginUrl, '_blank');
+                    
+                    showResult('🚀 Production login page opened! After login, copy the request token from the callback URL.', 'success');
+                } else {
+                    showResult('❌ Failed to get production login URL', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error opening login:', error);
+                showResult('❌ Error opening production login page: ' + error.message, 'error');
+            }
+        }
+
+        async function submitRequestToken() {
+            const requestToken = document.getElementById('request-token-input').value.trim();
+            
+            if (!requestToken) {
+                showResult('⚠️ Please enter a request token', 'error');
+                return;
+            }
+            
+            console.log('🔄 Submitting request token to production...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/token/submit-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        request_token: requestToken
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('🔄 Token submission response:', data);
+                
+                if (data.success) {
+                    const resultHtml = `
+                        <h4>🎉 Production Access Token Generated Successfully!</h4>
+                        <p><strong>👤 User:</strong> ${data.user_name} (${data.email})</p>
+                        <p><strong>🆔 User ID:</strong> ${data.user_id}</p>
+                        <p><strong>📁 Token Saved:</strong> ${data.token_file}</p>
+                        <p><strong>📂 Local Copy:</strong> ./data/zerodha_token.json</p>
+                        <p><strong>🔑 Access Token:</strong></p>
+                        <div class="access-token">${data.access_token}</div>
+                        <p><strong>✅ Next Steps:</strong></p>
+                        <ol>
+                            <li>✅ Token automatically saved to production file</li>
+                            <li>✅ Environment variable updated automatically</li>
+                            <li>🔄 Restart production service to use new token</li>
+                            <li>📊 Check status to verify token is working</li>
+                        </ol>
+                        <p><strong>🚀 Production Status:</strong> Token ready for use!</p>
+                    `;
+                    showResult(resultHtml, 'success');
+                    
+                    // Clear the input
+                    document.getElementById('request-token-input').value = '';
+                    
+                    // Refresh status after a moment
+                    setTimeout(checkStatus, 3000);
+                    
+                } else {
+                    showResult(`❌ Production token generation failed: ${data.detail || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error submitting token:', error);
+                showResult('❌ Error submitting token to production: ' + error.message, 'error');
+            }
+        }
+
+        function showResult(message, type) {
+            const resultBox = document.getElementById('token-result');
+            resultBox.className = `result-box result-${type}`;
+            resultBox.innerHTML = message;
+            resultBox.style.display = 'block';
+            
+            // Auto-hide success messages after 15 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    resultBox.style.display = 'none';
+                }, 15000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Kite Token Flow - UI Integration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .flow-step {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .flow-step.active {
+            border-color: #3498db;
+            background: #e8f4fd;
+        }
+        .flow-step.completed {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .step-number.completed {
+            background: #27ae60;
+        }
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .action-button {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .action-button:hover {
+            background: linear-gradient(45deg, #2980b9, #1abc9c);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        .action-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .input-group {
+            margin: 15px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-valid { background-color: #27ae60; }
+        .status-expired { background-color: #e74c3c; }
+        .status-unknown { background-color: #95a5a6; }
+        
+        .success-message {
+            background: #d5f4e6;
+            border-left: 4px solid #27ae60;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+        .error-message {
+            background: #fadbd8;
+            border-left: 4px solid #e74c3c;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+        .info-message {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            color: #3498db;
+            padding: 15px;
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+        
+        .callback-url {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Complete Kite Token Flow</h1>
+        
+        <!-- Step 1: Check Current Status -->
+        <div id="step1" class="flow-step active">
+            <div class="step-header">
+                <div id="step1-number" class="step-number">1</div>
+                <div class="step-title">Check Current Token Status</div>
+            </div>
+            <div id="step1-content">
+                <div class="loading">Checking token status...</div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Get Callback URL -->
+        <div id="step2" class="flow-step">
+            <div class="step-header">
+                <div id="step2-number" class="step-number">2</div>
+                <div class="step-title">Configure Callback URL</div>
+            </div>
+            <div id="step2-content">
+                <div class="info-message">
+                    <strong>Configure this callback URL in your Kite Connect app:</strong>
+                    <div id="callback-url-display" class="callback-url">Loading...</div>
+                    <p><small>Go to <a href="https://developers.kite.trade/" target="_blank">https://developers.kite.trade/</a> and set this as your Redirect URL</small></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Get Login URL and Login -->
+        <div id="step3" class="flow-step">
+            <div class="step-header">
+                <div id="step3-number" class="step-number">3</div>
+                <div class="step-title">Login to Get Request Token</div>
+            </div>
+            <div id="step3-content">
+                <div id="login-section">
+                    <p>Click the button below to login and get a request token:</p>
+                    <button id="login-button" class="action-button" onclick="openLoginPage()">
+                        🔗 Login to Kite Connect
+                    </button>
+                    <div class="info-message">
+                        <strong>After login:</strong> You'll be redirected to a callback URL that contains a request token. Copy the entire callback URL and paste it below.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 4: Extract Request Token -->
+        <div id="step4" class="flow-step">
+            <div class="step-header">
+                <div id="step4-number" class="step-number">4</div>
+                <div class="step-title">Extract Request Token from Callback URL</div>
+            </div>
+            <div id="step4-content">
+                <div class="input-group">
+                    <label for="callback-url-input">Paste the callback URL here:</label>
+                    <textarea id="callback-url-input" rows="3" placeholder="http://127.0.0.1:8079/auth/callback?action=login&type=login&status=success&request_token=your_request_token_here"></textarea>
+                </div>
+                <button class="action-button" onclick="extractRequestToken()">
+                    🔍 Extract Request Token
+                </button>
+                <div id="extracted-token-display" style="display: none;">
+                    <div class="success-message">
+                        <strong>Extracted Request Token:</strong>
+                        <div id="extracted-token" class="code-block"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 5: Generate Access Token -->
+        <div id="step5" class="flow-step">
+            <div class="step-header">
+                <div id="step5-number" class="step-number">5</div>
+                <div class="step-title">Generate Access Token</div>
+            </div>
+            <div id="step5-content">
+                <p>Convert the request token to an access token:</p>
+                <button id="generate-token-button" class="action-button" onclick="generateAccessToken()" disabled>
+                    🔄 Generate Access Token
+                </button>
+                <div id="access-token-result" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- Step 6: Update Configuration -->
+        <div id="step6" class="flow-step">
+            <div class="step-header">
+                <div id="step6-number" class="step-number">6</div>
+                <div class="step-title">Update Your Configuration</div>
+            </div>
+            <div id="step6-content">
+                <div class="info-message">
+                    <strong>Copy the access token above and update your environment variables:</strong>
+                    <div class="code-block">KITE_ACCESS_TOKEN=your_new_access_token_here</div>
+                    <p>Then restart your service to use the new token.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8079';
+        let currentStep = 1;
+        let extractedRequestToken = null;
+        let loginUrl = null;
+        
+        // Initialize the flow
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFlow();
+        });
+        
+        async function initializeFlow() {
+            await checkTokenStatus();
+            await loadCallbackUrl();
+            await loadLoginUrl();
+        }
+        
+        async function checkTokenStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/token/status`);
+                const data = await response.json();
+                
+                const step1Content = document.getElementById('step1-content');
+                const statusIcon = data.kite_token_valid ? 'status-valid' : 'status-expired';
+                const statusText = data.kite_token_valid ? '✅ Valid' : '❌ Expired';
+                
+                step1Content.innerHTML = `
+                    <div class="status-item">
+                        <span class="status-indicator ${statusIcon}"></span>
+                        <strong>Token Status:</strong> ${statusText}
+                    </div>
+                    <div class="status-item">
+                        <span class="status-indicator ${statusIcon}"></span>
+                        <strong>Token (Masked):</strong> ${data.kite_token_masked || 'Not configured'}
+                    </div>
+                    <div class="status-item">
+                        <span class="status-indicator ${data.needs_refresh ? 'status-expired' : 'status-valid'}"></span>
+                        <strong>Needs Refresh:</strong> ${data.needs_refresh ? '⚠️ Yes' : '✅ No'}
+                    </div>
+                `;
+                
+                if (data.kite_token_valid) {
+                    markStepCompleted(1);
+                    showSuccessMessage(step1Content, 'Token is valid! No refresh needed.');
+                } else {
+                    markStepActive(2);
+                }
+                
+            } catch (error) {
+                console.error('Error checking status:', error);
+                showErrorMessage(document.getElementById('step1-content'), 'Failed to check token status');
+            }
+        }
+        
+        async function loadCallbackUrl() {
+            try {
+                const response = await fetch(`${API_BASE}/api/token/callback-url`);
+                const data = await response.json();
+                
+                document.getElementById('callback-url-display').textContent = data.callback_url;
+                markStepCompleted(2);
+                markStepActive(3);
+                
+            } catch (error) {
+                console.error('Error loading callback URL:', error);
+                document.getElementById('callback-url-display').textContent = 'Error loading callback URL';
+            }
+        }
+        
+        async function loadLoginUrl() {
+            try {
+                const response = await fetch(`${API_BASE}/api/token/refresh-info`);
+                const data = await response.json();
+                loginUrl = data.login_url;
+                
+                if (loginUrl) {
+                    document.getElementById('login-button').disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Error loading login URL:', error);
+            }
+        }
+        
+        function openLoginPage() {
+            if (loginUrl) {
+                window.open(loginUrl, '_blank');
+                markStepActive(4);
+                showInfoMessage(document.getElementById('step3-content'), 
+                    'Login page opened! After login, copy the callback URL and paste it in Step 4.');
+            }
+        }
+        
+        function extractRequestToken() {
+            const callbackUrl = document.getElementById('callback-url-input').value.trim();
+            
+            if (!callbackUrl) {
+                showErrorMessage(document.getElementById('step4-content'), 'Please paste the callback URL');
+                return;
+            }
+            
+            try {
+                const url = new URL(callbackUrl);
+                const requestToken = url.searchParams.get('request_token');
+                
+                if (requestToken) {
+                    extractedRequestToken = requestToken;
+                    
+                    document.getElementById('extracted-token').textContent = requestToken;
+                    document.getElementById('extracted-token-display').style.display = 'block';
+                    document.getElementById('generate-token-button').disabled = false;
+                    
+                    markStepCompleted(4);
+                    markStepActive(5);
+                    
+                    showSuccessMessage(document.getElementById('step4-content'), 
+                        'Request token extracted successfully!');
+                } else {
+                    showErrorMessage(document.getElementById('step4-content'), 
+                        'No request_token found in the URL. Make sure you pasted the complete callback URL.');
+                }
+                
+            } catch (error) {
+                showErrorMessage(document.getElementById('step4-content'), 
+                    'Invalid URL format. Please paste a valid callback URL.');
+            }
+        }
+        
+        async function generateAccessToken() {
+            if (!extractedRequestToken) {
+                showErrorMessage(document.getElementById('step5-content'), 'No request token available');
+                return;
+            }
+            
+            try {
+                document.getElementById('generate-token-button').disabled = true;
+                document.getElementById('generate-token-button').textContent = '🔄 Generating...';
+                
+                const response = await fetch(`${API_BASE}/api/token/generate-access-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        request_token: extractedRequestToken
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const resultDiv = document.getElementById('access-token-result');
+                    resultDiv.innerHTML = `
+                        <div class="success-message">
+                            <strong>✅ Access Token Generated Successfully!</strong>
+                            <div class="code-block">
+                                <strong>Access Token:</strong><br>
+                                ${data.access_token}<br><br>
+                                <strong>User Info:</strong><br>
+                                User ID: ${data.user_id}<br>
+                                Name: ${data.user_name}<br>
+                                Email: ${data.email}
+                            </div>
+                            <p><strong>Next Steps:</strong></p>
+                            <ol>
+                                <li>Copy the access token above</li>
+                                <li>Update your KITE_ACCESS_TOKEN environment variable</li>
+                                <li>Restart your service</li>
+                            </ol>
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                    
+                    markStepCompleted(5);
+                    markStepActive(6);
+                    
+                } else {
+                    throw new Error(data.detail || 'Failed to generate access token');
+                }
+                
+            } catch (error) {
+                console.error('Error generating access token:', error);
+                showErrorMessage(document.getElementById('step5-content'), 
+                    'Failed to generate access token: ' + error.message);
+            } finally {
+                document.getElementById('generate-token-button').disabled = false;
+                document.getElementById('generate-token-button').textContent = '🔄 Generate Access Token';
+            }
+        }
+        
+        // Helper functions
+        function markStepCompleted(stepNumber) {
+            const step = document.getElementById(`step${stepNumber}`);
+            const stepNumberEl = document.getElementById(`step${stepNumber}-number`);
+            
+            step.classList.remove('active');
+            step.classList.add('completed');
+            stepNumberEl.classList.add('completed');
+            stepNumberEl.textContent = '✓';
+        }
+        
+        function markStepActive(stepNumber) {
+            // Remove active from all steps
+            document.querySelectorAll('.flow-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // Add active to current step
+            const step = document.getElementById(`step${stepNumber}`);
+            step.classList.add('active');
+            currentStep = stepNumber;
+        }
+        
+        function showSuccessMessage(container, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'success-message';
+            messageDiv.textContent = message;
+            container.appendChild(messageDiv);
+        }
+        
+        function showErrorMessage(container, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'error-message';
+            messageDiv.textContent = message;
+            container.appendChild(messageDiv);
+        }
+        
+        function showInfoMessage(container, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'info-message';
+            messageDiv.textContent = message;
+            container.appendChild(messageDiv);
+        }
+    </script>
+</body>
+</html>

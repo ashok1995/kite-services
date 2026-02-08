@@ -1,0 +1,34 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  # Quick checks for PRs - only run tests, no deployment
+  pr-checks:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'poetry'
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      
+      - name: Install dependencies
+        run: poetry install --no-interaction
+      
+      - name: Run unit tests
+        run: poetry run pytest tests/unit/ -v --tb=short
+      
+      - name: Run production config tests
+        env:
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+        run: |
+          poetry run pytest tests/e2e/test_production_config.py -v --tb=short

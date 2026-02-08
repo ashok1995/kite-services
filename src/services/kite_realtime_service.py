@@ -25,16 +25,10 @@ from kiteconnect import KiteTicker
 # Import configuration and credentials
 from config.settings import get_settings
 from services.kite_credentials_manager import get_kite_credentials_manager, KiteCredentials
-
-# Import comprehensive logging
-from services.logging.trading_pipeline_logger import (
-    trading_logger, LogCategory, log_kite_api, log_data_streaming, 
-    log_analysis, log_ranking, log_operation
-)
+from core.logging_config import get_logger
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class MarketStatus(Enum):
     PRE_MARKET = "pre_market"
@@ -169,80 +163,73 @@ class KiteRealTimeService:
     
     def load_credentials(self, credentials_file: str = None):
         """Load credentials from file or environment."""
-        with trading_logger.log_operation(LogCategory.KITE_API, "kite_service", "load_credentials") as req_id:
-            try:
-                # Update credentials file path if provided
-                if credentials_file:
-                    self.kite_config.credentials_file = credentials_file
+        try:
+            # Update credentials file path if provided
+            if credentials_file:
+                self.kite_config.credentials_file = credentials_file
+            
+            # Reload credentials using the credentials manager
+            self.credentials = self.credentials_manager.load_credentials()
+            
+            # Update API key and access token
+            self.api_key = self.credentials.api_key
+            self.access_token = self.credentials.access_token
+            
+            # Reinitialize Kite clients if credentials are available
+            if self.api_key and self.access_token:
+                self.kite = KiteConnect(api_key=self.api_key)
+                self.kite.set_access_token(self.access_token)
+                self.kws = KiteTicker(self.api_key, self.access_token)
                 
-                # Reload credentials using the credentials manager
-                self.credentials = self.credentials_manager.load_credentials()
-                
-                # Update API key and access token
-                self.api_key = self.credentials.api_key
-                self.access_token = self.credentials.access_token
-                
-                # Reinitialize Kite clients if credentials are available
-                if self.api_key and self.access_token:
-                    self.kite = KiteConnect(api_key=self.api_key)
-                    self.kite.set_access_token(self.access_token)
-                    self.kws = KiteTicker(self.api_key, self.access_token)
-                    
-                    log_kite_api("load_credentials", {
-                        "credentials_file": credentials_file or self.kite_config.credentials_file,
-                        "api_key": self.api_key[:10] + "..." if self.api_key else None,
-                        "has_access_token": bool(self.access_token),
-                        "user_id": self.credentials.user_id
-                    }, success=True)
-                else:
-                    log_kite_api("load_credentials", {
-                        "credentials_file": credentials_file or self.kite_config.credentials_file,
-                        "error": "No valid credentials found"
-                    }, success=False, error="No valid credentials found")
-                    
-            except Exception as e:
-                log_kite_api("load_credentials", {
+                logger.info("Credentials loaded successfully", extra={
                     "credentials_file": credentials_file or self.kite_config.credentials_file,
-                    "error": str(e)
-                }, success=False, error=str(e))
-                raise
+                    "api_key": self.api_key[:10] + "..." if self.api_key else None,
+                    "has_access_token": bool(self.access_token),
+                    "user_id": self.credentials.user_id
+                })
+            else:
+                logger.warning("No valid credentials found", extra={
+                    "credentials_file": credentials_file or self.kite_config.credentials_file
+                })
+                
+        except Exception as e:
+            logger.error(f"Failed to load credentials: {e}", extra={
+                "credentials_file": credentials_file or self.kite_config.credentials_file,
+                "error": str(e)
+            })
+            raise
     
     def get_instruments(self, exchange: str = "NSE") -> Dict[str, Dict]:
         """Get list of instruments from Kite API."""
-        with trading_logger.log_operation(LogCategory.KITE_API, "kite_service", "get_instruments") as req_id:
-            try:
-                if not self.kite:
-                    logger.warning("Kite client not available - returning mock instruments")
-                    return self._get_mock_instruments()
-                
-                instruments = self.kite.instruments(exchange)
-                instrument_dict = {}
-                
-                for instrument in instruments:
-                    if instrument['instrument_type'] == 'EQ':  # Equity only
-                        instrument_dict[instrument['tradingsymbol']] = {
-                            'instrument_token': instrument['instrument_token'],
-                            'name': instrument['name'],
-                            'exchange': instrument['exchange'],
-                            'lot_size': instrument['lot_size'],
-                            'tick_size': instrument['tick_size']
-                        }
-                
-                log_kite_api("get_instruments", {
-                    "exchange": exchange,
-                    "total_instruments": len(instruments),
-                    "equity_instruments": len(instrument_dict)
-                }, success=True)
-                
-                return instrument_dict
-                
-            except Exception as e:
-                log_kite_api("get_instruments", {
-                    "exchange": exchange,
-                    "error": str(e)
-                }, success=False, error=str(e))
-                logger.warning(f"Failed to get instruments from Kite API: {e}")
+        try:
+            if not self.kite:
+                logger.warning("Kite client not available - returning mock instruments")
                 return self._get_mock_instruments()
+            
+            instruments = self.kite.instruments(exchange)
+            instrument_dict = {}
+            
+            for instrument in instruments:
+                if instrument['instrument_type'] == 'EQ':  # Equity only
+                    instrument_dict[instrument['tradingsymbol']] = {
+                        'instrument_token': instrument['instrument_token'],
+                        'name': instrument['name'],
+                        'exchange': instrument['exchange'],
+                        'lot_size': instrument['lot_size'],
+                        'tick_size': instrument['tick_size']
+                    }
+            
+            logger.info("Instruments fetched", extra={
+                "exchange": exchange,
+                "total_instruments": len(instruments),
+                "equity_instruments": len(instrument_dict)
+            })
+            
+            return instrument_dict
+            
+        except Exception as e:
+            logger.warning(f"Failed to get instruments from Kite API: {e}")
+            return self._get_mock_instruments()
     
     def _get_mock_instruments(self) -> Dict[str, Dict]:
         """Get mock instruments for testing."""
@@ -409,7 +396,8 @@ class KiteRealTimeService:
                 self.historical_data[symbol] = self.historical_data[symbol][-100:]
             
             # Log tick data processing
-            log_data_streaming("tick_processed", symbol, {
+            logger.debug("Tick processed", extra={
+                "symbol": symbol,
                 "last_price": realtime_data.last_price,
                 "change_percent": realtime_data.change_percent,
                 "volume": realtime_data.volume,
@@ -422,8 +410,7 @@ class KiteRealTimeService:
             logger.debug(f"Technical indicators calculated for {symbol}")
             
         except Exception as e:
-            trading_logger.log_error(LogCategory.DATA_STREAMING, "kite_service", 
-                                   "Error processing tick data", {"tick": tick}, error=str(e))
+            logger.error(f"Error processing tick data: {e}", extra={"tick_token": tick.get('instrument_token')})
     
     def _get_symbol_from_token(self, instrument_token: int) -> Optional[str]:
         """Get symbol from instrument token."""
@@ -569,96 +556,80 @@ class KiteRealTimeService:
     
     def analyze_and_rank_stocks(self) -> List[StockRanking]:
         """Analyze stocks and create rankings based on real-time data."""
-        with trading_logger.log_operation(LogCategory.ANALYSIS, "kite_service", "analyze_and_rank_stocks") as req_id:
-            try:
-                rankings = []
+        try:
+            rankings = []
+            
+            for symbol, data in self.realtime_data.items():
+                if symbol not in self.technical_indicators:
+                    logger.debug(f"No technical indicators for {symbol}")
+                    continue
                 
-                for symbol, data in self.realtime_data.items():
-                    if symbol not in self.technical_indicators:
-                        logger.debug(f"No technical indicators for {symbol}")
-                        continue
-                    
-                    indicators = self.technical_indicators[symbol]
-                    
-                    # Calculate scores
-                    technical_score = self._calculate_technical_score(indicators)
-                    momentum_score = self._calculate_momentum_score(indicators)
-                    volume_score = self._calculate_volume_score(data, indicators)
-                    volatility_score = self._calculate_volatility_score(indicators)
-                    
-                    # Overall score
-                    overall_score = (
-                        technical_score * 0.3 +
-                        momentum_score * 0.3 +
-                        volume_score * 0.2 +
-                        volatility_score * 0.2
-                    )
-                    
-                    # Determine signal
-                    signal, confidence = self._determine_signal(indicators, overall_score)
-                    
-                    # Calculate entry, target, and stop loss
-                    entry_price = data.last_price
-                    target_price, stop_loss = self._calculate_targets(entry_price, indicators, signal)
-                    risk_reward_ratio = abs(target_price - entry_price) / abs(entry_price - stop_loss) if entry_price != stop_loss else 0
-                    
-                    ranking = StockRanking(
-                        symbol=symbol,
-                        rank=0,  # Will be set after sorting
-                        score=overall_score,
-                        technical_score=technical_score,
-                        momentum_score=momentum_score,
-                        volume_score=volume_score,
-                        volatility_score=volatility_score,
-                        overall_signal=signal,
-                        confidence=confidence,
-                        entry_price=entry_price,
-                        target_price=target_price,
-                        stop_loss=stop_loss,
-                        risk_reward_ratio=risk_reward_ratio,
-                        timestamp=datetime.now()
-                    )
-                    
-                    rankings.append(ranking)
-                    
-                    # Log individual stock analysis
-                    log_analysis("stock_analyzed", symbol, {
-                        "technical_score": technical_score,
-                        "momentum_score": momentum_score,
-                        "volume_score": volume_score,
-                        "volatility_score": volatility_score,
-                        "overall_score": overall_score,
-                        "signal": signal,
-                        "confidence": confidence,
-                        "risk_reward_ratio": risk_reward_ratio
-                    })
+                indicators = self.technical_indicators[symbol]
                 
-                # Sort by score and assign ranks
-                rankings.sort(key=lambda x: x.score, reverse=True)
-                for i, ranking in enumerate(rankings):
-                    ranking.rank = i + 1
+                # Calculate scores
+                technical_score = self._calculate_technical_score(indicators)
+                momentum_score = self._calculate_momentum_score(indicators)
+                volume_score = self._calculate_volume_score(data, indicators)
+                volatility_score = self._calculate_volatility_score(indicators)
                 
-                self.stock_rankings = rankings
+                # Overall score
+                overall_score = (
+                    technical_score * 0.3 +
+                    momentum_score * 0.3 +
+                    volume_score * 0.2 +
+                    volatility_score * 0.2
+                )
                 
-                # Log ranking update
-                log_ranking([{
-                    "symbol": r.symbol,
-                    "rank": r.rank,
-                    "score": r.score,
-                    "signal": r.overall_signal,
-                    "confidence": r.confidence
-                } for r in rankings])
+                # Determine signal
+                signal, confidence = self._determine_signal(indicators, overall_score)
                 
-                trading_logger.log_info(LogCategory.ANALYSIS, "kite_service", 
-                                      f"Analysis completed: {len(rankings)} stocks ranked", 
-                                      {"rankings_count": len(rankings)}, req_id)
+                # Calculate entry, target, and stop loss
+                entry_price = data.last_price
+                target_price, stop_loss = self._calculate_targets(entry_price, indicators, signal)
+                risk_reward_ratio = abs(target_price - entry_price) / abs(entry_price - stop_loss) if entry_price != stop_loss else 0
                 
-                return rankings
+                ranking = StockRanking(
+                    symbol=symbol,
+                    rank=0,  # Will be set after sorting
+                    score=overall_score,
+                    technical_score=technical_score,
+                    momentum_score=momentum_score,
+                    volume_score=volume_score,
+                    volatility_score=volatility_score,
+                    overall_signal=signal,
+                    confidence=confidence,
+                    entry_price=entry_price,
+                    target_price=target_price,
+                    stop_loss=stop_loss,
+                    risk_reward_ratio=risk_reward_ratio,
+                    timestamp=datetime.now()
+                )
                 
-            except Exception as e:
-                trading_logger.log_error(LogCategory.ANALYSIS, "kite_service", 
-                                        "Error analyzing and ranking stocks", {}, req_id, str(e))
-                return []
+                rankings.append(ranking)
+                
+                logger.debug("Stock analyzed", extra={
+                    "symbol": symbol,
+                    "overall_score": overall_score,
+                    "signal": signal,
+                    "confidence": confidence
+                })
+            
+            # Sort by score and assign ranks
+            rankings.sort(key=lambda x: x.score, reverse=True)
+            for i, ranking in enumerate(rankings):
+                ranking.rank = i + 1
+            
+            self.stock_rankings = rankings
+            
+            logger.info(f"Analysis completed: {len(rankings)} stocks ranked", extra={
+                "rankings_count": len(rankings)
+            })
+            
+            return rankings
+            
+        except Exception as e:
+            logger.error(f"Error analyzing and ranking stocks: {e}")
+            return []
     
     def _calculate_technical_score(self, indicators: TechnicalIndicators) -> float:
         """Calculate technical analysis score."""

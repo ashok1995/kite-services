@@ -52,15 +52,16 @@ class MarketIndex:
 class YahooFinanceService:
     """Service for Yahoo Finance data integration."""
     
-    def __init__(self):
+    def __init__(self, cache_service=None):
         self.settings = get_settings()
         self.logger = get_logger(__name__)
+        self.cache_service = cache_service  # Redis cache service
         
         # Configuration
         self.yahoo_config = self.settings.yahoo
         self.session: Optional[aiohttp.ClientSession] = None
         
-        # Data cache
+        # Data cache (legacy, for backward compatibility)
         self.stock_cache: Dict[str, YahooStockData] = {}
         self.index_cache: Dict[str, MarketIndex] = {}
         self.cache_ttl = 300  # 5 minutes
@@ -246,39 +247,28 @@ class YahooFinanceService:
     async def get_sector_performance(self) -> Dict[str, float]:
         """Get sector-wise performance data."""
         try:
-            # Indian sector ETFs and their symbols
-            sector_etfs = {
-                'BANKBEES.NS': 'Banking',
-                'ITBEES.NS': 'IT',
-                'PHARMBEES.NS': 'Pharma',
-                'AUTOBEES.NS': 'Auto',
-                'FMCGBEES.NS': 'FMCG',
-                'METALBEES.NS': 'Metals',
-                'ENERGYBEES.NS': 'Energy',
-                'REALTYBEES.NS': 'Realty'
-            }
+            # ⚠️ DEPRECATED: Yahoo Finance sector ETFs (many delisted)
+            # Now using Kite Connect Nifty sector indices instead
+            # This method is kept for backward compatibility but returns empty
+            # Use KiteClient.get_sector_performance() for Indian sectors
             
+            self.logger.warning("⚠️ Yahoo Finance sector data deprecated - use Kite Connect Nifty sector indices")
             sector_performance = {}
             
-            for etf_symbol, sector_name in sector_etfs.items():
-                try:
-                    await self._rate_limit()
-                    
-                    ticker = yf.Ticker(etf_symbol)
-                    hist = ticker.history(period="2d", interval="1d")
-                    
-                    if len(hist) >= 2:
-                        current_price = hist['Close'].iloc[-1]
-                        previous_price = hist['Close'].iloc[-2]
-                        
-                        change_percent = ((current_price - previous_price) / previous_price * 100) if previous_price != 0 else 0
-                        sector_performance[sector_name] = change_percent
-                        
-                except Exception as e:
-                    self.logger.error(f"Error getting sector performance for {sector_name}: {e}")
-                    continue
-            
+            # Return empty - caller should use Kite Connect for Indian sectors
             return sector_performance
+            
+            # OLD CODE (disabled - delisted symbols):
+            # sector_etfs = {
+            #     'BANKBEES.NS': 'Banking',  # May still work
+            #     'ITBEES.NS': 'IT',  # May still work
+            #     'PHARMBEES.NS': 'Pharma',  # DELISTED
+            #     'AUTOBEES.NS': 'Auto',  # May still work
+            #     'FMCGBEES.NS': 'FMCG',  # DELISTED
+            #     'METALBEES.NS': 'Metals',  # DELISTED
+            #     'ENERGYBEES.NS': 'Energy',  # DELISTED
+            #     'REALTYBEES.NS': 'Realty'  # DELISTED
+            # }
             
         except Exception as e:
             self.logger.error(f"Error getting sector performance: {e}")

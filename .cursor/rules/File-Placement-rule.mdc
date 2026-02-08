@@ -1,0 +1,38 @@
+---
+description: Strict File Placement Rules
+globs:
+  - "**/*.py"
+  - "**/*.md"
+alwaysApply: true
+---
+
+📂 File Placement Enforcement
+
+1. **Tests**
+   - ✅ All tests must be placed in `/tests/` (with subfolders for unit, integration, e2e, regression).
+   - ❌ No test files in project root or under `src/`.
+   - Test filenames must follow `test_*.py` or `*_test.py`.
+
+2. **Markdown / Documentation**
+   - ✅ All `.md` files must live in `/docs/`, except:
+     - `README.md` (root allowed)
+     - `CHANGELOG.md` (root allowed)
+     - `CONTRIBUTING.md` (root allowed)
+   - ❌ No stray `.md` files in root or `/src/`.
+
+3. **Root Directory Allowlist**
+   - Root may contain only:
+     - `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`
+     - `pyproject.toml` / `setup.py` / `requirements.txt`
+     - `docker-compose.yml`, `Dockerfile`, `entrypoint.sh`
+     - `.gitignore`, `.env.example`, `.editorconfig`
+   - ❌ Any new `.py` or `.md` file created at root outside this allowlist is invalid.
+
+4. **Docs Enforcement**
+   - All documentation must go into structured files under `/docs/`:
+     - `architecture.md`, `folder-structure.md`, `information-flow.md`
+     - `api.md`, `services.md`, `cron.md`, `db-schema.md`, `config.md`
+     - `apis-used.md`, ADRs in `/docs/adr/`
+   - Adding a new doc requires linking it in `/docs/README.md`.
+
+🚨 If a generator tries to drop test/docs at root → **reject and move under correct folder**.

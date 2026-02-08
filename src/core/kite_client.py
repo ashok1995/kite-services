@@ -8,7 +8,9 @@ Provides unified interface for market data, orders, and portfolio management.
 
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Dict, List, Optional, Any
 from kiteconnect import KiteConnect, KiteTicker
 
@@ -19,9 +21,10 @@ from core.logging_config import get_logger
 class KiteClient:
     """Core Kite Connect client."""
     
-    def __init__(self):
+    def __init__(self, cache_service=None):
         self.settings = get_settings()
         self.logger = get_logger(__name__)
+        self.cache_service = cache_service  # Redis cache service
         
         # Kite configuration
         self.kite_config = self.settings.kite
@@ -34,35 +37,41 @@ class KiteClient:
         self.is_connected = False
         self.is_streaming = False
         
-        # Data storage
+        # Data storage (legacy, for backward compatibility)
         self.instruments_cache: Dict[str, Dict] = {}
         self.historical_data_cache: Dict[str, List[Dict]] = {}
         
     async def initialize(self):
         """Initialize Kite client."""
         self.logger.info("Initializing Kite Client...")
-        
+
         try:
             # Load credentials
             await self._load_credentials()
-            
+
+            # Debug: Check what credentials are loaded
+            self.logger.info(f"Debug - API Key: {self.kite_config.api_key[:10]}..." if self.kite_config.api_key else "Debug - API Key: None")
+            self.logger.info(f"Debug - Access Token: {self.kite_config.access_token[:10]}..." if self.kite_config.access_token else "Debug - Access Token: None")
+
             # Initialize Kite Connect
             if self.kite_config.api_key and self.kite_config.access_token:
                 self.kite = KiteConnect(api_key=self.kite_config.api_key)
                 self.kite.set_access_token(self.kite_config.access_token)
-                
+
                 # Initialize WebSocket
                 self.kws = KiteTicker(
                     api_key=self.kite_config.api_key,
                     access_token=self.kite_config.access_token
                 )
-                
+
                 # Test connection
                 await self._test_connection()
-                
+
                 self.logger.info("✅ Kite Client initialized successfully")
             else:
                 self.logger.warning("⚠️ Kite credentials not available - using mock mode")
+                self.logger.warning(f"API Key present: {bool(self.kite_config.api_key)}")
+                self.logger.warning(f"Access Token present: {bool(self.kite_config.access_token)}")
                 
         except Exception as e:
             self.logger.error(f"❌ Failed to initialize Kite Client: {e}")
@@ -90,13 +99,17 @@ class KiteClient:
             
             # Check cache first
             cache_key = f"instruments_{exchange}"
-            if cache_key in self.instruments_cache:
-                return self.instruments_cache[cache_key]
-            
-            # Fetch from API
-            instruments = self.kite.instruments(exchange)
+            if self.cache_service and self.cache_service.enabled:
+                cached_data = await self.cache_service.get(cache_key)
+                if cached_data:
+                    self.logger.info(f"Retrieved {len(cached_data)} instruments from cache for {exchange}")
+                    return cached_data
+
+            # Fetch from API (run in executor to avoid blocking)
+            loop = asyncio.get_event_loop()
+            instruments = await loop.run_in_executor(None, self.kite.instruments, exchange)
             instrument_dict = {}
-            
+
             for instrument in instruments:
                 if instrument['instrument_type'] == 'EQ':  # Equity only
                     instrument_dict[instrument['tradingsymbol']] = {
@@ -104,12 +117,15 @@ class KiteClient:
                         'name': instrument['name'],
                         'exchange': instrument['exchange'],
                         'lot_size': instrument['lot_size'],
-                        'tick_size': instrument['tick_size']
+                        'tick_size': instrument['tick_size'],
+                        'instrument_type': instrument['instrument_type'],
+                        'segment': instrument.get('segment', 'EQ')
                     }
-            
-            # Cache the result
-            self.instruments_cache[cache_key] = instrument_dict
-            
+
+            # Cache the result for 24 hours (instruments don't change often)
+            if self.cache_service and self.cache_service.enabled:
+                await self.cache_service.set(cache_key, instrument_dict, ttl=86400)  # 24 hours
+
             self.logger.info(f"Retrieved {len(instrument_dict)} instruments from {exchange}")
             return instrument_dict
             
@@ -117,6 +133,34 @@ class KiteClient:
             self.logger.error(f"Error getting instruments: {e}")
             return self._get_mock_instruments()
             
+    async def quote(self, symbols: List[str]) -> Dict[str, Dict]:
+        """
+        Get real-time quotes for symbols.
+        
+        Works even when markets are closed - provides last traded prices.
+        
+        Args:
+            symbols: List of symbols in format "EXCHANGE:SYMBOL" (e.g., "NSE:NIFTY 50")
+        
+        Returns:
+            Dictionary mapping symbols to their quote data
+        """
+        try:
+            if not self.kite:
+                self.logger.warning("Kite client not initialized")
+                return {}
+            
+            # Call kite.quote() in a thread pool since it's synchronous
+            loop = asyncio.get_event_loop()
+            quotes = await loop.run_in_executor(None, self.kite.quote, symbols)
+            
+            self.logger.info(f"Fetched quotes for {len(symbols)} symbols")
+            return quotes or {}
+            
+        except Exception as e:
+            self.logger.error(f"Error getting quotes for {symbols}: {e}")
+            return {}
+    
     async def get_instrument_data(self, symbol: str) -> Optional[Dict]:
         """Get real-time instrument data."""
         try:
@@ -243,6 +287,230 @@ class KiteClient:
         except Exception as e:
             self.logger.error(f"Error subscribing to instruments: {e}")
             
+    async def generate_access_token(self, request_token: str, api_secret: str) -> Optional[str]:
+        """Generate access token from request token."""
+        try:
+            if not self.kite_config.api_key:
+                raise ValueError("API key not configured")
+            
+            # Initialize temporary Kite instance if not exists
+            if not self.kite:
+                self.kite = KiteConnect(api_key=self.kite_config.api_key)
+            
+            # Generate session
+            data = await asyncio.to_thread(
+                self.kite.generate_session,
+                request_token,
+                api_secret=api_secret
+            )
+            
+            access_token = data["access_token"]
+            self.logger.info(f"✅ Access token generated successfully for user: {data.get('user_id')}")
+            
+            # Save to file
+            import json
+            token_data = {
+                "access_token": access_token,
+                "user_id": data.get("user_id"),
+                "user_name": data.get("user_name"),
+                "user_type": data.get("user_type"),
+                "email": data.get("email"),
+                "broker": data.get("broker"),
+                "exchanges": data.get("exchanges", []),
+                "products": data.get("products", []),
+                "order_types": data.get("order_types", []),
+                "api_key": self.kite_config.api_key,
+                "api_secret": api_secret,
+                "request_token": request_token,
+                "generated_at": datetime.now().isoformat(),
+                "expires_at": (datetime.now() + timedelta(days=1)).isoformat(),
+                "status": "active",
+                "generated_by": "kite_services_api"
+            }
+            
+            with open("access_token.json", "w") as f:
+                json.dump(token_data, f, indent=2)
+            
+            # Also update .env file so next restart picks up the new token
+            try:
+                env_path = Path(__file__).parent.parent.parent / ".env"
+                if env_path.exists():
+                    env_content = env_path.read_text()
+                    import re
+                    env_content = re.sub(
+                        r'KITE_ACCESS_TOKEN=.*',
+                        f'KITE_ACCESS_TOKEN={access_token}',
+                        env_content
+                    )
+                    env_path.write_text(env_content)
+                    self.logger.info("✅ Token updated in .env file")
+            except Exception as env_err:
+                self.logger.warning(f"Could not update .env: {env_err}")
+            
+            self.logger.info("✅ Token saved to access_token.json")
+            
+            return access_token
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to generate access token: {e}")
+            raise
+    
+    async def set_access_token(self, access_token: str):
+        """Set access token and reinitialize Kite client."""
+        try:
+            if not self.kite_config.api_key:
+                raise ValueError("API key not configured")
+            
+            # Initialize/reinitialize Kite with new token
+            self.kite = KiteConnect(api_key=self.kite_config.api_key)
+            self.kite.set_access_token(access_token)
+            
+            # Update config
+            self.kite_config.access_token = access_token
+            
+            # Test connection
+            await self._test_connection()
+            
+            self.logger.info("✅ Access token set successfully")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to set access token: {e}")
+            raise
+    
+    async def get_access_token(self) -> Optional[str]:
+        """Get current access token."""
+        return self.kite_config.access_token
+    
+    async def get_profile(self) -> Optional[Dict]:
+        """Get user profile."""
+        try:
+            if not self.kite:
+                return None
+            
+            profile = await asyncio.to_thread(self.kite.profile)
+            return profile
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get profile: {e}")
+            return None
+    
+    async def get_margins(self) -> Optional[Dict]:
+        """Get user margins."""
+        try:
+            if not self.kite:
+                return None
+            
+            margins = await asyncio.to_thread(self.kite.margins)
+            return margins
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get margins: {e}")
+            return None
+    
+    async def get_sector_performance(self) -> Dict[str, float]:
+        """Get Indian sector performance from Nifty sector indices."""
+        try:
+            if not self.kite:
+                self.logger.warning("Kite client not initialized - cannot get sector performance")
+                return {}
+            
+            # Nifty sector indices (official NSE indices)
+            sector_indices = {
+                'NSE:NIFTY BANK': 'Banking',
+                'NSE:NIFTY IT': 'IT',
+                'NSE:NIFTY PHARMA': 'Pharma',
+                'NSE:NIFTY AUTO': 'Auto',
+                'NSE:NIFTY FMCG': 'FMCG',
+                'NSE:NIFTY METAL': 'Metal',
+                'NSE:NIFTY ENERGY': 'Energy',
+                'NSE:NIFTY REALTY': 'Realty'
+            }
+            
+            # Get quotes for all sector indices
+            symbols = list(sector_indices.keys())
+            quotes = await self.quote(symbols)
+            
+            sector_performance = {}
+            for symbol, sector_name in sector_indices.items():
+                if symbol in quotes:
+                    quote_data = quotes[symbol]
+                    # Calculate change percentage from net_change and close price
+                    net_change = quote_data.get('net_change', 0)
+                    close_price = quote_data.get('ohlc', {}).get('close', 0)
+                    
+                    if close_price and close_price > 0:
+                        change_percent = (net_change / close_price) * 100
+                        sector_performance[sector_name] = round(change_percent, 2)
+                        self.logger.info(f"Sector {sector_name}: {change_percent:.2f}%")
+            
+            return sector_performance
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get sector performance: {e}")
+            return {}
+    
+    async def get_market_status(self) -> Optional[Dict]:
+        """Get current market status from Kite or derive from time."""
+        try:
+            now = datetime.now()
+            hour = now.hour
+            minute = now.minute
+            weekday = now.weekday()  # 0=Monday, 6=Sunday
+
+            # Markets closed on weekends
+            if weekday >= 5:
+                return {
+                    "market_open": False,
+                    "exchanges": [
+                        {"exchange": "NSE", "status": "closed", "session": "weekend", "market_open": False},
+                        {"exchange": "BSE", "status": "closed", "session": "weekend", "market_open": False},
+                    ]
+                }
+
+            # Pre-market: 9:00-9:15, Open: 9:15-15:30, Post-market: 15:30-16:00
+            market_open = (hour == 9 and minute >= 15) or (10 <= hour <= 14) or (hour == 15 and minute <= 30)
+            if hour == 9 and minute < 15:
+                session = "pre_market"
+            elif market_open:
+                session = "normal"
+            elif hour == 15 and minute > 30 or hour == 16:
+                session = "post_market"
+            else:
+                session = "closed"
+
+            return {
+                "market_open": market_open,
+                "exchanges": [
+                    {"exchange": "NSE", "status": "open" if market_open else "closed", "session": session, "market_open": market_open},
+                    {"exchange": "BSE", "status": "open" if market_open else "closed", "session": session, "market_open": market_open},
+                ]
+            }
+        except Exception as e:
+            self.logger.error(f"Failed to get market status: {e}")
+            return None
+
+    async def get_positions(self) -> Optional[Dict]:
+        """Get user positions."""
+        try:
+            if not self.kite:
+                return None
+            positions = await asyncio.to_thread(self.kite.positions)
+            return positions
+        except Exception as e:
+            self.logger.error(f"Failed to get positions: {e}")
+            return None
+
+    async def get_holdings(self) -> Optional[List]:
+        """Get user holdings."""
+        try:
+            if not self.kite:
+                return None
+            holdings = await asyncio.to_thread(self.kite.holdings)
+            return holdings
+        except Exception as e:
+            self.logger.error(f"Failed to get holdings: {e}")
+            return None
+
     async def _load_credentials(self):
         """Load Kite credentials."""
         # Credentials are loaded from settings
@@ -270,35 +538,45 @@ class KiteClient:
                 'name': 'RELIANCE',
                 'exchange': 'NSE',
                 'lot_size': 1,
-                'tick_size': 0.05
+                'tick_size': 0.05,
+                'instrument_type': 'EQ',
+                'segment': 'EQ'
             },
             "TCS": {
                 'instrument_token': 2953217,
                 'name': 'TCS',
                 'exchange': 'NSE',
                 'lot_size': 1,
-                'tick_size': 0.05
+                'tick_size': 0.05,
+                'instrument_type': 'EQ',
+                'segment': 'EQ'
             },
             "HDFC": {
                 'instrument_token': 341249,
                 'name': 'HDFC',
                 'exchange': 'NSE',
                 'lot_size': 1,
-                'tick_size': 0.05
+                'tick_size': 0.05,
+                'instrument_type': 'EQ',
+                'segment': 'EQ'
             },
             "INFY": {
                 'instrument_token': 408065,
                 'name': 'INFY',
                 'exchange': 'NSE',
                 'lot_size': 1,
-                'tick_size': 0.05
+                'tick_size': 0.05,
+                'instrument_type': 'EQ',
+                'segment': 'EQ'
             },
             "WIPRO": {
                 'instrument_token': 969473,
                 'name': 'WIPRO',
                 'exchange': 'NSE',
                 'lot_size': 1,
-                'tick_size': 0.05
+                'tick_size': 0.05,
+                'instrument_type': 'EQ',
+                'segment': 'EQ'
             }
         }
         

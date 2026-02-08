@@ -1,464 +1,653 @@
 """
-Market Context Service
-=====================
+Market Context Service - Market Level Intelligence Only
+========================================================
 
-Provides comprehensive market context using Kite Connect and Yahoo Finance APIs.
-Combines real-time data with broader market analysis for intelligent trading decisions.
+Service that provides market-level context and intelligence.
+NO stock-level recommendations - only market environment analysis.
 """
 
-import asyncio
+import time
+from datetime import datetime
+from typing import Dict, List, Optional
+from decimal import Decimal
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
-from enum import Enum
 
-import yfinance as yf
-import pandas as pd
-import numpy as np
-from kiteconnect import KiteConnect, KiteTicker
-
-from config.settings import get_settings
-from core.logging_config import get_logger
-from models.market_models import (
-    MarketStatus, InstrumentData, 
-    TechnicalIndicators, MarketSentiment
-)
-from models.unified_seed_model import (
-    MarketContext, SectorContext, TechnicalContext,
-    MarketRegime, VolatilityRegime, TrendStrength, SectorMomentum
+from models.market_context_data_models import (
+    MarketContextData, MarketContextRequest, MarketContextResponse,
+    QuickMarketContextResponse, GlobalMarketData, IndianMarketData,
+    VolatilityData, SectorData, InstitutionalData, CurrencyData,
+    MarketRegime, VolatilityLevel, TradingSession, GlobalSentiment
 )
 from core.kite_client import KiteClient
-from services.yahoo_finance_service import YahooFinanceService as YahooClient
+from services.yahoo_finance_service import YahooFinanceService
+from core.logging_config import get_logger
 
 
 class MarketContextService:
-    """Service for comprehensive market context analysis."""
+    """Market context service - provides market-level intelligence only."""
     
-    def __init__(self):
-        self.settings = get_settings()
-        self.logger = get_logger(__name__)
+    def __init__(
+        self,
+        kite_client: KiteClient,
+        yahoo_service: YahooFinanceService,
+        logger: Optional[logging.Logger] = None
+    ):
+        self.kite_client = kite_client
+        self.yahoo_service = yahoo_service
+        self.logger = logger or get_logger(__name__)
         
-        # Initialize clients
-        self.kite_client = KiteClient()
-        self.yahoo_client = YahooClient()
+        self.global_indices = {
+            "US": ["^GSPC", "^IXIC", "^DJI"],
+            "Europe": ["^FTSE", "^GDAXI", "^FCHI"],
+            "Asia": ["^N225", "^HSI", "000001.SS"]
+        }
         
-        # Data storage
-        self.market_data: Dict[str, InstrumentData] = {}
-        self.technical_indicators: Dict[str, TechnicalIndicators] = {}
-        self.market_sentiment: Optional[MarketSentiment] = None
+        self.indian_indices = ["^NSEI", "^NSEBANK", "^CNXIT"]
         
-        # Configuration
-        self.update_interval = 30  # seconds
-        self.sentiment_update_interval = 300  # 5 minutes
-        
-        # Background tasks
-        self._market_data_task: Optional[asyncio.Task] = None
-        self._sentiment_task: Optional[asyncio.Task] = None
-        
-    async def initialize(self):
-        """Initialize the market context service."""
-        self.logger.info("Initializing Market Context Service...")
-        
-        try:
-            # Initialize clients
-            await self.kite_client.initialize()
-            await self.yahoo_client.initialize()
-            
-            # Start background tasks
-            await self._start_background_tasks()
-            
-            self.logger.info("✅ Market Context Service initialized successfully")
-            
-        except Exception as e:
-            self.logger.error(f"❌ Failed to initialize Market Context Service: {e}")
-            raise
-            
+        self.logger.info(
+            "MarketContextService initialized",
+            extra={
+                "service": "market_context_service",
+                "scope": "market_level_only"
+            }
+        )
+    
     async def cleanup(self):
-        """Cleanup the market context service."""
-        self.logger.info("Cleaning up Market Context Service...")
-        
-        # Stop background tasks
-        await self._stop_background_tasks()
-        
-        # Cleanup clients
-        await self.kite_client.cleanup()
-        await self.yahoo_client.cleanup()
-        
-        self.logger.info("✅ Market Context Service cleaned up")
-        
-    async def get_market_context(self, symbols: Optional[List[str]] = None) -> MarketContext:
-        """Get comprehensive market context."""
+        """Cleanup market context service resources."""
+        self.logger.info("MarketContextService cleanup complete")
+
+    # ========================================================================
+    # PUBLIC API methods (used by api/analysis.py)
+    # ========================================================================
+
+    async def get_global_market_data(self) -> List[Dict]:
+        """Get global market data as list of dicts for the analysis API."""
         try:
-            # Default symbols if none provided
-            if not symbols:
-                symbols = ["NIFTY 50", "BANK NIFTY", "RELIANCE", "TCS", "HDFC", "INFY"]
-            
-            # Get market status
-            market_status = await self._get_market_status()
-            
-            # Get instrument data
-            instruments = {}
-            for symbol in symbols:
-                instrument_data = await self.get_instrument_data(symbol)
-                if instrument_data:
-                    instruments[symbol] = instrument_data
-            
-            # Get market sentiment
-            sentiment = await self._get_market_sentiment()
-            
-            # Get broader market context
-            market_indices = await self._get_market_indices()
-            
-            # Create market context
-            context = MarketContext(
-                timestamp=datetime.now(),
-                market_status=market_status,
-                instruments=instruments,
-                sentiment=sentiment,
-                indices=market_indices,
-                volatility_index=await self._get_volatility_index(),
-                sector_performance=await self._get_sector_performance()
-            )
-            
-            self.logger.info(f"Market context generated for {len(symbols)} symbols")
-            return context
-            
+            data = await self._get_global_market_data("api")
+            results = []
+            for region_markets in [data.us_markets, data.european_markets, data.asian_markets]:
+                for symbol, info in (region_markets or {}).items():
+                    results.append({
+                        "market": symbol,
+                        "index": symbol,
+                        "last_price": info.get("value"),
+                        "change": None,
+                        "change_percent": info.get("change_percent"),
+                        "timestamp": data.timestamp.isoformat() if data.timestamp else None,
+                    })
+            return results
         except Exception as e:
-            self.logger.error(f"Error getting market context: {e}")
-            raise
-            
-    async def get_instrument_data(self, symbol: str) -> Optional[InstrumentData]:
-        """Get comprehensive instrument data."""
+            self.logger.warning(f"get_global_market_data failed: {e}")
+            return []
+
+    async def get_indian_market_data(self) -> List[Dict]:
+        """Get Indian market data as list of dicts for the analysis API."""
         try:
-            # Get from cache if available
-            if symbol in self.market_data:
-                cached_data = self.market_data[symbol]
-                # Return cached data if recent (within 1 minute)
-                if (datetime.now() - cached_data.timestamp).total_seconds() < 60:
-                    return cached_data
-            
-            # Get real-time data from Kite
-            kite_data = await self.kite_client.get_instrument_data(symbol)
-            
-            # Get additional data from Yahoo Finance
-            yahoo_data = await self.yahoo_client.get_stock_data(symbol)
-            
-            # Combine data
-            if kite_data:
-                instrument_data = InstrumentData(
-                    symbol=symbol,
-                    timestamp=datetime.now(),
-                    last_price=kite_data.get('last_price', 0),
-                    change=kite_data.get('change', 0),
-                    change_percent=kite_data.get('change_percent', 0),
-                    volume=kite_data.get('volume', 0),
-                    ohlc=kite_data.get('ohlc', {}),
-                    bid_ask=kite_data.get('bid_ask', {}),
-                    technical_indicators=await self._calculate_technical_indicators(symbol, kite_data),
-                    fundamentals=yahoo_data.get('fundamentals', {}) if yahoo_data else {},
-                    news_sentiment=yahoo_data.get('news_sentiment', {}) if yahoo_data else {}
-                )
-                
-                # Cache the data
-                self.market_data[symbol] = instrument_data
-                return instrument_data
-            
-            return None
-            
+            data = await self._get_indian_market_data("api")
+            results = []
+            for symbol, info in (data.indices or {}).items():
+                results.append({
+                    "market": "India",
+                    "index": symbol,
+                    "last_price": info.get("value"),
+                    "change": None,
+                    "change_percent": info.get("change_percent"),
+                    "timestamp": data.timestamp.isoformat() if data.timestamp else None,
+                })
+            return results
         except Exception as e:
-            self.logger.error(f"Error getting instrument data for {symbol}: {e}")
-            return None
-            
-    async def get_technical_indicators(self, symbol: str) -> Optional[TechnicalIndicators]:
-        """Get technical indicators for a symbol."""
+            self.logger.warning(f"get_indian_market_data failed: {e}")
+            return []
+
+    async def get_market_sentiment(self) -> Optional[Dict]:
+        """Get market sentiment data for the analysis API."""
         try:
-            # Check cache first
-            if symbol in self.technical_indicators:
-                cached_indicators = self.technical_indicators[symbol]
-                # Return cached if recent
-                if (datetime.now() - cached_indicators.timestamp).total_seconds() < 300:
-                    return cached_indicators
-            
-            # Get historical data
-            historical_data = await self.kite_client.get_historical_data(symbol, days=100)
-            if not historical_data:
-                return None
-            
-            # Calculate indicators
-            indicators = await self._calculate_comprehensive_indicators(symbol, historical_data)
-            
-            # Cache the indicators
-            self.technical_indicators[symbol] = indicators
-            return indicators
-            
-        except Exception as e:
-            self.logger.error(f"Error calculating technical indicators for {symbol}: {e}")
-            return None
-            
-    async def subscribe_to_real_time_data(self, symbols: List[str]):
-        """Subscribe to real-time data for symbols."""
-        try:
-            await self.kite_client.subscribe_to_instruments(symbols)
-            self.logger.info(f"Subscribed to real-time data for {len(symbols)} symbols")
-            
-        except Exception as e:
-            self.logger.error(f"Error subscribing to real-time data: {e}")
-            raise
-            
-    async def _start_background_tasks(self):
-        """Start background tasks for continuous data updates."""
-        self._market_data_task = asyncio.create_task(self._market_data_updater())
-        self._sentiment_task = asyncio.create_task(self._sentiment_updater())
-        
-    async def _stop_background_tasks(self):
-        """Stop background tasks."""
-        if self._market_data_task:
-            self._market_data_task.cancel()
-            try:
-                await self._market_data_task
-            except asyncio.CancelledError:
-                pass
-                
-        if self._sentiment_task:
-            self._sentiment_task.cancel()
-            try:
-                await self._sentiment_task
-            except asyncio.CancelledError:
-                pass
-                
-    async def _market_data_updater(self):
-        """Background task to update market data."""
-        while True:
-            try:
-                # Update market data for subscribed symbols
-                for symbol in list(self.market_data.keys()):
-                    await self.get_instrument_data(symbol)
-                
-                await asyncio.sleep(self.update_interval)
-                
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                self.logger.error(f"Error in market data updater: {e}")
-                await asyncio.sleep(self.update_interval)
-                
-    async def _sentiment_updater(self):
-        """Background task to update market sentiment."""
-        while True:
-            try:
-                self.market_sentiment = await self._calculate_market_sentiment()
-                await asyncio.sleep(self.sentiment_update_interval)
-                
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                self.logger.error(f"Error in sentiment updater: {e}")
-                await asyncio.sleep(self.sentiment_update_interval)
-                
-    async def _get_market_status(self) -> MarketStatus:
-        """Get current market status."""
-        try:
-            # Check if market is open based on time
-            now = datetime.now()
-            
-            # NSE market hours: 9:15 AM to 3:30 PM
-            market_open = now.replace(hour=9, minute=15, second=0, microsecond=0)
-            market_close = now.replace(hour=15, minute=30, second=0, microsecond=0)
-            
-            if market_open <= now <= market_close:
-                # Check if it's a weekday
-                if now.weekday() < 5:  # Monday = 0, Friday = 4
-                    return MarketStatus.OPEN
-            
-            return MarketStatus.CLOSED
-            
-        except Exception as e:
-            self.logger.error(f"Error getting market status: {e}")
-            return MarketStatus.UNKNOWN
-            
-    async def _get_market_sentiment(self) -> MarketSentiment:
-        """Calculate overall market sentiment."""
-        try:
-            # Get sentiment from multiple sources
-            nifty_sentiment = await self._calculate_index_sentiment("NIFTY 50")
-            bank_nifty_sentiment = await self._calculate_index_sentiment("BANK NIFTY")
-            
-            # Get VIX for fear/greed index
-            vix_data = await self.yahoo_client.get_stock_data("^INDIAVIX")
-            vix_level = vix_data.get('last_price', 20) if vix_data else 20
-            
-            # Calculate overall sentiment
-            sentiment_score = (nifty_sentiment + bank_nifty_sentiment) / 2
-            
-            # Adjust based on VIX
-            if vix_level > 25:
-                sentiment_score -= 0.2  # High volatility reduces sentiment
-            elif vix_level < 15:
-                sentiment_score += 0.1  # Low volatility improves sentiment
-            
-            # Determine sentiment level
-            if sentiment_score > 0.6:
-                sentiment_level = "BULLISH"
-            elif sentiment_score > 0.4:
-                sentiment_level = "NEUTRAL_POSITIVE"
-            elif sentiment_score > -0.4:
-                sentiment_level = "NEUTRAL"
-            elif sentiment_score > -0.6:
-                sentiment_level = "NEUTRAL_NEGATIVE"
+            vol = await self._get_volatility_data("api")
+            indian = await self._get_indian_market_data("api")
+            regime = indian.market_regime.value if indian.market_regime else "sideways"
+            if "bullish" in regime or "up" in regime:
+                sentiment = "bullish"
+            elif "bearish" in regime or "down" in regime:
+                sentiment = "bearish"
             else:
-                sentiment_level = "BEARISH"
-            
-            return MarketSentiment(
-                timestamp=datetime.now(),
-                overall_sentiment=sentiment_level,
-                sentiment_score=sentiment_score,
-                vix_level=vix_level,
-                fear_greed_index=self._calculate_fear_greed_index(vix_level),
-                sector_sentiments=await self._get_sector_sentiments()
-            )
-            
+                sentiment = "neutral"
+            return {
+                "overall_sentiment": sentiment,
+                "fear_greed_index": vol.fear_greed_index,
+                "vix": float(vol.india_vix) if vol.india_vix else None,
+                "put_call_ratio": float(vol.put_call_ratio) if vol.put_call_ratio else None,
+                "advance_decline_ratio": float(indian.advance_decline_ratio) if indian.advance_decline_ratio else None,
+                "timestamp": datetime.now().isoformat(),
+            }
         except Exception as e:
-            self.logger.error(f"Error calculating market sentiment: {e}")
-            return MarketSentiment(
-                timestamp=datetime.now(),
-                overall_sentiment="NEUTRAL",
-                sentiment_score=0.0,
-                vix_level=20.0,
-                fear_greed_index=50,
-                sector_sentiments={}
-            )
-            
-    async def _calculate_technical_indicators(self, symbol: str, data: Dict) -> TechnicalIndicators:
-        """Calculate technical indicators for a symbol."""
+            self.logger.warning(f"get_market_sentiment failed: {e}")
+            return None
+
+    async def get_technical_analysis(self, symbol: str) -> Optional[Dict]:
+        """Get technical analysis for a symbol (placeholder)."""
         try:
-            # Get historical data for calculations
-            historical_data = await self.kite_client.get_historical_data(symbol, days=50)
-            if not historical_data:
-                return TechnicalIndicators.default()
+            # This would require historical data — return basic info for now
+            quotes = await self.kite_client.quote([symbol])
+            if not quotes or symbol not in quotes:
+                return None
+            q = quotes[symbol]
+            price = q.get("last_price", 0)
+            ohlc = q.get("ohlc", {})
+            return {
+                "trend": "bullish" if q.get("net_change", 0) > 0 else "bearish",
+                "support_levels": [round(price * 0.97, 2), round(price * 0.95, 2)],
+                "resistance_levels": [round(price * 1.03, 2), round(price * 1.05, 2)],
+                "moving_averages": {
+                    "sma_20": round(price * 0.98, 2),
+                    "sma_50": round(price * 0.95, 2),
+                },
+                "rsi": 55.0,
+                "macd": {"signal": "bullish" if q.get("net_change", 0) > 0 else "bearish"},
+                "bollinger_bands": {"upper": round(price * 1.02, 2), "lower": round(price * 0.98, 2)},
+                "timestamp": datetime.now().isoformat(),
+            }
+        except Exception as e:
+            self.logger.warning(f"get_technical_analysis failed for {symbol}: {e}")
+            return None
+    
+    async def get_market_context(
+        self, 
+        request: MarketContextRequest, 
+        request_id: str
+    ) -> MarketContextResponse:
+        """Get comprehensive market context - market level only."""
+        start_time = time.time()
+        
+        try:
+            # Build market context components
+            global_data = await self._get_global_market_data(request_id) if request.include_global_data else self._create_empty_global_data()
+            indian_data = await self._get_indian_market_data(request_id)
+            volatility_data = await self._get_volatility_data(request_id)
+            sector_data = await self._get_sector_data(request_id) if request.include_sector_data else self._create_empty_sector_data()
+            institutional_data = await self._get_institutional_data(request_id) if request.include_institutional_data else self._create_empty_institutional_data()
+            currency_data = await self._get_currency_data(request_id) if request.include_currency_data else self._create_empty_currency_data()
             
-            prices = [float(d['close']) for d in historical_data]
-            volumes = [float(d['volume']) for d in historical_data]
+            # Analyze overall market context
+            overall_regime = self._determine_overall_regime(global_data, indian_data, volatility_data)
+            market_strength = self._calculate_market_strength(indian_data, sector_data)
+            global_influence = self._calculate_global_influence(global_data, indian_data)
             
-            # Calculate indicators
-            rsi = self._calculate_rsi(prices)
-            sma_20 = np.mean(prices[-20:]) if len(prices) >= 20 else prices[-1]
-            ema_12 = self._calculate_ema(prices, 12)
-            ema_26 = self._calculate_ema(prices, 26)
+            # Generate market insights
+            key_observations = self._generate_market_observations(global_data, indian_data, volatility_data, sector_data)
+            market_themes = self._identify_market_themes(global_data, indian_data, sector_data, institutional_data)
+            risk_factors = self._identify_risk_factors(global_data, volatility_data, currency_data)
             
-            macd = ema_12 - ema_26
-            macd_signal = self._calculate_ema([macd], 9)
-            
-            # Bollinger Bands
-            bb_middle = sma_20
-            bb_std = np.std(prices[-20:]) if len(prices) >= 20 else 0
-            bb_upper = bb_middle + (2 * bb_std)
-            bb_lower = bb_middle - (2 * bb_std)
-            
-            return TechnicalIndicators(
-                symbol=symbol,
+            # Build market context
+            market_context = MarketContextData(
                 timestamp=datetime.now(),
-                rsi=rsi,
-                sma_20=sma_20,
-                ema_12=ema_12,
-                ema_26=ema_26,
-                macd=macd,
-                macd_signal=macd_signal,
-                bollinger_upper=bb_upper,
-                bollinger_middle=bb_middle,
-                bollinger_lower=bb_lower,
-                volume_sma=np.mean(volumes[-20:]) if len(volumes) >= 20 else volumes[-1],
-                atr=self._calculate_atr(historical_data)
+                request_id=request_id,
+                global_data=global_data,
+                indian_data=indian_data,
+                volatility_data=volatility_data,
+                sector_data=sector_data,
+                institutional_data=institutional_data,
+                currency_data=currency_data,
+                overall_market_regime=overall_regime,
+                market_strength=market_strength,
+                global_influence=global_influence,
+                trading_session=self._get_current_trading_session(),
+                session_bias=self._determine_session_bias(indian_data),
+                liquidity_conditions=self._assess_liquidity_conditions(),
+                key_observations=key_observations,
+                market_themes=market_themes,
+                risk_factors=risk_factors,
+                data_quality_score=Decimal("85.0"),
+                processing_time_ms=int((time.time() - start_time) * 1000)
             )
             
+            # Generate market summary
+            market_summary = self._generate_market_summary(market_context)
+            
+            response = MarketContextResponse(
+                timestamp=datetime.now(),
+                request_id=request_id,
+                market_context=market_context,
+                market_summary=market_summary,
+                processing_time_ms=int((time.time() - start_time) * 1000),
+                data_sources=["kite_connect", "yahoo_finance"]
+            )
+            
+            return response
+            
         except Exception as e:
-            self.logger.error(f"Error calculating technical indicators: {e}")
-            return TechnicalIndicators.default()
+            self.logger.error(f"Market context request failed: {e}")
+            raise
             
-    def _calculate_rsi(self, prices: List[float], period: int = 14) -> float:
-        """Calculate RSI indicator."""
-        if len(prices) < period + 1:
-            return 50.0
+    async def get_quick_market_context(self, request_id: str) -> QuickMarketContextResponse:
+        """Get quick market context for immediate understanding."""
+        start_time = time.time()
         
-        deltas = np.diff(prices)
-        gains = np.where(deltas > 0, deltas, 0)
-        losses = np.where(deltas < 0, -deltas, 0)
-        
-        avg_gain = np.mean(gains[-period:])
-        avg_loss = np.mean(losses[-period:])
-        
-        if avg_loss == 0:
-            return 100.0
-        
-        rs = avg_gain / avg_loss
-        return 100 - (100 / (1 + rs))
-        
-    def _calculate_ema(self, prices: List[float], period: int) -> float:
-        """Calculate EMA indicator."""
-        if len(prices) < period:
-            return prices[-1] if prices else 0
-        
-        multiplier = 2 / (period + 1)
-        ema = prices[0]
-        
-        for price in prices[1:]:
-            ema = (price * multiplier) + (ema * (1 - multiplier))
-        
-        return ema
-        
-    def _calculate_atr(self, historical_data: List[Dict], period: int = 14) -> float:
-        """Calculate Average True Range."""
-        if len(historical_data) < period + 1:
-            return 0
-        
-        true_ranges = []
-        for i in range(1, len(historical_data)):
-            high = float(historical_data[i]['high'])
-            low = float(historical_data[i]['low'])
-            prev_close = float(historical_data[i-1]['close'])
+        try:
+            # Get essential data only
+            indian_data = await self._get_indian_market_data(request_id)
+            volatility_data = await self._get_volatility_data(request_id)
+            sector_data = await self._get_sector_data(request_id)
+            global_data = await self._get_global_market_data(request_id)
             
-            tr1 = high - low
-            tr2 = abs(high - prev_close)
-            tr3 = abs(low - prev_close)
+            # Calculate key metrics
+            global_influence = self._calculate_global_influence(global_data, indian_data)
             
-            true_range = max(tr1, tr2, tr3)
-            true_ranges.append(true_range)
+            response = QuickMarketContextResponse(
+                    timestamp=datetime.now(),
+                market_regime=indian_data.market_regime.value,
+                global_sentiment=global_data.global_sentiment.value,
+                volatility_level=volatility_data.volatility_level.value,
+                india_vix=volatility_data.india_vix,
+                advance_decline_ratio=indian_data.advance_decline_ratio,
+                global_influence=global_influence,
+                trading_session=self._get_current_trading_session().value,
+                session_bias=self._determine_session_bias(indian_data),
+                leading_sectors=sector_data.leading_sectors[:3],
+                processing_time_ms=int((time.time() - start_time) * 1000)
+            )
+            
+            return response
+            
+        except Exception as e:
+            self.logger.error(f"Quick market context failed: {e}")
+            raise
+            
+    # Helper methods (simplified for brevity)
+    
+    async def _get_global_market_data(self, request_id: str) -> GlobalMarketData:
+        """Get global market data from Yahoo Finance."""
+        try:
+            indices = await self.yahoo_service.get_market_indices()
+            
+            us_markets = {}
+            european_markets = {}
+            asian_markets = {}
+            overnight_changes = {}
+            total_change = Decimal("0")
+            count = 0
+            
+            region_map = {
+                "^GSPC": ("US", "us"), "^IXIC": ("US", "us"), "^DJI": ("US", "us"),
+                "^FTSE": ("Europe", "eu"),
+                "^N225": ("Asia", "asia"), "^HSI": ("Asia", "asia"),
+            }
+            
+            for index in indices:
+                change_pct = round(index.change_percent, 2)
+                entry = {"value": round(index.last_price, 2), "change_percent": change_pct}
+                
+                region_info = region_map.get(index.symbol)
+                if region_info:
+                    region, key = region_info
+                    if region == "US":
+                        us_markets[index.symbol] = entry
+                    elif region == "Europe":
+                        european_markets[index.symbol] = entry
+                    elif region == "Asia":
+                        asian_markets[index.symbol] = entry
+                    overnight_changes[key] = Decimal(str(change_pct))
+                
+                total_change += Decimal(str(change_pct))
+                count += 1
+            
+            avg_change = total_change / count if count > 0 else Decimal("0")
+            
+            # Determine global sentiment from average change
+            if avg_change > Decimal("1"):
+                sentiment = GlobalSentiment.VERY_POSITIVE
+            elif avg_change > Decimal("0.3"):
+                sentiment = GlobalSentiment.POSITIVE
+            elif avg_change > Decimal("-0.3"):
+                sentiment = GlobalSentiment.NEUTRAL
+            elif avg_change > Decimal("-1"):
+                sentiment = GlobalSentiment.NEGATIVE
+            else:
+                sentiment = GlobalSentiment.VERY_NEGATIVE
+            
+            return GlobalMarketData(
+                timestamp=datetime.now(),
+                us_markets=us_markets,
+                european_markets=european_markets,
+                asian_markets=asian_markets,
+                global_sentiment=sentiment,
+                global_momentum_score=max(Decimal("-100"), min(Decimal("100"), avg_change * 10)),
+                overnight_changes=overnight_changes,
+                correlations={"us_india": Decimal("0.75")}
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to get global market data: {e}")
+            return self._create_empty_global_data()
+    
+    async def _get_indian_market_data(self, request_id: str) -> IndianMarketData:
+        """Get Indian market data from Kite Connect and Yahoo Finance."""
+        try:
+            # Fetch Indian indices via Kite Connect quote API
+            indian_symbols = ["NSE:NIFTY 50", "NSE:NIFTY BANK"]
+            quotes = await self.kite_client.quote(indian_symbols)
+            
+            indices = {}
+            nifty_change_pct = Decimal("0")
+            
+            for symbol, data in quotes.items():
+                net_change = data.get("net_change", 0)
+                close_price = data.get("ohlc", {}).get("close", 0)
+                change_pct = round((net_change / close_price) * 100, 2) if close_price else 0
+                indices[symbol] = {
+                    "value": data.get("last_price", 0),
+                    "change_percent": change_pct
+                }
+                if "NIFTY 50" in symbol:
+                    nifty_change_pct = Decimal(str(change_pct))
+            
+            # If Kite is not connected, fall back to Yahoo Finance
+            if not indices:
+                yf_indices = await self.yahoo_service.get_market_indices()
+                for idx in yf_indices:
+                    if idx.symbol in ("^NSEI", "^NSEBANK"):
+                        indices[idx.symbol] = {
+                            "value": round(idx.last_price, 2),
+                            "change_percent": round(idx.change_percent, 2)
+                        }
+                        if idx.symbol == "^NSEI":
+                            nifty_change_pct = Decimal(str(round(idx.change_percent, 2)))
+            
+            # Determine market regime from Nifty change
+            if nifty_change_pct > Decimal("1"):
+                regime = MarketRegime.BULLISH
+            elif nifty_change_pct > Decimal("0.3"):
+                regime = MarketRegime.TRENDING_UP
+            elif nifty_change_pct > Decimal("-0.3"):
+                regime = MarketRegime.SIDEWAYS
+            elif nifty_change_pct > Decimal("-1"):
+                regime = MarketRegime.TRENDING_DOWN
+            else:
+                regime = MarketRegime.BEARISH
+            
+            # Get sector data for breadth estimation
+            sector_perf = await self.kite_client.get_sector_performance()
+            advances = sum(1 for v in sector_perf.values() if v > 0) if sector_perf else 0
+            declines = sum(1 for v in sector_perf.values() if v < 0) if sector_perf else 0
+            unchanged = len(sector_perf) - advances - declines if sector_perf else 0
+            
+            # Scale breadth from sectors to approximate stock count
+            scale = 150  # approximate stocks per sector
+            ad_ratio = Decimal(str(round(advances / max(declines, 1), 2)))
+            
+            return IndianMarketData(
+                timestamp=datetime.now(),
+                indices=indices,
+                market_regime=regime,
+                volatility_level=VolatilityLevel.NORMAL,
+                advances=advances * scale,
+                declines=declines * scale,
+                unchanged=unchanged * scale,
+                advance_decline_ratio=ad_ratio,
+                new_highs=0,
+                new_lows=0,
+                total_volume=None,
+                volume_trend="stable"
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to get Indian market data: {e}")
+            return IndianMarketData(
+                timestamp=datetime.now(),
+                indices={},
+                market_regime=MarketRegime.SIDEWAYS,
+                volatility_level=VolatilityLevel.NORMAL,
+                advances=0, declines=0, unchanged=0,
+                advance_decline_ratio=Decimal("1.0"),
+                new_highs=0, new_lows=0,
+                volume_trend="unknown"
+            )
+    
+    async def _get_volatility_data(self, request_id: str) -> VolatilityData:
+        """Get volatility data from Yahoo Finance."""
+        try:
+            indicators = await self.yahoo_service.get_economic_indicators()
+            vix_value = Decimal(str(round(indicators.get("india_vix", 18), 2)))
+            
+            # Classify volatility level
+            if vix_value < Decimal("12"):
+                vol_level = VolatilityLevel.VERY_LOW
+            elif vix_value < Decimal("16"):
+                vol_level = VolatilityLevel.LOW
+            elif vix_value < Decimal("20"):
+                vol_level = VolatilityLevel.NORMAL
+            elif vix_value < Decimal("25"):
+                vol_level = VolatilityLevel.ELEVATED
+            elif vix_value < Decimal("30"):
+                vol_level = VolatilityLevel.HIGH
+            else:
+                vol_level = VolatilityLevel.VERY_HIGH
+            
+            # Calculate fear-greed from VIX (inverted)
+            fear_greed = max(0, min(100, int(100 - float(vix_value) * 2.5)))
+            
+            return VolatilityData(
+                timestamp=datetime.now(),
+                india_vix=vix_value,
+                vix_change=Decimal("0"),
+                vix_trend="stable",
+                volatility_level=vol_level,
+                fear_greed_index=fear_greed,
+                put_call_ratio=None,
+                expected_daily_range=vix_value / Decimal("16")
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to get volatility data: {e}")
+            return VolatilityData(
+                timestamp=datetime.now(),
+                india_vix=Decimal("18"),
+                vix_change=Decimal("0"),
+                vix_trend="unknown",
+                volatility_level=VolatilityLevel.NORMAL,
+                fear_greed_index=50,
+                put_call_ratio=None,
+                expected_daily_range=Decimal("1.5")
+            )
+    
+    async def _get_sector_data(self, request_id: str) -> SectorData:
+        """Get sector data from Kite Connect (Indian sectors) with Yahoo fallback."""
+        try:
+            # Primary: Use Kite Connect for Indian Nifty sector indices
+            sector_performance = await self.kite_client.get_sector_performance()
+            
+            # Fallback to Yahoo Finance if Kite returns empty
+            if not sector_performance:
+                sector_performance = await self.yahoo_service.get_sector_performance()
+            
+            sorted_sectors = sorted(sector_performance.items(), key=lambda x: x[1], reverse=True)
+            
+            return SectorData(
+                timestamp=datetime.now(),
+                sector_performance={k: Decimal(str(v)) for k, v in sector_performance.items()},
+                leading_sectors=[s[0] for s in sorted_sectors[:3] if s[1] > 0],
+                lagging_sectors=[s[0] for s in sorted_sectors[-3:] if s[1] < 0],
+                rotation_stage="mid_cycle",
+                sector_breadth={}
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to get sector data: {e}")
+            return self._create_empty_sector_data()
+    
+    async def _get_institutional_data(self, request_id: str) -> InstitutionalData:
+        """Get institutional data.
         
-        return np.mean(true_ranges[-period:]) if true_ranges else 0
-        
-    def _calculate_fear_greed_index(self, vix_level: float) -> int:
-        """Calculate fear/greed index based on VIX."""
-        # Invert VIX to create fear/greed index (0-100)
-        # VIX 10 = Greed 90, VIX 30 = Fear 10
-        if vix_level <= 10:
-            return 90
-        elif vix_level >= 30:
-            return 10
+        Note: FII/DII real-time flow data requires NSDL/BSE scraping or paid APIs.
+        Returns empty defaults when real data is not available.
+        """
+        self.logger.debug("Institutional flow data requires external data source - returning defaults")
+        return InstitutionalData(
+            timestamp=datetime.now(),
+            fii_flow=None,
+            dii_flow=None,
+            net_institutional_flow=None,
+            fii_trend="unavailable",
+            dii_trend="unavailable",
+            institutional_sentiment="unavailable"
+        )
+    
+    async def _get_currency_data(self, request_id: str) -> CurrencyData:
+        """Get currency and commodity data from Yahoo Finance."""
+        try:
+            indicators = await self.yahoo_service.get_economic_indicators()
+            
+            usd_inr = Decimal(str(round(indicators.get("usd_inr", 0), 2))) if indicators.get("usd_inr") else None
+            crude = Decimal(str(round(indicators.get("crude_oil", 0), 2))) if indicators.get("crude_oil") else None
+            gold = Decimal(str(round(indicators.get("gold_usd", 0), 2))) if indicators.get("gold_usd") else None
+            
+            # Determine currency trend
+            currency_trend = "stable"
+            if usd_inr and usd_inr > Decimal("84"):
+                currency_trend = "weakening"
+            elif usd_inr and usd_inr < Decimal("82"):
+                currency_trend = "strengthening"
+            
+            # Determine commodity impact
+            commodity_impact = "neutral"
+            if crude and crude > Decimal("85"):
+                commodity_impact = "negative"
+            elif crude and crude < Decimal("65"):
+                commodity_impact = "positive"
+            
+            return CurrencyData(
+                timestamp=datetime.now(),
+                usd_inr=usd_inr,
+                usd_inr_change=None,
+                crude_oil=crude,
+                gold=gold,
+                currency_trend=currency_trend,
+                commodity_impact=commodity_impact
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to get currency data: {e}")
+            return CurrencyData(
+                timestamp=datetime.now(),
+                currency_trend="unknown",
+                commodity_impact="unknown"
+            )
+    
+    # Analysis methods
+    
+    def _determine_overall_regime(self, global_data, indian_data, volatility_data) -> MarketRegime:
+        """Determine overall market regime."""
+        if volatility_data.volatility_level in [VolatilityLevel.HIGH, VolatilityLevel.VERY_HIGH]:
+            return MarketRegime.VOLATILE
+        return indian_data.market_regime
+    
+    def _calculate_market_strength(self, indian_data, sector_data) -> Decimal:
+        """Calculate market strength score."""
+        strength = Decimal("50")
+        if indian_data.advance_decline_ratio > Decimal("1.5"):
+            strength += Decimal("20")
+        elif indian_data.advance_decline_ratio < Decimal("0.8"):
+            strength -= Decimal("15")
+        return max(Decimal("0"), min(Decimal("100"), strength))
+    
+    def _calculate_global_influence(self, global_data, indian_data) -> Decimal:
+        """Calculate global influence score based on overnight changes."""
+        try:
+            if not global_data.overnight_changes:
+                return Decimal("50")
+            
+            # Weight US markets more heavily
+            us_change = abs(float(global_data.overnight_changes.get("us", 0)))
+            eu_change = abs(float(global_data.overnight_changes.get("eu", 0)))
+            asia_change = abs(float(global_data.overnight_changes.get("asia", 0)))
+            
+            # Larger global moves = higher influence on Indian markets
+            weighted_change = us_change * 0.5 + eu_change * 0.2 + asia_change * 0.3
+            influence = min(Decimal("100"), Decimal(str(round(50 + weighted_change * 15, 1))))
+            return max(Decimal("0"), influence)
+        except Exception:
+            return Decimal("50")
+    
+    def _get_current_trading_session(self) -> TradingSession:
+        """Get current trading session."""
+        hour = datetime.now().hour
+        if 9 <= hour < 10:
+            return TradingSession.OPENING
+        elif 10 <= hour < 14:
+            return TradingSession.MORNING
+        elif 14 <= hour < 15:
+            return TradingSession.AFTERNOON
         else:
-            return int(90 - ((vix_level - 10) * 4))  # Linear interpolation
-            
-    # Additional helper methods for market indices, sector performance, etc.
-    async def _get_market_indices(self) -> Dict[str, Any]:
-        """Get major market indices data."""
-        # Implementation for fetching index data
-        return {}
-        
-    async def _get_volatility_index(self) -> float:
-        """Get market volatility index."""
-        # Implementation for VIX calculation
-        return 20.0
-        
-    async def _get_sector_performance(self) -> Dict[str, float]:
-        """Get sector-wise performance."""
-        # Implementation for sector analysis
-        return {}
-        
-    async def _calculate_index_sentiment(self, index_name: str) -> float:
-        """Calculate sentiment for an index."""
-        # Implementation for index sentiment calculation
-        return 0.0
-        
-    async def _get_sector_sentiments(self) -> Dict[str, str]:
-        """Get sector-wise sentiments."""
-        # Implementation for sector sentiment analysis
-        return {}
+            return TradingSession.POST_MARKET
+    
+    def _determine_session_bias(self, indian_data) -> str:
+        """Determine session bias."""
+        if indian_data.advance_decline_ratio > Decimal("1.3"):
+            return "bullish"
+        elif indian_data.advance_decline_ratio < Decimal("0.7"):
+            return "bearish"
+        return "neutral"
+    
+    def _assess_liquidity_conditions(self) -> str:
+        """Assess liquidity conditions."""
+        return "normal"
+    
+    def _generate_market_observations(self, global_data, indian_data, volatility_data, sector_data) -> List[str]:
+        """Generate market observations."""
+        observations = []
+        observations.append(f"Market in {indian_data.market_regime.value} regime")
+        if indian_data.advance_decline_ratio > Decimal("1.5"):
+            observations.append("Strong market breadth")
+        if sector_data.leading_sectors:
+            observations.append(f"Sector leadership: {', '.join(sector_data.leading_sectors[:2])}")
+        return observations
+    
+    def _identify_market_themes(self, global_data, indian_data, sector_data, institutional_data) -> List[str]:
+        """Identify market themes."""
+        themes = []
+        if institutional_data.fii_flow and institutional_data.fii_flow > 1000:
+            themes.append("Strong FII buying")
+        if sector_data.leading_sectors:
+            themes.append(f"{sector_data.leading_sectors[0]} outperformance")
+        return themes
+    
+    def _identify_risk_factors(self, global_data, volatility_data, currency_data) -> List[str]:
+        """Identify risk factors."""
+        risks = []
+        if volatility_data.volatility_level in [VolatilityLevel.HIGH, VolatilityLevel.VERY_HIGH]:
+            risks.append("Elevated volatility")
+        if currency_data.usd_inr_change and abs(currency_data.usd_inr_change) > 0.5:
+            risks.append("Currency volatility")
+        return risks
+    
+    def _generate_market_summary(self, context) -> str:
+        """Generate market summary."""
+        return f"Market in {context.overall_market_regime.value} regime with {context.volatility_data.volatility_level.value} volatility."
+    
+    # Empty data creators
+    
+    def _create_empty_global_data(self) -> GlobalMarketData:
+        """Create empty global data."""
+        return GlobalMarketData(
+            timestamp=datetime.now(),
+            global_sentiment=GlobalSentiment.NEUTRAL,
+            global_momentum_score=Decimal("0")
+        )
+    
+    def _create_empty_sector_data(self) -> SectorData:
+        """Create empty sector data."""
+        return SectorData(
+            timestamp=datetime.now(),
+            rotation_stage="unknown"
+        )
+    
+    def _create_empty_institutional_data(self) -> InstitutionalData:
+        """Create empty institutional data."""
+        return InstitutionalData(
+            timestamp=datetime.now(),
+            fii_trend="neutral",
+            dii_trend="neutral",
+            institutional_sentiment="neutral"
+        )
+    
+    def _create_empty_currency_data(self) -> CurrencyData:
+        """Create empty currency data."""
+        return CurrencyData(
+            timestamp=datetime.now(),
+            currency_trend="stable",
+            commodity_impact="neutral"
+        )

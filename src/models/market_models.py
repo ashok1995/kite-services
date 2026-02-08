@@ -81,6 +81,90 @@ class MarketSentiment(BaseModel):
     sector_sentiments: Dict[str, str] = Field(default_factory=dict)
 
 
+class IndexRealTimeData(BaseModel):
+    """Real-time data for an index."""
+    symbol: str = Field(..., description="Index symbol (e.g., ^NSEI, ^NSEBANK)")
+    name: str = Field(..., description="Index name")
+    current_level: float = Field(..., description="Current index level")
+    daily_change: float = Field(..., description="Daily change amount")
+    daily_change_percent: float = Field(..., description="Daily change percentage")
+    volume: int = Field(..., description="Daily volume")
+    previous_close: float = Field(..., description="Previous day's close")
+    market_status: MarketStatus = Field(..., description="Current market status")
+
+
+class SupportResistanceLevel(BaseModel):
+    """Support and resistance levels for an index."""
+    level: float = Field(..., description="Price level")
+    level_type: str = Field(..., description="Type of level (support/resistance/pivot)")
+    strength: str = Field(..., description="Strength of the level (strong/moderate/weak)")
+    timeframe: str = Field(..., description="Timeframe for the level (daily/weekly/monthly)")
+
+
+class ComprehensiveMarketSentiment(BaseModel):
+    """Comprehensive market sentiment analysis with multi-timeframe perspective."""
+
+    # Current market data
+    current_level: float = Field(..., description="Current index level")
+    daily_change: float = Field(..., description="Daily change amount")
+    daily_change_percent: float = Field(..., description="Daily change percentage")
+
+    # Technical indicators
+    technical_indicators: TechnicalIndicators = Field(..., description="Technical indicators")
+
+    # Support and resistance levels
+    support_resistance_levels: List[SupportResistanceLevel] = Field(..., description="Key support and resistance levels")
+
+    # Multi-timeframe sentiment analysis
+    short_term_sentiment: str = Field(..., description="Short-term sentiment (1-5 days)")
+    short_term_confidence: float = Field(..., description="Short-term sentiment confidence (0-100)")
+    medium_term_sentiment: str = Field(..., description="Medium-term sentiment (1-4 weeks)")
+    medium_term_confidence: float = Field(..., description="Medium-term sentiment confidence (0-100)")
+    long_term_sentiment: str = Field(..., description="Long-term sentiment (1-6 months)")
+    long_term_confidence: float = Field(..., description="Long-term sentiment confidence (0-100)")
+
+    # Overall market regime
+    overall_market_regime: str = Field(..., description="Overall market regime (bullish/bearish/sideways)")
+    regime_confidence: float = Field(..., description="Confidence in market regime (0-100)")
+
+    # Risk indicators
+    volatility_level: str = Field(..., description="Current volatility level (low/medium/high)")
+    risk_appetite: str = Field(..., description="Current risk appetite (high/medium/low)")
+
+    # Trend strength
+    trend_strength: str = Field(..., description="Overall trend strength (strong/moderate/weak)")
+    momentum_direction: str = Field(..., description="Momentum direction (bullish/bearish/neutral)")
+
+    # Market breadth
+    advance_decline_ratio: float = Field(..., description="Advance/decline ratio")
+    new_highs_lows_ratio: float = Field(..., description="New highs to lows ratio")
+
+    # Institutional indicators
+    institutional_flow: str = Field(..., description="Institutional money flow (buying/selling/neutral)")
+    fii_activity: str = Field(..., description="FII activity trend")
+
+    # Market internals
+    vix_level: float = Field(..., description="VIX (fear gauge) level")
+    vix_trend: str = Field(..., description="VIX trend direction")
+
+    # Trading recommendations
+    recommended_action: str = Field(..., description="Recommended trading action")
+    risk_level: str = Field(..., description="Overall risk level (low/medium/high)")
+
+    # Analysis metadata
+    analysis_timestamp: datetime = Field(..., description="When this analysis was generated")
+    data_freshness_minutes: int = Field(..., description="Age of underlying data in minutes")
+    analysis_horizon: str = Field(..., description="Primary analysis timeframe")
+
+
+class MarketSentimentResponse(BaseModel):
+    """Response model for market sentiment endpoint."""
+    indices: List[ComprehensiveMarketSentiment] = Field(..., description="Market sentiment for each index")
+    overall_market_sentiment: str = Field(..., description="Overall market sentiment across all indices")
+    analysis_timestamp: datetime = Field(..., description="When this analysis was generated")
+    data_sources: List[str] = Field(..., description="Data sources used for this analysis")
+
+
 class MarketIndex(BaseModel):
     """Market index data."""
     symbol: str
