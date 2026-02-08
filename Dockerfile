@@ -32,8 +32,9 @@ RUN poetry install --no-dev --no-interaction --no-ansi && \
 # Copy application code
 COPY src/ ./src/
 
-# Create necessary directories
-RUN mkdir -p logs data
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/data && \
+    chmod -R 777 /app/logs /app/data
 
 # Set Python path
 ENV PYTHONPATH=/app/src
