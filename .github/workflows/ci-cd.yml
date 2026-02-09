@@ -47,11 +47,15 @@ jobs:
           restore-keys: |
             venv-${{ runner.os }}-
 
+      - name: Verify poetry.lock is in sync
+        run: |
+          poetry check || poetry lock --no-update
+      
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install --no-interaction --no-root
-
+      
       - name: Install project
         run: |
           poetry install --no-interaction
@@ -98,11 +102,15 @@ jobs:
           restore-keys: |
             venv-${{ runner.os }}-
 
+      - name: Verify poetry.lock is in sync
+        run: |
+          poetry check || poetry lock --no-update
+      
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install --no-interaction --no-root
-
+      
       - name: Install project
         run: |
           poetry install --no-interaction
@@ -177,11 +185,15 @@ jobs:
           restore-keys: |
             venv-${{ runner.os }}-
 
+      - name: Verify poetry.lock is in sync
+        run: |
+          poetry check || poetry lock --no-update
+      
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install --no-interaction --no-root
-
+      
       - name: Install project
         run: |
           poetry install --no-interaction
@@ -237,11 +249,15 @@ jobs:
           restore-keys: |
             venv-${{ runner.os }}-
 
+      - name: Verify poetry.lock is in sync
+        run: |
+          poetry check || poetry lock --no-update
+      
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install --no-interaction --no-root
-
+      
       - name: Install project
         run: |
           poetry install --no-interaction
