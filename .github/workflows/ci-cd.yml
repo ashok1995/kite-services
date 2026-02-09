@@ -50,7 +50,7 @@ jobs:
 
       - name: Verify poetry.lock is in sync
         run: |
-          poetry install --dry-run || poetry lock
+          $HOME/.local/bin/poetry install --dry-run || $HOME/.local/bin/poetry lock || poetry install --dry-run || poetry lock
       
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
@@ -106,7 +106,7 @@ jobs:
 
       - name: Verify poetry.lock is in sync
         run: |
-          poetry install --dry-run || poetry lock
+          $HOME/.local/bin/poetry install --dry-run || $HOME/.local/bin/poetry lock || poetry install --dry-run || poetry lock
       
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
@@ -190,7 +190,7 @@ jobs:
 
       - name: Verify poetry.lock is in sync
         run: |
-          poetry install --dry-run || poetry lock
+          $HOME/.local/bin/poetry install --dry-run || $HOME/.local/bin/poetry lock || poetry install --dry-run || poetry lock
       
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
@@ -255,7 +255,7 @@ jobs:
 
       - name: Verify poetry.lock is in sync
         run: |
-          poetry install --dry-run || poetry lock
+          $HOME/.local/bin/poetry install --dry-run || $HOME/.local/bin/poetry lock || poetry install --dry-run || poetry lock
       
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
