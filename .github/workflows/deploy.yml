@@ -38,17 +38,8 @@ jobs:
         run: |
           docker build -t kite-services:latest .
       
-      - name: Deploy to production
-        if: success()
-        uses: appleboy/ssh-action@master
-        with:
-          host: 203.57.85.72
-          username: root
-          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/kite-services
-            git pull origin main
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --force-recreate
-            sleep 10
-            curl -f http://localhost:8179/health || exit 1
+      - name: Summary
+        run: |
+          echo "✅ Build and tests completed successfully"
+          echo "📦 Docker image built: kite-services:latest"
+          echo "🚀 Deploy manually on VM using deploy_to_prod.sh script"
