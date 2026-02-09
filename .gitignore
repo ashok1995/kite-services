@@ -78,7 +78,8 @@ tests/results/*.md
 .dockerignore
 
 # Poetry
-poetry.lock
+# poetry.lock should be committed for reproducible builds
+# poetry.lock
 
 # Temporary files
 *.tmp
