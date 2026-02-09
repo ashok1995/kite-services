@@ -112,6 +112,73 @@ async def authenticate(request: AuthRequest):
         )
 
 
+@router.put("/auth/token", response_model=AuthResponse)
+async def update_token(access_token: str, user_id: Optional[str] = None):
+    """
+    Update access token in token file.
+    
+    This endpoint allows updating the access token without restarting the service.
+    The token is saved to kite_token.json and automatically reloaded by the service.
+    
+    Args:
+        access_token: The new access token
+        user_id: Optional user ID for metadata
+    
+    Returns:
+        AuthResponse with updated token information
+    """
+    try:
+        service_manager = await get_service_manager()
+        kite_client = service_manager.kite_client
+        
+        # Save token to file
+        success = kite_client.token_manager.update_token(
+            access_token=access_token,
+            user_id=user_id
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to save token to file"
+            )
+        
+        # Update Kite client with new token
+        await kite_client.set_access_token(access_token)
+        
+        # Get profile to verify token
+        profile = await kite_client.get_profile()
+        if not profile:
+            raise HTTPException(
+                status_code=401,
+                detail="Token saved but validation failed - token may be invalid"
+            )
+        
+        logger.info(f"✅ Token updated successfully for user: {profile.get('user_id')}")
+        
+        return AuthResponse(
+            status=AuthStatus.AUTHENTICATED,
+            access_token=access_token,
+            user_id=profile.get("user_id"),
+            user_name=profile.get("user_name"),
+            email=profile.get("email"),
+            broker=profile.get("broker"),
+            exchanges=profile.get("exchanges", []),
+            products=profile.get("products", []),
+            order_types=profile.get("order_types", []),
+            message="Token updated successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Token update failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Token update failed: {str(e)}"
+        )
+
+
 @router.get("/auth/status", response_model=AuthStatusResponse)
 async def get_auth_status():
     """

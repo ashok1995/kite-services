@@ -33,6 +33,7 @@ pre-commit install --hook-type commit-msg
 ## What Gets Checked
 
 ### Code Quality
+
 - ✅ **Trailing whitespace** - Removes trailing spaces
 - ✅ **End of file** - Ensures files end with newline
 - ✅ **YAML/JSON/TOML** - Validates configuration files
@@ -41,22 +42,26 @@ pre-commit install --hook-type commit-msg
 - ✅ **Private keys** - Prevents committing secrets
 
 ### Python Code
+
 - ✅ **Black** - Auto-formats Python code
 - ✅ **isort** - Sorts imports automatically
 - ✅ **Flake8** - Lints Python code
 - ✅ **Bandit** - Security vulnerability scanner
 
 ### Security
+
 - ✅ **Detect Secrets** - Finds hardcoded secrets/credentials
 - ✅ **Private Key Detection** - Prevents committing SSH keys
 
 ### Configuration
+
 - ✅ **Poetry Lock** - Ensures `poetry.lock` is up to date
 - ✅ **Dockerfile** - Lints Dockerfile syntax
 - ✅ **YAML** - Validates YAML files
 - ✅ **Markdown** - Lints markdown files
 
 ### Commit Messages
+
 - ✅ **Commitizen** - Enforces conventional commit format
 
 ## Usage
@@ -215,6 +220,7 @@ Pre-commit enforces conventional commits:
 ```
 
 **Types**:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation
@@ -224,6 +230,7 @@ Pre-commit enforces conventional commits:
 - `chore`: Maintenance tasks
 
 **Examples**:
+
 ```bash
 git commit -m "feat: Add user authentication"
 git commit -m "fix: Resolve CORS parsing issue"

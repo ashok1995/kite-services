@@ -16,6 +16,7 @@ from kiteconnect import KiteConnect, KiteTicker
 
 from config.settings import get_settings
 from core.logging_config import get_logger
+from core.token_manager import TokenManager
 
 
 class KiteClient:
@@ -28,6 +29,9 @@ class KiteClient:
         
         # Kite configuration
         self.kite_config = self.settings.kite
+        
+        # Token manager for file-based token updates
+        self.token_manager = TokenManager()
         
         # Kite instances
         self.kite: Optional[KiteConnect] = None
@@ -307,7 +311,20 @@ class KiteClient:
             access_token = data["access_token"]
             self.logger.info(f"✅ Access token generated successfully for user: {data.get('user_id')}")
             
-            # Save to file
+            # Save to token file (for daily updates)
+            self.token_manager.save_token(
+                access_token=access_token,
+                user_id=data.get("user_id"),
+                user_name=data.get("user_name"),
+                user_type=data.get("user_type"),
+                email=data.get("email"),
+                broker=data.get("broker"),
+                exchanges=data.get("exchanges", []),
+                products=data.get("products", []),
+                order_types=data.get("order_types", [])
+            )
+            
+            # Also save to legacy access_token.json for backward compatibility
             import json
             token_data = {
                 "access_token": access_token,
@@ -512,10 +529,42 @@ class KiteClient:
             return None
 
     async def _load_credentials(self):
-        """Load Kite credentials."""
-        # Credentials are loaded from settings
+        """Load Kite credentials from multiple sources."""
+        # First, try to load from token file (highest priority for daily updates)
+        file_token = self.token_manager.load_token()
+        if file_token:
+            self.kite_config.access_token = file_token
+            self.logger.info("✅ Loaded access token from token file")
+        
+        # Fallback to settings/env if file token not available
+        if not self.kite_config.access_token:
+            self.logger.info("Token file not available, using settings/env token")
+        
+        # Start watching token file for changes
+        self.token_manager.start_watching(callback=self._on_token_updated)
+        
         if not self.kite_config.api_key or not self.kite_config.access_token:
             self.logger.warning("Kite credentials not configured")
+    
+    def _on_token_updated(self, new_token: str):
+        """Handle token file update - reload token without restart."""
+        self.logger.info("🔄 Token file updated, reloading Kite client...")
+        try:
+            # Update config
+            self.kite_config.access_token = new_token
+            
+            # Update existing Kite instance
+            if self.kite:
+                self.kite.set_access_token(new_token)
+                self.logger.info("✅ Kite client token updated")
+            
+            # Update WebSocket if connected
+            if self.kws and self.is_streaming:
+                self.logger.info("⚠️ WebSocket is active, will reconnect with new token")
+                # Note: WebSocket reconnection should be handled by the service
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to update token: {e}", exc_info=True)
             
     async def _test_connection(self):
         """Test Kite API connection."""
