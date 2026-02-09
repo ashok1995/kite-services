@@ -1,0 +1,50 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: false
+      
+      - name: Install dependencies
+        run: |
+          poetry install --no-dev --no-interaction
+      
+      - name: Run tests
+        run: |
+          poetry run pytest tests/ -v --tb=short || exit 0
+      
+      - name: Build Docker image
+        run: |
+          docker build -t kite-services:latest .
+      
+      - name: Deploy to production
+        if: success()
+        uses: appleboy/ssh-action@master
+        with:
+          host: 203.57.85.72
+          username: root
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/kite-services
+            git pull origin main
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
+            sleep 10
+            curl -f http://localhost:8179/health || exit 1

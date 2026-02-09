@@ -29,9 +29,10 @@ env/
 ENV/
 .venv
 
-# IDEs
+# IDEs and Editors
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
@@ -62,6 +63,7 @@ debug/
 # Access tokens (NEVER commit)
 src/access_token.json
 access_token.json
+kite_token.json
 *.token
 
 # Testing
@@ -76,10 +78,6 @@ tests/results/*.md
 
 # Docker
 .dockerignore
-
-# Poetry
-# poetry.lock should be committed for reproducible builds
-# poetry.lock
 
 # Temporary files
 *.tmp
@@ -98,7 +96,6 @@ production.pid
 # Coverage reports
 coverage.xml
 *.cover
-.hypothesis/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -110,30 +107,8 @@ coverage.xml
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
-*.sage.py
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
 # Secrets
 secrets/
 *.pem
 *.key
 *.crt
-kite_token.json
