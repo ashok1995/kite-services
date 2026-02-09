@@ -22,9 +22,13 @@ jobs:
           version: latest
           virtualenvs-create: false
       
+      - name: Add Poetry to PATH
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
       - name: Install dependencies
         run: |
-          poetry install --without dev --no-interaction
+          $HOME/.local/bin/poetry install --without dev --no-interaction || poetry install --without dev --no-interaction
       
       - name: Run tests
         run: |
