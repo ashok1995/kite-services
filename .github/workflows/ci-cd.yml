@@ -19,20 +19,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
           cache: 'poetry'
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: latest
           virtualenvs-create: true
           virtualenvs-in-project: true
-      
+          installer-parallel: true
+
+      - name: Add Poetry to PATH
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry --version
+
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -41,14 +47,16 @@ jobs:
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             venv-${{ runner.os }}-
-      
+
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-      
+        run: |
+          poetry install --no-interaction --no-root
+
       - name: Install project
-        run: poetry install --no-interaction
-      
+        run: |
+          poetry install --no-interaction
+
       - name: Run linting checks
         run: |
           echo "✅ Code quality checks passed"
@@ -63,19 +71,25 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: latest
           virtualenvs-create: true
           virtualenvs-in-project: true
-      
+          installer-parallel: true
+
+      - name: Add Poetry to PATH
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry --version
+
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -84,30 +98,32 @@ jobs:
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             venv-${{ runner.os }}-
-      
+
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-      
+        run: |
+          poetry install --no-interaction --no-root
+
       - name: Install project
-        run: poetry install --no-interaction
-      
+        run: |
+          poetry install --no-interaction
+
       - name: Run unit tests
         run: |
           poetry run pytest tests/unit/ -v --tb=short --cov=src --cov-report=xml --cov-report=term --cov-report=html
-      
+
       - name: Check test coverage threshold
         run: |
           # Fail if coverage drops below 70%
           poetry run pytest tests/unit/ --cov=src --cov-fail-under=70 || echo "⚠️ Coverage below 70%"
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           flags: unittests
           name: codecov-umbrella
-      
+
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v4
         if: always()
@@ -134,19 +150,25 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: latest
           virtualenvs-create: true
           virtualenvs-in-project: true
-      
+          installer-parallel: true
+
+      - name: Add Poetry to PATH
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry --version
+
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -155,14 +177,16 @@ jobs:
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             venv-${{ runner.os }}-
-      
+
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-      
+        run: |
+          poetry install --no-interaction --no-root
+
       - name: Install project
-        run: poetry install --no-interaction
-      
+        run: |
+          poetry install --no-interaction
+
       - name: Run integration tests
         env:
           REDIS_HOST: localhost
@@ -186,19 +210,25 @@ jobs:
           - 6379:6379
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: latest
           virtualenvs-create: true
           virtualenvs-in-project: true
-      
+          installer-parallel: true
+
+      - name: Add Poetry to PATH
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry --version
+
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -207,14 +237,16 @@ jobs:
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             venv-${{ runner.os }}-
-      
+
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-      
+        run: |
+          poetry install --no-interaction --no-root
+
       - name: Install project
-        run: poetry install --no-interaction
-      
+        run: |
+          poetry install --no-interaction
+
       - name: Run E2E tests
         env:
           REDIS_HOST: localhost
@@ -223,7 +255,7 @@ jobs:
           KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
         run: |
           poetry run pytest tests/e2e/ -v --tb=short --maxfail=5
-      
+
       - name: Run production config tests (CRITICAL for main branch)
         env:
           KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
@@ -232,7 +264,7 @@ jobs:
           echo "🧪 Running production config tests..."
           poetry run pytest tests/e2e/test_production_config.py -v --tb=short
           echo "✅ Production config tests passed - safe to deploy"
-      
+
       - name: Run deployment reliability tests (CRITICAL for main branch)
         env:
           KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
@@ -256,17 +288,17 @@ jobs:
       image-digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -276,7 +308,7 @@ jobs:
             type=ref,event=branch
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
-      
+
       - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@v5
@@ -300,26 +332,26 @@ jobs:
     if: (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/dev') && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Run container health check
         run: |
           echo "🧪 Testing Docker image..."
           IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop-${{ github.sha }}
           echo "Testing image: $IMAGE"
-          
+
           # Pull and test the image
           docker pull $IMAGE || echo "Image not found, using latest"
-          
+
           # Run container and test health endpoint
           docker run -d --name test-container \
             -p 8080:8179 \
@@ -328,13 +360,13 @@ jobs:
             -e KITE_API_KEY=${{ secrets.KITE_API_KEY }} \
             -e KITE_ACCESS_TOKEN=${{ secrets.KITE_ACCESS_TOKEN }} \
             $IMAGE || docker run -d --name test-container -p 8080:8179 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          
+
           sleep 15
-          
+
           # Test health endpoint
           curl -f http://localhost:8080/health || exit 1
           echo "✅ Image health check passed"
-          
+
           # Cleanup
           docker stop test-container || true
           docker rm test-container || true
@@ -353,12 +385,12 @@ jobs:
       url: http://203.57.85.72:8179
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-      
+
       - name: Verify all tests passed before deployment
         run: |
           echo "🔍 Verifying all test stages passed..."
@@ -372,14 +404,14 @@ jobs:
             exit 1
           fi
           echo "✅ All tests passed - proceeding with deployment"
-      
+
       - name: Deploy to production
         run: |
           echo "🚀 Deploying to PRODUCTION..."
           echo "Branch: ${{ github.ref }}"
           echo "Image: ${{ needs.build-image.outputs.image-tag }}"
           echo "✅ All tests verified - safe to deploy"
-          
+
           ssh -o StrictHostKeyChecking=no root@203.57.85.72 << 'EOF'
             cd /opt/kite-services
             docker compose -f docker-compose.prod.yml pull || true
@@ -388,7 +420,7 @@ jobs:
             curl -f http://localhost:8179/health || exit 1
             echo "✅ Production deployment verified"
           EOF
-      
+
       - name: Verify production deployment
         run: |
           echo "🔍 Verifying production deployment..."
@@ -410,21 +442,21 @@ jobs:
         run: |
           echo "🧪 Running post-deployment smoke tests..."
           sleep 5
-          
+
           # Health check
           curl -f http://203.57.85.72:8179/health || exit 1
           echo "✅ Health check passed"
-          
+
           # Metrics check
           curl -f http://203.57.85.72:8179/metrics || exit 1
           echo "✅ Metrics endpoint accessible"
-          
+
           # Auth status
           curl -f http://203.57.85.72:8179/api/auth/status || exit 1
           echo "✅ Auth endpoint accessible"
-          
+
           # Market status
           curl -f http://203.57.85.72:8179/api/market/status || exit 1
           echo "✅ Market endpoint accessible"
-          
+
           echo "✅ All smoke tests passed"
