@@ -32,11 +32,12 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
+          poetry-version: latest
 
-      - name: Add Poetry to PATH
+      - name: Verify Poetry installation
         run: |
+          $HOME/.local/bin/poetry --version || poetry --version || (echo "Poetry not found" && exit 1)
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry --version
 
       - name: Load cached venv
         id: cached-poetry-dependencies
@@ -87,11 +88,12 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
+          poetry-version: latest
 
-      - name: Add Poetry to PATH
+      - name: Verify Poetry installation
         run: |
+          $HOME/.local/bin/poetry --version || poetry --version || (echo "Poetry not found" && exit 1)
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry --version
 
       - name: Load cached venv
         id: cached-poetry-dependencies
@@ -170,11 +172,12 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
+          poetry-version: latest
 
-      - name: Add Poetry to PATH
+      - name: Verify Poetry installation
         run: |
+          $HOME/.local/bin/poetry --version || poetry --version || (echo "Poetry not found" && exit 1)
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry --version
 
       - name: Load cached venv
         id: cached-poetry-dependencies
@@ -234,11 +237,12 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
+          poetry-version: latest
 
-      - name: Add Poetry to PATH
+      - name: Verify Poetry installation
         run: |
+          $HOME/.local/bin/poetry --version || poetry --version || (echo "Poetry not found" && exit 1)
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry --version
 
       - name: Load cached venv
         id: cached-poetry-dependencies
