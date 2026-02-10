@@ -37,12 +37,36 @@ async def init_database():
     logger.info("Initializing database...")
     
     try:
+        # Ensure database directory exists
+        import os
+        from pathlib import Path
+        
+        # Extract database path from URL
+        db_url = settings.database.url
+        if "sqlite" in db_url:
+            # Parse SQLite URL: sqlite+aiosqlite:////app/data/db.db
+            if "///" in db_url:
+                # Absolute path
+                db_path = db_url.split("///")[-1]
+            elif "//" in db_url:
+                # Relative path
+                db_path = db_url.split("//")[-1]
+            else:
+                db_path = db_url.split("://")[-1]
+            
+            # Get directory
+            db_dir = os.path.dirname(db_path)
+            if db_dir:
+                Path(db_dir).mkdir(parents=True, exist_ok=True)
+                os.chmod(db_dir, 0o777)
+                logger.info(f"✅ Database directory ensured: {db_dir}")
+        
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         
         logger.info("✅ Database initialized successfully")
     except Exception as e:
-        logger.error(f"❌ Database initialization failed: {e}")
+        logger.error(f"❌ Database initialization failed: {e}", exc_info=True)
         raise
 
 
