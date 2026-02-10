@@ -34,7 +34,8 @@ COPY src/ ./src/
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs /app/data && \
-    chmod -R 777 /app/logs /app/data
+    chmod -R 777 /app/logs /app/data && \
+    touch /app/data/.gitkeep
 
 # Set Python path
 ENV PYTHONPATH=/app/src
