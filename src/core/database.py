@@ -39,15 +39,17 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 def _get_sqlite_db_path(db_url: str) -> str:
-    """Extract absolute path from SQLite URL. Handles sqlite:////path format."""
-    # sqlite+aiosqlite:////app/data/db.db -> /app/data/db.db
+    """Extract path from SQLite URL. Preserves relative paths (e.g. ./data/db.db)."""
     if "///" in db_url:
         path = db_url.split("///", 1)[-1]
     elif "//" in db_url:
         path = db_url.split("//", 1)[-1]
     else:
         path = db_url.split("://", 1)[-1]
-    return path if path.startswith("/") else f"/{path}"
+    # Preserve relative paths (./data); only add / for bare relative (data/foo)
+    if path.startswith("/") or path.startswith("."):
+        return path
+    return f"/{path}"
 
 
 async def init_database():
@@ -63,12 +65,14 @@ async def init_database():
             db_path = _get_sqlite_db_path(db_url)
             db_dir = os.path.dirname(db_path)
             if db_dir:
-                Path(db_dir).mkdir(parents=True, exist_ok=True)
+                # Resolve relative paths from cwd (e.g. ./data -> project/data)
+                target = Path(db_dir).resolve()
+                target.mkdir(parents=True, exist_ok=True)
                 try:
-                    os.chmod(db_dir, 0o777)
+                    os.chmod(str(target), 0o777)
                 except OSError:
                     pass  # May fail in restricted envs
-                logger.info(f"✅ Database directory ensured: {db_dir}")
+                logger.info(f"✅ Database directory ensured: {target}")
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

@@ -12,81 +12,39 @@ Note: For enhanced hierarchical context with trading style optimization,
 see /analysis/context/enhanced endpoint (analysis_enhanced module)
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import datetime
 import logging
 import time
 
-from models.unified_api_models import (
-    MarketContextRequest, MarketContextResponse, GlobalMarketData,
-    MarketSentiment, TechnicalAnalysis,
-    IntelligenceRequest, IntelligenceResponse, StockIntelligence,
-    TradingSignal
-)
+from fastapi import APIRouter, HTTPException
+
 from core.service_manager import get_service_manager
+from models.unified_api_models import (
+    IntelligenceRequest,
+    IntelligenceResponse,
+    MarketContextRequest,
+    MarketContextResponse,
+    StockAnalysisRequest,
+    StockAnalysisResponse,
+    StockIntelligence,
+)
 from services.market_context_service import MarketContextService
 from services.market_intelligence_service import MarketIntelligenceService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Response model for stock analysis
-class StockAnalysisResponse(BaseModel):
-    success: bool
-    symbol: str
-    analysis_type: str
-    time_horizon: str
-
-    # Current price data
-    current_price: Optional[float] = None
-    open_price: Optional[float] = None
-    high_price: Optional[float] = None
-    low_price: Optional[float] = None
-    change: Optional[float] = None
-    change_percent: Optional[float] = None
-    volume: Optional[int] = None
-
-    # Technical indicators
-    rsi_14: Optional[float] = None
-    macd_signal: Optional[str] = None
-    bollinger_position: Optional[str] = None
-    sma_20: Optional[float] = None
-    sma_50: Optional[float] = None
-
-    # Support/Resistance
-    immediate_support: Optional[float] = None
-    immediate_resistance: Optional[float] = None
-
-    # Trend and momentum
-    trend: Optional[str] = None
-    trend_strength: Optional[str] = None
-    momentum: Optional[str] = None
-
-    # Trading signals
-    signal: Optional[str] = None
-    confidence: Optional[float] = None
-    target_price: Optional[float] = None
-    stop_loss: Optional[float] = None
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    processing_time_ms: float
-    message: str
-
 
 @router.post("/analysis/context", response_model=MarketContextResponse)
 async def get_market_context(request: MarketContextRequest):
     """
     Complete market context analysis.
-    
+
     Provides comprehensive market analysis including:
     - Global market data (US, Europe, Asia)
     - Indian market data (Nifty, Sensex, sector indices)
     - Market sentiment indicators
     - Technical analysis for specified symbols
-    
+
     Args:
         symbols: Specific symbols to analyze (optional)
         include_global: Include global market context
@@ -95,19 +53,19 @@ async def get_market_context(request: MarketContextRequest):
         include_technical: Include technical analysis
     """
     start_time = time.time()
-    
+
     try:
         service_manager = await get_service_manager()
         market_context_service = service_manager.market_context_service
-        
+
         logger.info(f"Generating market context analysis for {len(request.symbols or [])} symbols")
-        
+
         # Initialize response data
         global_markets = []
         indian_markets = []
         market_sentiment = None
         technical_analysis = []
-        
+
         # Get global market data
         if request.include_global:
             try:
@@ -120,13 +78,13 @@ async def get_market_context(request: MarketContextRequest):
                             last_price=market.get("last_price"),
                             change=market.get("change"),
                             change_percent=market.get("change_percent"),
-                            timestamp=market.get("timestamp")
+                            timestamp=market.get("timestamp"),
                         )
                         for market in global_data
                     ]
             except Exception as e:
                 logger.warning(f"Failed to get global market data: {str(e)}")
-        
+
         # Get Indian market data
         if request.include_indian:
             try:
@@ -139,13 +97,13 @@ async def get_market_context(request: MarketContextRequest):
                             last_price=market.get("last_price"),
                             change=market.get("change"),
                             change_percent=market.get("change_percent"),
-                            timestamp=market.get("timestamp")
+                            timestamp=market.get("timestamp"),
                         )
                         for market in indian_data
                     ]
             except Exception as e:
                 logger.warning(f"Failed to get Indian market data: {str(e)}")
-        
+
         # Get market sentiment
         if request.include_sentiment:
             try:
@@ -157,11 +115,11 @@ async def get_market_context(request: MarketContextRequest):
                         vix=sentiment_data.get("vix"),
                         put_call_ratio=sentiment_data.get("put_call_ratio"),
                         advance_decline_ratio=sentiment_data.get("advance_decline_ratio"),
-                        timestamp=sentiment_data.get("timestamp")
+                        timestamp=sentiment_data.get("timestamp"),
                     )
             except Exception as e:
                 logger.warning(f"Failed to get market sentiment: {str(e)}")
-        
+
         # Get technical analysis for specified symbols
         if request.include_technical and request.symbols:
             try:
@@ -169,24 +127,26 @@ async def get_market_context(request: MarketContextRequest):
                     try:
                         tech_data = await market_context_service.get_technical_analysis(symbol)
                         if tech_data:
-                            technical_analysis.append(TechnicalAnalysis(
-                                symbol=symbol,
-                                trend=tech_data.get("trend"),
-                                support_levels=tech_data.get("support_levels", []),
-                                resistance_levels=tech_data.get("resistance_levels", []),
-                                moving_averages=tech_data.get("moving_averages", {}),
-                                rsi=tech_data.get("rsi"),
-                                macd=tech_data.get("macd"),
-                                bollinger_bands=tech_data.get("bollinger_bands"),
-                                timestamp=tech_data.get("timestamp")
-                            ))
+                            technical_analysis.append(
+                                TechnicalAnalysis(
+                                    symbol=symbol,
+                                    trend=tech_data.get("trend"),
+                                    support_levels=tech_data.get("support_levels", []),
+                                    resistance_levels=tech_data.get("resistance_levels", []),
+                                    moving_averages=tech_data.get("moving_averages", {}),
+                                    rsi=tech_data.get("rsi"),
+                                    macd=tech_data.get("macd"),
+                                    bollinger_bands=tech_data.get("bollinger_bands"),
+                                    timestamp=tech_data.get("timestamp"),
+                                )
+                            )
                     except Exception as e:
                         logger.warning(f"Failed to get technical analysis for {symbol}: {str(e)}")
             except Exception as e:
                 logger.warning(f"Failed to get technical analysis: {str(e)}")
-        
+
         processing_time = (time.time() - start_time) * 1000
-        
+
         return MarketContextResponse(
             success=True,
             global_markets=global_markets,
@@ -194,29 +154,26 @@ async def get_market_context(request: MarketContextRequest):
             market_sentiment=market_sentiment,
             technical_analysis=technical_analysis,
             processing_time_ms=round(processing_time, 2),
-            message="Market context analysis completed successfully"
+            message="Market context analysis completed successfully",
         )
-        
+
     except Exception as e:
         logger.error(f"Market context analysis failed: {str(e)}")
         processing_time = (time.time() - start_time) * 1000
-        raise HTTPException(
-            status_code=500,
-            detail=f"Market context analysis failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Market context analysis failed: {str(e)}")
 
 
 @router.post("/analysis/intelligence", response_model=IntelligenceResponse)
 async def get_stock_intelligence(request: IntelligenceRequest):
     """
     Stock-specific intelligence analysis.
-    
+
     Provides comprehensive stock analysis including:
     - Overall trend analysis and strength
     - Support and resistance levels
     - Trading signals with confidence scores
     - Risk assessment and volatility analysis
-    
+
     Args:
         symbol: Stock symbol to analyze
         include_trends: Include trend analysis
@@ -225,13 +182,13 @@ async def get_stock_intelligence(request: IntelligenceRequest):
         time_horizon: Analysis time horizon (short, medium, long)
     """
     start_time = time.time()
-    
+
     try:
         service_manager = await get_service_manager()
         intelligence_service = service_manager.market_intelligence_service
-        
+
         logger.info(f"Generating intelligence analysis for {request.symbol}")
-        
+
         # Initialize intelligence data
         intelligence_data = {
             "symbol": request.symbol,
@@ -239,49 +196,50 @@ async def get_stock_intelligence(request: IntelligenceRequest):
             "resistance_levels": [],
             "key_levels": [],
             "trading_signals": [],
-            "timestamp": None
+            "timestamp": None,
         }
-        
+
         # Get trend analysis
         if request.include_trends:
             try:
                 trend_data = await intelligence_service.get_trend_analysis(
-                    symbol=request.symbol,
-                    time_horizon=request.time_horizon
+                    symbol=request.symbol, time_horizon=request.time_horizon
                 )
                 if trend_data:
-                    intelligence_data.update({
-                        "overall_trend": trend_data.get("overall_trend"),
-                        "trend_strength": trend_data.get("trend_strength"),
-                        "momentum": trend_data.get("momentum"),
-                        "volatility": trend_data.get("volatility"),
-                        "risk_level": trend_data.get("risk_level")
-                    })
+                    intelligence_data.update(
+                        {
+                            "overall_trend": trend_data.get("overall_trend"),
+                            "trend_strength": trend_data.get("trend_strength"),
+                            "momentum": trend_data.get("momentum"),
+                            "volatility": trend_data.get("volatility"),
+                            "risk_level": trend_data.get("risk_level"),
+                        }
+                    )
             except Exception as e:
                 logger.warning(f"Failed to get trend analysis for {request.symbol}: {str(e)}")
-        
+
         # Get support and resistance levels
         if request.include_levels:
             try:
                 levels_data = await intelligence_service.get_support_resistance_levels(
-                    symbol=request.symbol,
-                    time_horizon=request.time_horizon
+                    symbol=request.symbol, time_horizon=request.time_horizon
                 )
                 if levels_data:
-                    intelligence_data.update({
-                        "support_levels": levels_data.get("support_levels", []),
-                        "resistance_levels": levels_data.get("resistance_levels", []),
-                        "key_levels": levels_data.get("key_levels", [])
-                    })
+                    intelligence_data.update(
+                        {
+                            "support_levels": levels_data.get("support_levels", []),
+                            "resistance_levels": levels_data.get("resistance_levels", []),
+                            "key_levels": levels_data.get("key_levels", []),
+                        }
+                    )
             except Exception as e:
                 logger.warning(f"Failed to get levels for {request.symbol}: {str(e)}")
-        
+
         # Get trading signals
         if request.include_signals:
             try:
                 signals_data = await intelligence_service.get_trading_signals(
-                    symbol=request.symbol,
-                    time_horizon=request.time_horizon
+                    symbol=request.symbol, time_horizon=request.time_horizon
                 )
                 if signals_data:
                     trading_signals = [
@@ -292,40 +250,33 @@ async def get_stock_intelligence(request: IntelligenceRequest):
                             reason=signal.get("reason", ""),
                             price_target=signal.get("price_target"),
                             stop_loss=signal.get("stop_loss"),
-                            timestamp=signal.get("timestamp")
+                            timestamp=signal.get("timestamp"),
                         )
                         for signal in signals_data.get("signals", [])
                     ]
                     intelligence_data["trading_signals"] = trading_signals
             except Exception as e:
                 logger.warning(f"Failed to get trading signals for {request.symbol}: {str(e)}")
-        
+
         processing_time = (time.time() - start_time) * 1000
-        
+
         stock_intelligence = StockIntelligence(**intelligence_data)
-        
+
         return IntelligenceResponse(
             success=True,
             intelligence=stock_intelligence,
             processing_time_ms=round(processing_time, 2),
-            message=f"Intelligence analysis completed for {request.symbol}"
+            message=f"Intelligence analysis completed for {request.symbol}",
         )
-        
+
     except Exception as e:
         logger.error(f"Intelligence analysis failed for {request.symbol}: {str(e)}")
         processing_time = (time.time() - start_time) * 1000
-        raise HTTPException(
-            status_code=500,
-            detail=f"Intelligence analysis failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Intelligence analysis failed: {str(e)}")
 
 
 @router.post("/analysis/stock", response_model=StockAnalysisResponse)
-async def get_stock_analysis(
-    symbol: str = Query(..., description="Stock symbol to analyze"),
-    analysis_type: str = Query("comprehensive", description="Type of analysis: basic, technical, comprehensive"),
-    time_horizon: str = Query("intraday", description="Time horizon: intraday, swing, long_term")
-):
+async def get_stock_analysis(request: StockAnalysisRequest):
     """
     Single-instrument analysis endpoint.
 
@@ -349,21 +300,24 @@ async def get_stock_analysis(
         kite_client = service_manager.kite_client
         intelligence_service = service_manager.market_intelligence_service
 
-        logger.info(f"Performing {analysis_type} analysis for {symbol} ({time_horizon})")
+        logger.info(
+            f"Performing {request.analysis_type} analysis for {request.symbol} "
+            f"({request.time_horizon})"
+        )
 
         # Get current quote
-        quotes = await kite_client.quote([symbol])
-        if not quotes or symbol not in quotes:
+        quotes = await kite_client.quote([request.symbol])
+        if not quotes or request.symbol not in quotes:
             return StockAnalysisResponse(
                 success=False,
-                symbol=symbol,
-                analysis_type=analysis_type,
-                time_horizon=time_horizon,
+                symbol=request.symbol,
+                analysis_type=request.analysis_type,
+                time_horizon=request.time_horizon,
                 processing_time_ms=round((time.time() - start_time) * 1000, 2),
-                message=f"Failed to fetch current quote for {symbol}"
+                message=f"Failed to fetch current quote for {request.symbol}",
             )
 
-        quote_data = quotes[symbol]
+        quote_data = quotes[request.symbol]
 
         # Extract current price data
         current_price = quote_data.get("last_price")
@@ -377,9 +331,9 @@ async def get_stock_analysis(
         # Initialize analysis data
         analysis_data = {
             "success": True,
-            "symbol": symbol,
-            "analysis_type": analysis_type,
-            "time_horizon": time_horizon,
+            "symbol": request.symbol,
+            "analysis_type": request.analysis_type,
+            "time_horizon": request.time_horizon,
             "current_price": current_price,
             "open_price": open_price,
             "high_price": high_price,
@@ -390,27 +344,33 @@ async def get_stock_analysis(
         }
 
         # Get technical analysis if requested
-        if analysis_type in ["technical", "comprehensive"]:
+        if request.analysis_type in ["technical", "comprehensive"]:
             try:
                 # Get technical indicators (approximated for now)
                 # In a full implementation, this would use real historical data
-                analysis_data.update({
-                    "rsi_14": 55.0,  # Would calculate from recent candles
-                    "macd_signal": "bullish" if change_percent and change_percent > 0 else "bearish",
-                    "bollinger_position": "middle",  # Would calculate from recent prices
-                    "sma_20": current_price * 0.98,  # Approximation
-                    "sma_50": current_price * 0.95,  # Approximation
-                    "immediate_support": current_price * 0.97,
-                    "immediate_resistance": current_price * 1.03,
-                    "trend": "bullish" if change_percent and change_percent > 0 else "bearish",
-                    "trend_strength": "moderate",
-                    "momentum": "increasing" if change_percent and change_percent > 0.5 else "stable",
-                })
+                analysis_data.update(
+                    {
+                        "rsi_14": 55.0,  # Would calculate from recent candles
+                        "macd_signal": (
+                            "bullish" if change_percent and change_percent > 0 else "bearish"
+                        ),
+                        "bollinger_position": "middle",  # Would calculate from recent prices
+                        "sma_20": current_price * 0.98,  # Approximation
+                        "sma_50": current_price * 0.95,  # Approximation
+                        "immediate_support": current_price * 0.97,
+                        "immediate_resistance": current_price * 1.03,
+                        "trend": "bullish" if change_percent and change_percent > 0 else "bearish",
+                        "trend_strength": "moderate",
+                        "momentum": (
+                            "increasing" if change_percent and change_percent > 0.5 else "stable"
+                        ),
+                    }
+                )
             except Exception as e:
-                logger.warning(f"Technical analysis failed for {symbol}: {str(e)}")
+                logger.warning(f"Technical analysis failed for {request.symbol}: {str(e)}")
 
         # Get trading signals if comprehensive analysis
-        if analysis_type == "comprehensive":
+        if request.analysis_type == "comprehensive":
             try:
                 # Generate basic signals based on current data
                 if change_percent and change_percent > 1.0:
@@ -429,22 +389,24 @@ async def get_stock_analysis(
                     target_price = None
                     stop_loss = None
 
-                analysis_data.update({
-                    "signal": signal,
-                    "confidence": confidence,
-                    "target_price": target_price,
-                    "stop_loss": stop_loss,
-                })
+                analysis_data.update(
+                    {
+                        "signal": signal,
+                        "confidence": confidence,
+                        "target_price": target_price,
+                        "stop_loss": stop_loss,
+                    }
+                )
             except Exception as e:
-                logger.warning(f"Signal generation failed for {symbol}: {str(e)}")
+                logger.warning(f"Signal generation failed for {request.symbol}: {str(e)}")
 
         processing_time = (time.time() - start_time) * 1000
 
         return StockAnalysisResponse(
             success=True,
-            symbol=symbol,
-            analysis_type=analysis_type,
-            time_horizon=time_horizon,
+            symbol=request.symbol,
+            analysis_type=request.analysis_type,
+            time_horizon=request.time_horizon,
             current_price=current_price,
             open_price=open_price,
             high_price=high_price,
@@ -467,18 +429,18 @@ async def get_stock_analysis(
             target_price=analysis_data.get("target_price"),
             stop_loss=analysis_data.get("stop_loss"),
             processing_time_ms=round(processing_time, 2),
-            message=f"Stock analysis completed for {symbol} ({analysis_type})"
+            message=f"Stock analysis completed for {request.symbol} ({request.analysis_type})",
         )
 
     except Exception as e:
-        logger.error(f"Stock analysis failed for {symbol}: {str(e)}")
+        logger.error(f"Stock analysis failed for {request.symbol}: {str(e)}")
         processing_time = (time.time() - start_time) * 1000
 
         return StockAnalysisResponse(
             success=False,
-            symbol=symbol,
-            analysis_type=analysis_type,
-            time_horizon=time_horizon,
+            symbol=request.symbol,
+            analysis_type=request.analysis_type,
+            time_horizon=request.time_horizon,
             processing_time_ms=round(processing_time, 2),
-            message=f"Stock analysis failed: {str(e)}"
+            message=f"Stock analysis failed: {str(e)}",
         )

@@ -7,8 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Integration docs: `docs/INTEGRATION_GUIDE.md` (consolidated) and `docs/integration/` (per-service: auth, market-data, analysis, trading)
+- Request/response Pydantic models for all endpoints (master rule compliance):
+  - `LoginUrlResponse` for GET `/auth/login-url`
+  - `UpdateTokenRequest` for PUT `/auth/token` (body-based)
+  - `ContextExamplesResponse` for GET `/context/examples`
+  - `StockAnalysisRequest` for POST `/analysis/stock` (body-based)
+- Extracted `analysis_enhanced_cache.py` (cache keys) and `analysis_enhanced_helpers.py` (scoring, quality)
+
+### Changed
+
+- PUT `/auth/token` now accepts JSON body instead of query params
+- POST `/analysis/stock` now accepts JSON body (`StockAnalysisRequest`) instead of query params
+- Refactored analysis_enhanced to use shared cache and helper modules
+- Updated `docs/api.md` for PUT `/auth/token` request body
+
+### Removed
+
+- `docs/PRODUCTION_DEPLOYMENT.md` (redundant)
+- `docs/api-integration-doc.md`, `api-integration-guide.md`, `API_INTEGRATION_GUIDE_PRODUCTION.md`, `API_QUICK_REFERENCE.md` (replaced by INTEGRATION_GUIDE.md and integration/)
+
 ### Fixed
 
+- Restored `StockIntelligence` import in `analysis.py` (broken by earlier refactor)
+- Database: resolve relative SQLite paths (e.g. `./data/`) from project cwd; added `greenlet` for SQLAlchemy async
 - **Production deployment (VM)**: Resolved SQLite "unable to open database file" crash loop
   - Use `DATABASE_URL` from `os.environ` (pydantic-settings nested models don't pass env in Docker)
   - Use `SERVICE_PORT` and `REDIS_HOST` from env for correct Docker networking

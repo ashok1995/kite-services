@@ -8,16 +8,18 @@ Consolidates functionality from 60+ endpoints into 8 focused endpoints.
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional, Union
 
+from pydantic import BaseModel, Field
 
 # ============================================================================
 # ENUMS
 # ============================================================================
 
+
 class Exchange(str, Enum):
     """Supported exchanges."""
+
     NSE = "NSE"
     BSE = "BSE"
     NFO = "NFO"
@@ -28,6 +30,7 @@ class Exchange(str, Enum):
 
 class Interval(str, Enum):
     """Time intervals for historical data."""
+
     MINUTE = "minute"
     MINUTE_3 = "3minute"
     MINUTE_5 = "5minute"
@@ -39,6 +42,7 @@ class Interval(str, Enum):
 
 class AuthStatus(str, Enum):
     """Authentication status."""
+
     AUTHENTICATED = "authenticated"
     EXPIRED = "expired"
     INVALID = "invalid"
@@ -47,6 +51,7 @@ class AuthStatus(str, Enum):
 
 class MarketStatus(str, Enum):
     """Market status."""
+
     OPEN = "open"
     CLOSED = "closed"
     PRE_MARKET = "pre_market"
@@ -57,8 +62,10 @@ class MarketStatus(str, Enum):
 # AUTH MODULE MODELS
 # ============================================================================
 
+
 class AuthRequest(BaseModel):
     """Authentication request."""
+
     request_token: Optional[str] = Field(None, description="Request token from Kite login")
     access_token: Optional[str] = Field(None, description="Existing access token to validate")
     api_key: Optional[str] = Field(None, description="API key")
@@ -67,6 +74,7 @@ class AuthRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     """Authentication response."""
+
     status: AuthStatus
     access_token: Optional[str] = Field(None, description="Access token")
     user_id: Optional[str] = Field(None, description="User ID")
@@ -82,6 +90,7 @@ class AuthResponse(BaseModel):
 
 class AuthStatusResponse(BaseModel):
     """Authentication status response."""
+
     status: AuthStatus
     authenticated: bool
     user_id: Optional[str] = None
@@ -93,21 +102,42 @@ class AuthStatusResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
 
 
+class LoginUrlResponse(BaseModel):
+    """Login URL response for OAuth flow."""
+
+    login_url: str = Field(..., description="Kite Connect login URL")
+    message: str = Field(
+        default="Open URL, login, copy request_token from redirect",
+        description="Usage instructions",
+    )
+
+
+class UpdateTokenRequest(BaseModel):
+    """Request to update access token."""
+
+    access_token: str = Field(..., min_length=1, description="New access token")
+    user_id: Optional[str] = Field(None, description="Optional user ID for metadata")
+
+
 # ============================================================================
 # MARKET DATA MODULE MODELS
 # ============================================================================
 
+
 class MarketDataRequest(BaseModel):
     """Universal market data request."""
+
     symbols: List[str] = Field(..., min_length=1, max_length=50, description="Stock symbols")
     exchange: Exchange = Field(default=Exchange.NSE, description="Exchange")
-    data_type: str = Field(default="quote", description="Data type: quote, historical, fundamentals")
-    
+    data_type: str = Field(
+        default="quote", description="Data type: quote, historical, fundamentals"
+    )
+
     # Historical data parameters
     from_date: Optional[datetime] = Field(None, description="From date for historical data")
     to_date: Optional[datetime] = Field(None, description="To date for historical data")
     interval: Optional[Interval] = Field(None, description="Time interval for historical data")
-    
+
     # Additional options
     include_depth: bool = Field(default=False, description="Include market depth")
     include_circuit_limits: bool = Field(default=True, description="Include circuit limits")
@@ -115,6 +145,7 @@ class MarketDataRequest(BaseModel):
 
 class StockData(BaseModel):
     """Stock data model."""
+
     symbol: str
     instrument_token: Optional[int] = None
     last_price: Optional[Decimal] = None
@@ -136,6 +167,7 @@ class StockData(BaseModel):
 
 class MarketDataResponse(BaseModel):
     """Market data response."""
+
     success: bool
     data: Dict[str, StockData] = Field(default_factory=dict, description="Stock data by symbol")
     total_symbols: int
@@ -149,6 +181,7 @@ class MarketDataResponse(BaseModel):
 
 class MarketStatusResponse(BaseModel):
     """Market status response."""
+
     market_status: MarketStatus
     market_open: bool
     current_time: datetime = Field(default_factory=datetime.now)
@@ -160,6 +193,7 @@ class MarketStatusResponse(BaseModel):
 
 class InstrumentInfo(BaseModel):
     """Instrument information."""
+
     instrument_token: int
     exchange_token: Optional[int] = None  # Not available from Kite API
     tradingsymbol: str
@@ -176,6 +210,7 @@ class InstrumentInfo(BaseModel):
 
 class InstrumentsResponse(BaseModel):
     """Instruments response."""
+
     success: bool
     instruments: List[InstrumentInfo] = Field(default_factory=list)
     total_count: int
@@ -188,9 +223,13 @@ class InstrumentsResponse(BaseModel):
 # ANALYSIS MODULE MODELS
 # ============================================================================
 
+
 class MarketContextRequest(BaseModel):
     """Market context analysis request."""
-    symbols: Optional[List[str]] = Field(None, max_length=20, description="Specific symbols to analyze")
+
+    symbols: Optional[List[str]] = Field(
+        None, max_length=20, description="Specific symbols to analyze"
+    )
     include_global: bool = Field(default=True, description="Include global market context")
     include_indian: bool = Field(default=True, description="Include Indian market context")
     include_sentiment: bool = Field(default=True, description="Include market sentiment")
@@ -199,6 +238,7 @@ class MarketContextRequest(BaseModel):
 
 class GlobalMarketData(BaseModel):
     """Global market data."""
+
     market: str
     index: str
     last_price: Optional[Decimal] = None
@@ -209,6 +249,7 @@ class GlobalMarketData(BaseModel):
 
 class MarketSentiment(BaseModel):
     """Market sentiment data."""
+
     overall_sentiment: str  # bullish, bearish, neutral
     fear_greed_index: Optional[int] = None
     vix: Optional[Decimal] = None
@@ -219,6 +260,7 @@ class MarketSentiment(BaseModel):
 
 class TechnicalAnalysis(BaseModel):
     """Technical analysis data."""
+
     symbol: str
     trend: Optional[str] = None  # bullish, bearish, sideways
     support_levels: List[Decimal] = Field(default_factory=list)
@@ -232,6 +274,7 @@ class TechnicalAnalysis(BaseModel):
 
 class MarketContextResponse(BaseModel):
     """Market context response."""
+
     success: bool
     global_markets: List[GlobalMarketData] = Field(default_factory=list)
     indian_markets: List[GlobalMarketData] = Field(default_factory=list)
@@ -244,15 +287,19 @@ class MarketContextResponse(BaseModel):
 
 class IntelligenceRequest(BaseModel):
     """Stock intelligence request."""
+
     symbol: str = Field(..., description="Stock symbol")
     include_trends: bool = Field(default=True, description="Include trend analysis")
     include_levels: bool = Field(default=True, description="Include support/resistance levels")
     include_signals: bool = Field(default=True, description="Include trading signals")
-    time_horizon: str = Field(default="short", description="Analysis time horizon: short, medium, long")
+    time_horizon: str = Field(
+        default="short", description="Analysis time horizon: short, medium, long"
+    )
 
 
 class TradingSignal(BaseModel):
     """Trading signal."""
+
     signal_type: str  # buy, sell, hold
     confidence: float = Field(..., ge=0.0, le=1.0, description="Signal confidence (0-1)")
     strength: str = Field(..., description="Signal strength: weak, medium, strong")
@@ -264,6 +311,7 @@ class TradingSignal(BaseModel):
 
 class StockIntelligence(BaseModel):
     """Stock intelligence data."""
+
     symbol: str
     overall_trend: Optional[str] = None
     trend_strength: Optional[str] = None
@@ -279,6 +327,7 @@ class StockIntelligence(BaseModel):
 
 class IntelligenceResponse(BaseModel):
     """Stock intelligence response."""
+
     success: bool
     intelligence: Optional[StockIntelligence] = None
     processing_time_ms: float
@@ -286,12 +335,78 @@ class IntelligenceResponse(BaseModel):
     message: Optional[str] = None
 
 
+class StockAnalysisRequest(BaseModel):
+    """Single stock analysis request."""
+
+    symbol: str = Field(..., min_length=1, description="Stock symbol to analyze")
+    analysis_type: str = Field(
+        default="comprehensive",
+        description="Type: basic, technical, comprehensive",
+    )
+    time_horizon: str = Field(
+        default="intraday",
+        description="Horizon: intraday, swing, long_term",
+    )
+
+
+class StockAnalysisResponse(BaseModel):
+    """Single stock analysis response."""
+
+    success: bool
+    symbol: str
+    analysis_type: str
+    time_horizon: str
+    current_price: Optional[float] = None
+    open_price: Optional[float] = None
+    high_price: Optional[float] = None
+    low_price: Optional[float] = None
+    change: Optional[float] = None
+    change_percent: Optional[float] = None
+    volume: Optional[int] = None
+    rsi_14: Optional[float] = None
+    macd_signal: Optional[str] = None
+    bollinger_position: Optional[str] = None
+    sma_20: Optional[float] = None
+    sma_50: Optional[float] = None
+    immediate_support: Optional[float] = None
+    immediate_resistance: Optional[float] = None
+    trend: Optional[str] = None
+    trend_strength: Optional[str] = None
+    momentum: Optional[str] = None
+    signal: Optional[str] = None
+    confidence: Optional[float] = None
+    target_price: Optional[float] = None
+    stop_loss: Optional[float] = None
+    timestamp: datetime = Field(default_factory=datetime.now)
+    processing_time_ms: float
+    message: str
+
+
+class ContextExampleItem(BaseModel):
+    """Single context example item."""
+
+    description: str
+    request: Dict[str, Any]
+    use_case: str
+
+
+class ContextExamplesResponse(BaseModel):
+    """Market context examples response."""
+
+    message: str = Field(..., description="Response message")
+    endpoint: str = Field(..., description="API endpoint for context")
+    examples: Dict[str, ContextExampleItem] = Field(default_factory=dict)
+    tips: List[str] = Field(default_factory=list, description="Usage tips")
+
+
 # ============================================================================
 # TRADING MODULE MODELS
 # ============================================================================
 
+
 class Position(BaseModel):
     """Position information."""
+
     symbol: str
     instrument_token: Optional[int] = None
     quantity: int
@@ -308,6 +423,7 @@ class Position(BaseModel):
 
 class Holding(BaseModel):
     """Holding information."""
+
     symbol: str
     instrument_token: Optional[int] = None
     quantity: int
@@ -324,6 +440,7 @@ class Holding(BaseModel):
 
 class TradingStatusResponse(BaseModel):
     """Trading status response."""
+
     success: bool
     authenticated: bool
     user_id: Optional[str] = None
@@ -345,8 +462,10 @@ class TradingStatusResponse(BaseModel):
 # ERROR MODELS
 # ============================================================================
 
+
 class ErrorResponse(BaseModel):
     """Error response."""
+
     success: bool = False
     error: str
     error_code: Optional[str] = None
@@ -356,6 +475,7 @@ class ErrorResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: str
     service: str
     version: str

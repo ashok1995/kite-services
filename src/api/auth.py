@@ -19,13 +19,20 @@ from kiteconnect.exceptions import KiteException, TokenException
 from config.settings import get_settings
 from core.kite_exceptions import KiteErrorHandler
 from core.service_manager import get_service_manager
-from models.unified_api_models import AuthRequest, AuthResponse, AuthStatus, AuthStatusResponse
+from models.unified_api_models import (
+    AuthRequest,
+    AuthResponse,
+    AuthStatus,
+    AuthStatusResponse,
+    LoginUrlResponse,
+    UpdateTokenRequest,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/auth/login-url")
+@router.get("/auth/login-url", response_model=LoginUrlResponse)
 async def get_login_url():
     """
     Get Kite Connect login URL.
@@ -36,10 +43,10 @@ async def get_login_url():
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
         login_url = kite_client.get_login_url()
-        return {
-            "login_url": login_url,
-            "message": "Open URL, login, copy request_token from redirect",
-        }
+        return LoginUrlResponse(
+            login_url=login_url,
+            message="Open URL, login, copy request_token from redirect",
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -125,32 +132,27 @@ async def authenticate(request: AuthRequest):
 
 
 @router.put("/auth/token", response_model=AuthResponse)
-async def update_token(access_token: str, user_id: Optional[str] = None):
+async def update_token(request: UpdateTokenRequest):
     """
     Update access token in token file.
 
     This endpoint allows updating the access token without restarting the service.
     The token is saved to kite_token.json and automatically reloaded by the service.
-
-    Args:
-        access_token: The new access token
-        user_id: Optional user ID for metadata
-
-    Returns:
-        AuthResponse with updated token information
     """
     try:
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
 
         # Save token to file
-        success = kite_client.token_manager.update_token(access_token=access_token, user_id=user_id)
+        success = kite_client.token_manager.update_token(
+            access_token=request.access_token, user_id=request.user_id
+        )
 
         if not success:
             raise HTTPException(status_code=500, detail="Failed to save token to file")
 
         # Update Kite client with new token
-        await kite_client.set_access_token(access_token)
+        await kite_client.set_access_token(request.access_token)
 
         # Get profile to verify token
         profile = await kite_client.get_profile()
@@ -163,7 +165,7 @@ async def update_token(access_token: str, user_id: Optional[str] = None):
 
         return AuthResponse(
             status=AuthStatus.AUTHENTICATED,
-            access_token=access_token,
+            access_token=request.access_token,
             user_id=profile.get("user_id"),
             user_name=profile.get("user_name"),
             email=profile.get("email"),
