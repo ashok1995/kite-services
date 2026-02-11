@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Local staging** — staging runs strictly on this machine (port 8279). `scripts/run-staging.sh` and `docs/deployment/local-staging.md`. VM = prod only.
 - Master rule: no docs at root of `/docs/` except README.md; all docs in subfolders (`api/`, `architecture/`, `integration/`, `deployment/`, `development/`)
 - Integration docs: `docs/integration/INTEGRATION_GUIDE.md` (consolidated) and per-service guides
 - Request/response Pydantic models for all endpoints (master rule compliance):
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `docker-compose.staging.yml` — staging is local-only, no VM staging.
 - Legacy docs: API_CONSOLIDATION_COMPLETE, CACHE_STRATEGY_DETAILED, CACHING_AUDIT_KITE_FIRST, CI_CD_PIPELINE, COMPLETE_STATUS, COMPLETE_TOKEN_FLOW, DATA_CONTRACT_V1, ENHANCED_MARKET_CONTEXT, GIT_SETUP, PRE_COMMIT_SETUP, PRE_PRODUCTION_TESTS, PRODUCTION_MONITORING, production-deployment, PROJECT_SUMMARY, QUICK_MONEY_OPPORTUNITIES, REAL_DATA_FEASIBILITY, refactoring-plan, SERVICE_ANALYSIS, stock-data-service, TEST_RELIABILITY, TOKEN_MANAGEMENT, TOKEN_STATUS_API, UNIFIED_API_GUIDE, V3_ML_MARKET_INTELLIGENCE_API_GUIDE, api-testing-guide, dev-server-curl-tests, endpoint-testing-results, market-context-*
 
 ### Fixed
