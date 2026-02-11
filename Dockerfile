@@ -27,6 +27,7 @@ RUN poetry config virtualenvs.create false
 
 # Install dependencies
 RUN poetry install --no-dev --no-interaction --no-ansi && \
+    pip install --no-cache-dir watchdog && \
     rm -rf $POETRY_CACHE_DIR
 
 # Copy application code
