@@ -169,7 +169,9 @@ class ServiceConfig(BaseSettings):
 
     name: str = Field("kite-services", env="SERVICE_NAME")
     version: str = Field("1.0.0", env="SERVICE_VERSION")
-    host: str = Field("0.0.0.0", env="SERVICE_HOST")
+    host: str = Field(
+        "0.0.0.0", env="SERVICE_HOST"
+    )  # nosec B104 - intended public bind for API service
     port: int = Field(8079, env="SERVICE_PORT")  # DEV on 8079, PROD on 8179
     callback_base_url: Optional[str] = Field(
         None, env="KITE_CALLBACK_BASE_URL"

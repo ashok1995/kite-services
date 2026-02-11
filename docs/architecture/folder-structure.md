@@ -2,7 +2,7 @@
 
 ## Complete Directory Tree
 
-```
+```text
 kite-services/
 ├── src/                          # Source code
 │   ├── api/                      # API routes (controllers)
@@ -58,11 +58,6 @@ kite-services/
 │   │   ├── __init__.py
 │   │   └── settings.py           # Settings management
 │   │
-│   ├── ui/                       # UI files
-│   │   └── token/                # Token management UI
-│   │       ├── complete_token_flow_ui.html
-│   │       ├── production_token_ui.html
-│   │       └── simple_token_ui.html
 │   │
 │   ├── utils/                    # Utility functions
 │   │   └── (currently empty)
@@ -107,8 +102,6 @@ kite-services/
 │   ├── kite-connect-setup.md     # Kite setup guide
 │   ├── production-deployment.md  # Deployment guide
 │   └── examples/                 # Code examples
-│       ├── token_refresh_ui_example.html
-│       ├── ui_integration_example.html
 │       ├── token_flow_integration.js
 │       ├── simple_ui_integration.js
 │       └── ui_integration_snippet.js

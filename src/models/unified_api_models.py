@@ -123,6 +123,36 @@ class UpdateTokenRequest(BaseModel):
     user_id: Optional[str] = Field(None, description="Optional user ID for metadata")
 
 
+class CredentialsRequest(BaseModel):
+    """Request to save api_key and api_secret."""
+
+    api_key: str = Field(..., min_length=1, description="Kite Connect API key")
+    api_secret: str = Field("", description="Kite Connect API secret (required for login flow)")
+
+
+class CredentialsStatusResponse(BaseModel):
+    """Response for api_key configuration status."""
+
+    api_key_configured: bool = Field(..., description="True if api_key is set")
+    message: Optional[str] = None
+
+
+class TokenStatusResponse(BaseModel):
+    """Diagnostic response for access token status."""
+
+    api_key_configured: bool = Field(..., description="True if api_key is in token file")
+    access_token_present: bool = Field(..., description="True if access_token exists in file")
+    token_file_path: str = Field(..., description="Path to token file (no secrets)")
+    kite_client_initialized: bool = Field(..., description="True if kite instance created")
+    profile_verified: bool = Field(..., description="True if Kite profile call succeeds")
+    message: str = Field(..., description="Human-readable status")
+    action_required: Optional[str] = Field(
+        None,
+        description="What to do when token invalid (e.g. refresh steps)",
+    )
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+
 # ============================================================================
 # MARKET DATA MODULE MODELS
 # ============================================================================

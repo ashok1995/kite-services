@@ -42,6 +42,22 @@ class TestAuthTokenFlow:
         if "token_valid" in d and d.get("authenticated"):
             assert d.get("token_valid") is True
 
+    def test_callback_url(self, base_url):
+        """GET /api/token/callback-url returns callback_url and configured flag."""
+        r = httpx.get(f"{base_url}/api/token/callback-url", timeout=10)
+        assert r.status_code == 200
+        d = r.json()
+        assert "callback_url" in d
+        assert "configured" in d
+        assert "/api/auth/callback" in d["callback_url"]
+
+    def test_auth_callback_no_token(self, base_url):
+        """GET /api/auth/callback without request_token returns HTML."""
+        r = httpx.get(f"{base_url}/api/auth/callback", timeout=10)
+        assert r.status_code == 200
+        assert "text/html" in r.headers.get("content-type", "")
+        assert "request_token" in r.text.lower() or "error" in r.text.lower()
+
     def test_login_url(self, base_url):
         r = httpx.get(f"{base_url}/api/auth/login-url", timeout=10)
         if r.status_code == 404:

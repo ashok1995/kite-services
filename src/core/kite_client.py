@@ -532,8 +532,27 @@ class KiteClient:
             self.logger.error(f"Failed to get holdings: {e}")
             return None
 
+    def reload_api_credentials(self) -> bool:
+        """Reload api_key and api_secret from token file into kite_config."""
+        creds = self.token_manager.load_credentials()
+        if creds and (creds.get("api_key") or creds.get("api_secret")):
+            if creds.get("api_key"):
+                object.__setattr__(self.kite_config, "api_key", creds["api_key"])
+            if creds.get("api_secret"):
+                object.__setattr__(self.kite_config, "api_secret", creds["api_secret"])
+            self.logger.info("Reloaded api_key from token file")
+            return True
+        return False
+
     async def _load_credentials(self):
         """Load Kite credentials from multiple sources."""
+        # Load api_key, api_secret from token file
+        creds = self.token_manager.load_credentials()
+        if creds:
+            if creds.get("api_key"):
+                object.__setattr__(self.kite_config, "api_key", creds["api_key"])
+            if creds.get("api_secret"):
+                object.__setattr__(self.kite_config, "api_secret", creds["api_secret"])
         # First, try to load from token file (highest priority for daily updates)
         file_token = self.token_manager.load_token()
         if file_token:

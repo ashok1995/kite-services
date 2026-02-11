@@ -2,6 +2,8 @@
 # Install: pre-commit install
 # Run: pre-commit run --all-files
 
+---
+
 repos:
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -46,7 +48,7 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        args: [--max-line-length=100, --extend-ignore=E203,W503]
+        args: ["--max-line-length=100", "--extend-ignore=E203,W503"]
         exclude: ^(venv/|\.venv/|migrations/|__pycache__/)
 
   # Security checks
@@ -54,7 +56,8 @@ repos:
     rev: 1.7.6
     hooks:
       - id: bandit
-        args: [-r, src/, -ll]
+        args: ["-r", "src/", "-ll"]
+        pass_filenames: false
         exclude: ^(tests/|venv/|\.venv/)
 
   # Check for common mistakes
@@ -83,7 +86,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: [--baseline, .secrets.baseline]
+        args: ["--baseline", ".secrets.baseline"]
         exclude: ^(poetry.lock|package-lock.json)
 
   # Dockerfile linting

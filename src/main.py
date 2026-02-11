@@ -149,7 +149,7 @@ def setup_middleware(app: FastAPI):
         )
         allowed = ["localhost", "127.0.0.1", settings.service.host or "0.0.0.0", "*"] + [
             h.strip() for h in extra_hosts if h.strip()
-        ]
+        ]  # nosec B104 - trusted hosts explicitly controlled via config
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed)
 
     # Request logging middleware with request IDs and metrics

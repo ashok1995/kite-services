@@ -1,9 +1,14 @@
+<!-- markdownlint-disable MD013 -->
+
 # Complete API Reference
 
 ## Base URL
 
-- **Development**: `http://localhost:8079`
-- **Production**: `http://localhost:8179`
+| Environment | Base URL |
+|-------------|----------|
+| Development | `http://localhost:8079` |
+| Staging | `http://localhost:8279` |
+| Production | `http://203.57.85.72:8179` |
 
 ## Authentication
 
@@ -11,9 +16,31 @@ Kite Connect OAuth token flow. Get access token in 3 steps:
 
 ### Token Flow
 
-1. **GET /api/auth/login-url** – Get Kite login URL  
-2. Open URL in browser, log in, copy `request_token` from redirect URL  
-3. **POST /api/auth/login** with `request_token` – Receive `access_token`
+1. **GET /api/token/callback-url** – Get callback URL to configure in Kite app (Redirect URL at developers.kite.trade)
+2. **GET /api/auth/login-url** – Get Kite login URL  
+3. Open URL in browser, log in; Kite redirects to callback URL with `request_token`  
+4. **POST /api/auth/login** with `request_token` – Receive `access_token`
+
+#### GET /api/token/callback-url
+
+Returns the callback/redirect URL to set in your Kite Connect app.
+
+**Response**: 200 OK
+
+```json
+{
+  "callback_url": "http://203.57.85.72:8179/api/auth/callback",
+  "configured": true,
+  "message": null
+}
+```
+
+- **Production**: `http://203.57.85.72:8179/api/auth/callback`  
+- **Development**: `http://localhost:8079/api/auth/callback`
+
+#### GET /api/auth/callback
+
+Kite OAuth redirect target. Set the URL from `/api/token/callback-url` as Redirect URL in your Kite app. After login, this page shows the `request_token` for copy-paste into your UI.
 
 #### GET /api/auth/login-url
 
@@ -54,6 +81,10 @@ Generate access token from request token.
   "message": "Authentication successful"
 }
 ```
+
+#### GET /api/auth/token-status
+
+Token status diagnostic. Use when quotes/trading/opportunities fail. Shows api_key, access_token presence, profile verification.
 
 #### GET /api/auth/status
 

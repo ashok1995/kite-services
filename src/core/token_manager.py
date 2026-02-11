@@ -205,6 +205,73 @@ class TokenManager:
         """
         return self.save_token(access_token, **metadata)
 
+    def save_credentials(self, api_key: str, api_secret: str = "") -> bool:
+        """
+        Save api_key and api_secret to token file (no access_token).
+        Preserves existing access_token if present.
+
+        Args:
+            api_key: Kite Connect API key (required)
+            api_secret: Kite Connect API secret (required for request_token exchange)
+
+        Returns:
+            True if saved successfully
+        """
+        key_masked = (api_key[:4] + "***") if api_key and len(api_key) > 4 else "<empty>"
+        self.logger.info(
+            "save_credentials starting",
+            extra={
+                "token_file": str(self.token_file),
+                "api_key_masked": key_masked,
+                "api_secret_provided": bool(api_secret and api_secret.strip()),
+            },
+        )
+        try:
+            self.token_file.parent.mkdir(parents=True, exist_ok=True)
+            self.logger.info(
+                "save_credentials: token dir ensured", extra={"path": str(self.token_file.parent)}
+            )
+            existing = {}
+            if self.token_file.exists():
+                try:
+                    with open(self.token_file, "r") as f:
+                        existing = json.load(f)
+                    self.logger.info("save_credentials: loaded existing file")
+                except Exception as load_err:
+                    self.logger.warning(
+                        "save_credentials: could not load existing file, using empty",
+                        extra={"error": str(load_err)},
+                    )
+            existing["api_key"] = api_key or existing.get("api_key", "")
+            existing["api_secret"] = api_secret or existing.get("api_secret", "")
+            existing["updated_at"] = datetime.now().isoformat()
+            if "access_token" not in existing:
+                existing["access_token"] = existing.get("token") or ""
+            if "user_id" not in existing:
+                existing["user_id"] = ""
+            if "user_name" not in existing:
+                existing["user_name"] = ""
+
+            with open(self.token_file, "w") as f:
+                json.dump(existing, f, indent=2)
+
+            self.token_data = existing
+            self.logger.info(
+                "save_credentials: saved successfully", extra={"token_file": str(self.token_file)}
+            )
+            return True
+        except Exception as e:
+            self.logger.error(
+                "save_credentials failed",
+                extra={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "token_file": str(self.token_file),
+                },
+                exc_info=True,
+            )
+            return False
+
     def start_watching(self, callback: Optional[Callable[[str], None]] = None):
         """
         Start watching token file for changes.

@@ -1,8 +1,32 @@
 # Auth Service Integration Guide
 
-Base URL: `http://localhost:8079` (dev) | `http://YOUR_HOST:8179` (prod)
+<!-- markdownlint-disable MD013 -->
+
+Base URL: `http://localhost:8079` (dev) | `http://203.57.85.72:8179` (prod)
 
 ## Endpoints
+
+### 0. GET /api/token/callback-url
+
+Get the callback URL to configure in Kite Connect app (Redirect URL at developers.kite.trade).
+
+**cURL:**
+
+```bash
+curl -s "http://203.57.85.72:8179/api/token/callback-url" | jq .
+```
+
+**Response 200:**
+
+```json
+{
+  "callback_url": "http://203.57.85.72:8179/api/auth/callback",
+  "configured": true,
+  "message": null
+}
+```
+
+When `configured` is false, add api_key and api_secret to the token file on the server. See [token-flow-setup.md](token-flow-setup.md).
 
 ### 1. GET /api/auth/login-url
 
