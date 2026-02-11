@@ -33,6 +33,8 @@ TEST_BASE_URL=http://203.57.85.72:8179 \
 
 ### Token flow (prod)
 
+Token saved to `~/.kite-services/kite_token.json` (survives git pull).
+
 1. Get login URL: `curl -s http://203.57.85.72:8179/api/auth/login-url | jq .`
 2. Open URL in browser, log in, copy `request_token` from redirect.
 3. Exchange:

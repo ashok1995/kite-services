@@ -25,7 +25,8 @@ KITE_RECONNECT_INTERVAL=30              # Seconds between reconnection attempts
 KITE_MAX_RECONNECT_ATTEMPTS=5           # Max reconnection attempts
 KITE_TICK_MODE=full                     # full | quote | ltp
 KITE_SUBSCRIPTION_MODE=mode_quote       # WebSocket subscription mode
-KITE_CREDENTIALS_FILE=access_token.json # Token storage file
+KITE_CREDENTIALS_FILE=access_token.json # Legacy token storage file
+KITE_TOKEN_FILE=~/.kite-services/kite_token.json  # Outside project; survives git pull
 ```
 
 ### Yahoo Finance Configuration
@@ -146,31 +147,25 @@ RATE_LIMIT_WINDOW=60                    # Time window in seconds
 
 ## Configuration Files
 
-### .env.example
+### envs/ folder
 
-Template for environment variables:
+Single source for all environment config. No other env files.
 
-```bash
-# Kite Connect API Credentials
-KITE_API_KEY=your_api_key
-KITE_API_SECRET=your_secret  
-KITE_ACCESS_TOKEN=your_token
+| File | Port | Use |
+|------|------|-----|
+| `envs/development.env` | 8079 | Local development |
+| `envs/staging.env` | 8279 | Local staging |
+| `envs/production.env` | 8179 | Production (VM) |
 
-# Service Configuration
-ENVIRONMENT=development
-DEBUG=True
-SERVICE_PORT=8079
-LOG_LEVEL=INFO
-```
-
-### Creating .env File
+Settings loads `envs/{ENVIRONMENT}.env` based on `ENVIRONMENT` (default: development).
 
 ```bash
-# Copy example file
-cp .env.example .env
+# Edit env for your environment (service config only)
+vim envs/development.env
 
-# Edit with your credentials
-vim .env  # or nano, code, etc.
+# Kite credentials go in ~/.kite-services/kite_token.json (not env)
+cp kite_token.json.example ~/.kite-services/kite_token.json
+# Edit with api_key, api_secret; access_token added after login
 ```
 
 ---
@@ -225,40 +220,30 @@ assert settings.service.port >= 1024  # Validated by Pydantic
 
 ## Environment-Specific Configuration
 
-### Development (.env)
+### Development (envs/development.env)
 
 ```bash
 ENVIRONMENT=development
-DEBUG=True
 SERVICE_PORT=8079
-LOG_LEVEL=DEBUG
-DATABASE_URL=sqlite:///data/kite_services.db
+DEBUG=True
 ```
 
-### Production (.env.prod)
+### Staging (envs/staging.env)
+
+```bash
+ENVIRONMENT=staging
+SERVICE_PORT=8279
+```
+
+### Production (envs/production.env)
 
 ```bash
 ENVIRONMENT=production
-DEBUG=False
 SERVICE_PORT=8179
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-DATABASE_URL=postgresql://user:pass@localhost/kite_services
-CORS_ORIGINS=https://yourdomain.com
+DEBUG=false
 ```
 
-### Docker Configuration
-
-In `docker-compose.yml`:
-
-```yaml
-environment:
-  - ENVIRONMENT=production
-  - SERVICE_PORT=8179
-  - LOG_LEVEL=INFO
-  - KITE_API_KEY=${KITE_API_KEY}
-  - KITE_ACCESS_TOKEN=${KITE_ACCESS_TOKEN}
-```
+Docker Compose uses `env_file: envs/production.env`.
 
 ---
 
@@ -454,14 +439,10 @@ REDIS_DB=0
 
 ## Security Considerations
 
-### 1. Never Commit .env Files
+### 1. Env Files
 
-```bash
-# In .gitignore
-.env
-.env.*
-!.env.example
-```
+`envs/*.env` files are committed as templates.
+Edit with real credentials locally; avoid committing secrets.
 
 ### 2. Use Secret Management in Production
 
@@ -477,8 +458,8 @@ REDIS_DB=0
 ### 4. Restrict Access
 
 ```bash
-# Make .env readable only by owner
-chmod 600 .env
+# Restrict env file (if containing secrets)
+chmod 600 envs/development.env
 ```
 
 ---

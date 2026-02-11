@@ -8,7 +8,7 @@ Consolidates functionality from 60+ endpoints into 8 focused endpoints.
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -93,6 +93,10 @@ class AuthStatusResponse(BaseModel):
 
     status: AuthStatus
     authenticated: bool
+    token_valid: bool = Field(
+        default=False,
+        description="True only when token verified via Kite API (profile call)",
+    )
     user_id: Optional[str] = None
     user_name: Optional[str] = None
     broker: Optional[str] = None

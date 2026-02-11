@@ -1,6 +1,8 @@
 {
-  "access_token": "your_access_token_here",
+  "api_key": "your_kite_api_key_here",
+  "api_secret": "your_kite_api_secret_here",
+  "access_token": "your_access_token_after_login",
   "user_id": "AB1234",
   "user_name": "Your Name",
-  "updated_at": "2026-02-08T12:00:00"
+  "updated_at": "2026-02-11T12:00:00"
 }

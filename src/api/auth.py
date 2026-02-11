@@ -11,7 +11,6 @@ Endpoints:
 
 import logging
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from kiteconnect.exceptions import KiteException, TokenException
@@ -134,10 +133,9 @@ async def authenticate(request: AuthRequest):
 @router.put("/auth/token", response_model=AuthResponse)
 async def update_token(request: UpdateTokenRequest):
     """
-    Update access token in token file.
+    Update access token in configured token file (e.g. ~/.kite-services/kite_token.json).
 
-    This endpoint allows updating the access token without restarting the service.
-    The token is saved to kite_token.json and automatically reloaded by the service.
+    Saves token outside project so it survives git pull. Automatically reloaded by service.
     """
     try:
         service_manager = await get_service_manager()
@@ -197,46 +195,51 @@ async def get_auth_status():
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
 
-        # Check if we have credentials configured
-        if not kite_client.kite_config.api_key or not kite_client.kite_config.api_secret:
+        # Check if we have credentials configured (api_key from token file)
+        if not kite_client.kite_config.api_key:
             return AuthStatusResponse(
                 status=AuthStatus.NOT_CONFIGURED,
                 authenticated=False,
-                message="Kite credentials not configured",
+                token_valid=False,
+                message="Kite credentials not configured (create ~/.kite-services/kite_token.json)",
             )
 
         # Check if we have an access token
         access_token = await kite_client.get_access_token()
         if not access_token:
             return AuthStatusResponse(
-                status=AuthStatus.INVALID, authenticated=False, message="No access token available"
+                status=AuthStatus.INVALID,
+                authenticated=False,
+                token_valid=False,
+                message="No access token available",
             )
 
-        # Test the token by getting profile
+        # Verify token via Kite API - only return valid when profile call succeeds
         try:
             profile = await kite_client.get_profile()
             if profile:
                 return AuthStatusResponse(
                     status=AuthStatus.AUTHENTICATED,
                     authenticated=True,
+                    token_valid=True,
                     user_id=profile.get("user_id"),
                     user_name=profile.get("user_name"),
                     broker=profile.get("broker"),
-                    message="Token is valid and active",
+                    message="Token verified via Kite API (profile)",
                 )
-            else:
-                return AuthStatusResponse(
-                    status=AuthStatus.INVALID,
-                    authenticated=False,
-                    message="Invalid or expired token",
-                )
-
+            return AuthStatusResponse(
+                status=AuthStatus.INVALID,
+                authenticated=False,
+                token_valid=False,
+                message="Invalid or expired token",
+            )
         except Exception as e:
             logger.warning(f"Token validation failed: {str(e)}")
             return AuthStatusResponse(
                 status=AuthStatus.EXPIRED,
                 authenticated=False,
-                message=f"Token validation failed: {str(e)}",
+                token_valid=False,
+                message=f"Token verification failed: {str(e)}",
             )
 
     except Exception as e:
@@ -244,5 +247,6 @@ async def get_auth_status():
         return AuthStatusResponse(
             status=AuthStatus.INVALID,
             authenticated=False,
+            token_valid=False,
             message=f"Auth status check failed: {str(e)}",
         )

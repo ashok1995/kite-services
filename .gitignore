@@ -38,12 +38,14 @@ ENV/
 *~
 .DS_Store
 
-# Environment variables
+# Environment (only envs/ is used; committed as templates)
 .env
 .env.local
-.env.*.local
+.env.*
 *.env
-!config/production.env.example
+!envs/development.env
+!envs/staging.env
+!envs/production.env
 
 # Logs
 logs/

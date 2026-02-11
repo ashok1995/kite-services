@@ -1,8 +1,7 @@
 #!/bin/bash
-# Run staging locally on port 8279
-# Use this to test changes before deploying to prod on VM
-
+# Run staging locally on port 8279 (uses envs/staging.env)
 set -e
 cd "$(dirname "$0")/.."
 echo "🚀 Starting staging (port 8279)..."
-ENVIRONMENT=staging SERVICE_PORT=8279 poetry run python src/main.py
+export ENVIRONMENT=staging
+poetry run python src/main.py

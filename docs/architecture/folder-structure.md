@@ -122,7 +122,7 @@ kite-services/
 ├── debug/                        # Debug artifacts
 │   └── (git-ignored)
 │
-├── .env.example                  # Environment template
+├── envs/                         # Environment config (dev, staging, prod only)
 ├── .gitignore                    # Git ignore rules
 ├── requirements.txt              # Python dependencies
 ├── Dockerfile                    # Production Docker image
@@ -258,7 +258,7 @@ kite-services/
 
 ### Configuration
 
-- **Environment**: `.env.example`, `.env` (git-ignored)
+- **Environment**: `envs/development.env`, `envs/staging.env`, `envs/production.env`
 - **Docker**: `Dockerfile`, `docker-compose.yml`
 
 ## Import Conventions

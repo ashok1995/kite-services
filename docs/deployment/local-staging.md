@@ -13,9 +13,12 @@ Test changes here before deploying to prod on VM.
 
 ## Run staging
 
+Uses `envs/staging.env` automatically when `ENVIRONMENT=staging`.
+
 ```bash
 git pull origin main
-ENVIRONMENT=staging SERVICE_PORT=8279 poetry run python src/main.py
+./scripts/run-staging.sh
+# or: ENVIRONMENT=staging poetry run python src/main.py
 ```
 
 Or use the script:
@@ -35,7 +38,10 @@ TEST_BASE_URL=http://localhost:8279 pytest tests/e2e/test_prod_endpoints.py -v -
 ```bash
 curl -s http://localhost:8279/health | jq .
 curl -s http://localhost:8279/api/auth/login-url | jq .
+curl -s http://localhost:8279/api/auth/status | jq .  # token_valid when verified
 ```
+
+Token saved to `~/.kite-services/kite_token.json` (survives git pull).
 
 ## Workflow
 

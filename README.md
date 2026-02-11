@@ -73,7 +73,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 ### Environment Variables
 
-See `config/production.env.example` for all configuration options.
+See `envs/development.env`, `envs/staging.env`, `envs/production.env` for configuration.
 
 Key variables:
 
