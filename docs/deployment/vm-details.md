@@ -33,11 +33,14 @@ TEST_BASE_URL=http://203.57.85.72:8179 \
 
 ### Token flow (prod)
 
-Token saved to `~/.kite-services/kite_token.json` (survives git pull).
+Token file created on first run at `kite-credentials/kite_token.json` (no file transfer).
+Deploy via `git pull` only; add credentials via SSH edit.
 
-1. Get login URL: `curl -s http://203.57.85.72:8179/api/auth/login-url | jq .`
-2. Open URL in browser, log in, copy `request_token` from redirect.
-3. Exchange:
+1. After deploy, SSH and add api_key, api_secret:
+   `nano /opt/kite-services/kite-credentials/kite_token.json`
+2. Get login URL: `curl -s http://203.57.85.72:8179/api/auth/login-url | jq .`
+3. Open URL in browser, log in, copy `request_token` from redirect.
+4. Exchange:
 
    ```bash
    curl -X POST http://203.57.85.72:8179/api/auth/login \
@@ -45,7 +48,7 @@ Token saved to `~/.kite-services/kite_token.json` (survives git pull).
      -d '{"request_token":"<TOKEN>"}' | jq .
    ```
 
-4. Verify: `curl -s http://203.57.85.72:8179/api/auth/status | jq .`
+5. Verify: `curl -s http://203.57.85.72:8179/api/auth/status | jq .`
 
 ### Health check
 

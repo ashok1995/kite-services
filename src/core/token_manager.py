@@ -68,10 +68,28 @@ class TokenManager:
         self.observer: Optional[Observer] = None
         self.callbacks: list[Callable[[str], None]] = []
 
-        # Ensure token file directory exists
+        # Ensure directory exists; create token file with template if not present
         self.token_file.parent.mkdir(parents=True, exist_ok=True)
-
+        if not self.token_file.exists():
+            self._create_template_token_file()
         self.logger.info(f"Token Manager initialized with file: {self.token_file}")
+
+    def _create_template_token_file(self) -> None:
+        """Create token file with empty template when not present (no file transfer)."""
+        template = {
+            "api_key": "",
+            "api_secret": "",
+            "access_token": "",
+            "user_id": "",
+            "user_name": "",
+            "updated_at": datetime.now().isoformat(),
+        }
+        try:
+            with open(self.token_file, "w") as f:
+                json.dump(template, f, indent=2)
+            self.logger.info(f"Created token template at {self.token_file}")
+        except Exception as e:
+            self.logger.error(f"Failed to create token template: {e}", exc_info=True)
 
     def load_token(self) -> Optional[str]:
         """

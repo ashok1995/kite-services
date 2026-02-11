@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Token file auto-create**: When missing, create template at `kite-credentials/kite_token.json`. No SCP; add api_key/api_secret via SSH edit after deploy.
+- **Docker prod**: Mount `./kite-credentials` → `/root/.kite-services` for token persistence.
 - **Kite credentials** in token file only — api_key, api_secret, access_token in `~/.kite-services/kite_token.json`, removed from env files.
 - **Env config**: All env in `envs/` only. Removed `.env.example`, `config/production.env`. Settings loads `envs/{ENVIRONMENT}.env`.
 - Token storage: default to `~/.kite-services/kite_token.json`; no longer writes to project `access_token.json` or `.env`

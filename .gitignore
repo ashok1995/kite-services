@@ -62,6 +62,9 @@ data/
 debug/
 *.pid
 
+# Kite credentials (created if missing; add api_key, api_secret via SSH edit)
+kite-credentials/
+
 # Access tokens (NEVER commit)
 src/access_token.json
 access_token.json

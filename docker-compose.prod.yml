@@ -16,6 +16,7 @@ services:
       - ./logs:/app/logs
       - kite_data:/app/data
       - ./src:/app/src
+      - ./kite-credentials:/root/.kite-services
     restart: unless-stopped
     depends_on:
       - redis
