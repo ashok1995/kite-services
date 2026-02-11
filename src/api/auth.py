@@ -12,7 +12,8 @@ Endpoints:
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from kiteconnect.exceptions import KiteException, TokenException
 
 from config.settings import get_settings
@@ -29,6 +30,90 @@ from models.unified_api_models import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+@router.get("/token/callback-url")
+async def get_callback_url(request: Request):
+    """
+    Get callback URL for Kite app Redirect URL at developers.kite.trade.
+    """
+    settings = get_settings()
+    base = (getattr(settings.service, "callback_base_url", None) or "").strip() or str(
+        request.base_url
+    ).rstrip("/")
+    api_key_configured = False
+    try:
+        sm = await get_service_manager()
+        api_key_configured = bool(sm.kite_client.kite_config.api_key)
+    except Exception:
+        pass
+    callback_url = f"{base}/api/auth/callback"
+    return {
+        "callback_url": callback_url,
+        "configured": api_key_configured,
+        "message": (
+            "Configure in Kite app. Add api_key/api_secret to token file if not done."
+            if not api_key_configured
+            else None
+        ),
+    }
+
+
+@router.get(
+    "/auth/callback",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def auth_callback(
+    request_token: str | None = Query(None),
+    status: str | None = Query(None),
+):
+    """
+    Kite OAuth callback. Kite redirects here after login with request_token.
+
+    Set this URL (e.g. http://203.57.85.72:8179/api/auth/callback) as
+    Redirect URL in your Kite Connect app at developers.kite.trade.
+    """
+    if not request_token:
+        return _callback_html(
+            error="No request_token in URL. Ensure Kite app Redirect URL matches this endpoint.",
+        )
+    status_ok = (status or "").lower() == "success"
+    return _callback_html(
+        request_token=request_token,
+        status_ok=status_ok,
+    )
+
+
+def _callback_html(
+    request_token: str | None = None,
+    status_ok: bool = True,
+    error: str | None = None,
+) -> str:
+    """Return HTML page for auth callback."""
+    if error:
+        return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Kite Callback</title></head>
+<body style="font-family:sans-serif;padding:40px;max-width:600px;margin:0 auto;">
+<h2>Kite OAuth Callback</h2>
+<p style="color:#c00;">{error}</p>
+<p>Configure the Redirect URL in your <a href="https://developers.kite.trade">Kite Connect app</a> to match this page's URL.</p>
+</body></html>"""
+    copy_instruction = (
+        "Copy the request token below and paste it in your token flow UI, then use POST /api/auth/login to exchange for access token."
+        if request_token
+        else ""
+    )
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Kite Callback</title></head>
+<body style="font-family:sans-serif;padding:40px;max-width:600px;margin:0 auto;">
+<h2>Kite Login Successful</h2>
+<p>Request token received. {copy_instruction}</p>
+<div style="background:#f0f0f0;padding:12px;border-radius:6px;word-break:break-all;">
+<strong>request_token:</strong><br><code id="tok">{request_token or ''}</code>
+</div>
+<button onclick="navigator.clipboard.writeText(document.getElementById('tok').textContent)">Copy to clipboard</button>
+</body></html>"""
 
 
 @router.get("/auth/login-url", response_model=LoginUrlResponse)

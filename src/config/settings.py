@@ -171,6 +171,9 @@ class ServiceConfig(BaseSettings):
     version: str = Field("1.0.0", env="SERVICE_VERSION")
     host: str = Field("0.0.0.0", env="SERVICE_HOST")
     port: int = Field(8079, env="SERVICE_PORT")  # DEV on 8079, PROD on 8179
+    callback_base_url: Optional[str] = Field(
+        None, env="KITE_CALLBACK_BASE_URL"
+    )  # e.g. http://203.57.85.72:8179 for prod
     workers: int = Field(1, env="SERVICE_WORKERS")
 
     model_config = {"extra": "ignore"}
