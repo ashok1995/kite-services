@@ -7,7 +7,73 @@
 
 ## Authentication
 
-Currently uses Kite Connect OAuth tokens configured via environment variables. API key authentication planned for future.
+Kite Connect OAuth token flow. Get access token in 3 steps:
+
+### Token Flow
+
+1. **GET /api/auth/login-url** – Get Kite login URL  
+2. Open URL in browser, log in, copy `request_token` from redirect URL  
+3. **POST /api/auth/login** with `request_token` – Receive `access_token`
+
+#### GET /api/auth/login-url
+
+Returns Kite Connect login URL.
+
+**Response**: 200 OK
+
+```json
+{
+  "login_url": "https://kite.zerodha.com/connect/login?api_key=...",
+  "message": "Open URL, login, copy request_token from redirect"
+}
+```
+
+#### POST /api/auth/login
+
+Generate access token from request token.
+
+**Request Body**:
+
+```json
+{
+  "request_token": "from_redirect_url",
+  "api_secret": "optional_if_in_env"
+}
+```
+
+**Response**: 200 OK
+
+```json
+{
+  "status": "authenticated",
+  "access_token": "...",
+  "user_id": "AB1234",
+  "user_name": "User Name",
+  "message": "Authentication successful"
+}
+```
+
+#### GET /api/auth/status
+
+Check current auth status.
+
+**Response**: 200 OK
+
+```json
+{
+  "status": "authenticated",
+  "authenticated": true,
+  "user_id": "AB1234",
+  "user_name": "User Name",
+  "message": "Token is valid and active"
+}
+```
+
+#### PUT /api/auth/token
+
+Update access token (for daily refresh without restart).
+
+**Query params**: `access_token` (required), `user_id` (optional)
 
 ---
 
@@ -16,9 +82,11 @@ Currently uses Kite Connect OAuth tokens configured via environment variables. A
 ### Health & Status
 
 #### GET /health
+
 Health check endpoint
 
 **Response**: 200 OK
+
 ```json
 {
   "status": "healthy",
@@ -33,9 +101,11 @@ Health check endpoint
 ```
 
 #### GET /
+
 Service information
 
 **Response**: 200 OK
+
 ```json
 {
   "service": "kite-services",
@@ -52,9 +122,11 @@ Service information
 ## Stock Data API
 
 ### POST /api/stock-data/real-time
+
 Get real-time stock quotes
 
 **Request Body**:
+
 ```json
 {
   "symbols": ["RELIANCE", "TCS"],
@@ -63,6 +135,7 @@ Get real-time stock quotes
 ```
 
 **Response**: 200 OK
+
 ```json
 {
   "stocks": [
@@ -83,9 +156,11 @@ Get real-time stock quotes
 ```
 
 ### POST /api/stock-data/historical
+
 Get historical candlestick data
 
 **Request Body**:
+
 ```json
 {
   "symbol": "RELIANCE",
@@ -96,6 +171,7 @@ Get historical candlestick data
 ```
 
 **Response**: 200 OK
+
 ```json
 {
   "symbol": "RELIANCE",
@@ -117,6 +193,7 @@ Get historical candlestick data
 ```
 
 ### GET /api/stock-data/examples
+
 API usage examples
 
 ---
@@ -124,9 +201,11 @@ API usage examples
 ## Market Context API
 
 ### GET /api/market-context-data/quick-context
+
 Quick market intelligence (no stock recommendations)
 
 **Response**: 200 OK
+
 ```json
 {
   "market_regime": "bullish",
@@ -140,9 +219,11 @@ Quick market intelligence (no stock recommendations)
 ```
 
 ### GET /api/market-context/full
+
 Comprehensive market context
 
 **Response**: 200 OK
+
 ```json
 {
   "market_regime": "bullish",
@@ -181,9 +262,11 @@ Comprehensive market context
 ## Token Management API
 
 ### POST /api/token/submit
+
 Submit request token for access token generation
 
 **Request Body**:
+
 ```json
 {
   "request_token": "abc123xyz"
@@ -191,6 +274,7 @@ Submit request token for access token generation
 ```
 
 **Response**: 200 OK
+
 ```json
 {
   "status": "success",
@@ -201,9 +285,11 @@ Submit request token for access token generation
 ```
 
 ### GET /api/token/status
+
 Check token status and validity
 
 **Response**: 200 OK
+
 ```json
 {
   "status": "valid",
@@ -217,9 +303,11 @@ Check token status and validity
 ## WebSocket API
 
 ### WS /ws/market-data
+
 Real-time market data stream
 
 **Subscribe Message**:
+
 ```json
 {
   "type": "subscribe",
@@ -228,6 +316,7 @@ Real-time market data stream
 ```
 
 **Data Message**:
+
 ```json
 {
   "type": "tick",
@@ -243,6 +332,7 @@ Real-time market data stream
 ## Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "error": "ValidationError",
@@ -252,6 +342,7 @@ Real-time market data stream
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "error": "Unauthorized",
@@ -260,6 +351,7 @@ Real-time market data stream
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "error": "Internal server error",
@@ -283,4 +375,3 @@ Real-time market data stream
 - **ReDoc**: `/redoc` (if enabled)
 
 For complete interactive API documentation with try-it-out functionality, visit the `/docs` endpoint.
-

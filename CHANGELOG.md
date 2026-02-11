@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Production deployment (VM)**: Resolved SQLite "unable to open database file" crash loop
+  - Use `DATABASE_URL` from `os.environ` (pydantic-settings nested models don't pass env in Docker)
+  - Use `SERVICE_PORT` and `REDIS_HOST` from env for correct Docker networking
+  - Added `*` to TrustedHostMiddleware for external access
+  - Use `/tmp` for SQLite when `/app/data` has permission issues
+
 ### Added
+
 - ✅ Comprehensive test infrastructure in `/tests/` directory
   - Unit tests for models and services
   - Integration tests for API endpoints
@@ -31,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Proper `.env.example` at project root
 
 ### Changed
+
 - ✅ Reorganized file structure to comply with workspace rules
   - Moved test files from root to `/tests/` directory
   - Moved UI files to `/src/ui/` directory
@@ -42,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Improved import organization in `main.py`
 
 ### Removed
+
 - ✅ Redundant deployment scripts (consolidated to single `deploy.sh`)
 - ✅ Redundant startup scripts (using `main.py` as single entry point)
 - ✅ Duplicate Dockerfiles (5 removed, kept 2: production and dev)
@@ -82,12 +93,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `env.prod.example` (using single `.env.example`)
 
 ### Deprecated
+
 - ⚠️ `/api/market/legacy` routes (formerly `/api/market`)
   - File: `src/api/market_routes.py` (1281 LOC)
   - Use `market_context_routes.py` and `stock_data_routes.py` instead
   - Scheduled for removal after migration
 
 ### Fixed
+
 - ✅ File placement compliance with workspace rules
   - All tests now in `/tests/` directory
   - All documentation in `/docs/` directory
@@ -100,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Initial Release
 
 **Core Features:**
+
 - Real-time stock data API via Kite Connect
 - Market context and intelligence service
 - Global market data via Yahoo Finance
@@ -109,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production deployment ready
 
 **API Endpoints:**
+
 - `/health` - Health check
 - `/api/stock-data/*` - Stock data operations
 - `/api/market-context/*` - Market intelligence
@@ -117,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/ws/*` - WebSocket endpoints
 
 **Documentation:**
+
 - Complete API documentation
 - Kite Connect setup guide
 - Production deployment guide
@@ -132,6 +148,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 If you were using any of the following endpoints, please migrate:
 
 #### Market Sentiment → Market Context
+
 ```python
 # Old (Deleted)
 GET /api/market-sentiment
@@ -141,6 +158,7 @@ GET /api/market-context-data/quick-context
 ```
 
 #### Enhanced Market Context → Unified Market Context
+
 ```python
 # Old (Deleted)
 GET /api/v2/market-context
@@ -150,6 +168,7 @@ GET /api/market-context/full
 ```
 
 #### ML Market Intelligence → Market Intelligence
+
 ```python
 # Old (Deleted)
 GET /api/v3/market-intelligence
@@ -161,7 +180,9 @@ GET /api/intelligence/market-intelligence
 ### For Developers
 
 #### Test Files
+
 All tests moved to `/tests/`. Update your test runners:
+
 ```bash
 # Old
 python test_stock_data_service.py
@@ -171,6 +192,7 @@ pytest tests/integration/test_stock_data_service.py
 ```
 
 #### Import Paths
+
 If you were importing from deleted modules, use these alternatives:
 
 ```python
@@ -189,16 +211,20 @@ If you were importing from deleted modules, use these alternatives:
 ## Code Quality Improvements
 
 ### Files Refactored
+
 - None in this release (documented in refactoring plan)
 
 ### Files Scheduled for Refactoring
+
 See `/docs/refactoring-plan.md` for:
+
 - 4 files >1000 LOC
 - 5 files 700-1000 LOC
 - 8 files 500-700 LOC
 - 10+ files 300-500 LOC
 
 ### Test Coverage
+
 - Unit tests: 15+ test files
 - Integration tests: 3 test files
 - E2E tests: 1 test file
@@ -209,7 +235,9 @@ See `/docs/refactoring-plan.md` for:
 ## Breaking Changes
 
 ### Removed Endpoints
+
 The following endpoints were removed (never documented or in production):
+
 - All `/api/v2/*` endpoints
 - All `/api/v3/*` endpoints
 - `/api/market-sentiment`
@@ -218,6 +246,7 @@ The following endpoints were removed (never documented or in production):
 - `/api/intraday-trading/*` (use `/api/intraday` instead)
 
 ### File Relocations
+
 - Test files: Root → `/tests/`
 - UI files: Root → `/src/ui/`
 - Example files: Root → `/docs/examples/`
@@ -229,11 +258,13 @@ The following endpoints were removed (never documented or in production):
 ## Security
 
 ### Fixed
+
 - No hardcoded credentials in source code
 - Proper .gitignore for sensitive files
 - Database credentials via environment variables
 
 ### Added
+
 - Security best practices documentation
 - Environment variable validation
 
@@ -242,6 +273,7 @@ The following endpoints were removed (never documented or in production):
 ## Performance
 
 ### Improved
+
 - Removed unused code (~5000 LOC deleted)
 - Faster startup (fewer modules to load)
 - Reduced Docker image size (fewer dependencies)
@@ -253,7 +285,7 @@ The following endpoints were removed (never documented or in production):
 This release represents a major cleanup and reorganization of the codebase to comply with workspace rules and best practices. All functionality remains intact through the new, properly organized endpoints.
 
 For questions or issues, please refer to:
+
 - `/docs/README.md` - Documentation index
 - `/docs/architecture.md` - System architecture
 - `/docs/api.md` - API reference
-
