@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **envs/** — single folder for env config: `development.env`, `staging.env`, `production.env` (no .env.example or scattered .env)
+- **KITE_TOKEN_FILE** — store token outside project (`~/.kite-services/kite_token.json` by default) so it survives git pull
+- **token_valid** in GET `/api/auth/status` — true only when token verified via Kite API (profile call)
+- **Local staging** — staging runs strictly on this machine (port 8279). `scripts/run-staging.sh` and `docs/deployment/local-staging.md`. VM = prod only.
 - Master rule: no docs at root of `/docs/` except README.md; all docs in subfolders (`api/`, `architecture/`, `integration/`, `deployment/`, `development/`)
 - Integration docs: `docs/integration/INTEGRATION_GUIDE.md` (consolidated) and per-service guides
 - Request/response Pydantic models for all endpoints (master rule compliance):
@@ -20,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Kite credentials** in token file only — api_key, api_secret, access_token in `~/.kite-services/kite_token.json`, removed from env files.
+- **Env config**: All env in `envs/` only. Removed `.env.example`, `config/production.env`. Settings loads `envs/{ENVIRONMENT}.env`.
+- Token storage: default to `~/.kite-services/kite_token.json`; no longer writes to project `access_token.json` or `.env`
+- GET `/api/auth/status` verifies token via Kite API; returns `token_valid: true` only when profile call succeeds
 - PUT `/auth/token` now accepts JSON body instead of query params
 - POST `/analysis/stock` now accepts JSON body (`StockAnalysisRequest`) instead of query params
 - Refactored analysis_enhanced to use shared cache and helper modules
@@ -27,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `docker-compose.staging.yml` — staging is local-only, no VM staging.
 - Legacy docs: API_CONSOLIDATION_COMPLETE, CACHE_STRATEGY_DETAILED, CACHING_AUDIT_KITE_FIRST, CI_CD_PIPELINE, COMPLETE_STATUS, COMPLETE_TOKEN_FLOW, DATA_CONTRACT_V1, ENHANCED_MARKET_CONTEXT, GIT_SETUP, PRE_COMMIT_SETUP, PRE_PRODUCTION_TESTS, PRODUCTION_MONITORING, production-deployment, PROJECT_SUMMARY, QUICK_MONEY_OPPORTUNITIES, REAL_DATA_FEASIBILITY, refactoring-plan, SERVICE_ANALYSIS, stock-data-service, TEST_RELIABILITY, TOKEN_MANAGEMENT, TOKEN_STATUS_API, UNIFIED_API_GUIDE, V3_ML_MARKET_INTELLIGENCE_API_GUIDE, api-testing-guide, dev-server-curl-tests, endpoint-testing-results, market-context-*
 
 ### Fixed

@@ -47,10 +47,10 @@ cd /path/to/kite-services
 
 ```bash
 # Copy production environment template
-cp config/production.env .env
+# Use envs/prod.env (no copy needed)
 
 # Edit with your credentials
-nano .env  # or vim .env
+nano envs/production.env  # add KITE_API_KEY, KITE_API_SECRET
 ```
 
 **Minimum required configuration:**

@@ -36,7 +36,7 @@ https://your-domain.com/api/auth/callback
 
 ### **2. Set Environment Variables**
 
-Create `.env` file in project root:
+Add credentials to `envs/dev.env`:
 
 ```bash
 KITE_API_KEY=your_api_key_here
@@ -218,7 +218,7 @@ curl "http://localhost:8079/api/market/data?symbols=RELIANCE&scope=basic"
 
 #### **2. "Invalid API credentials"**
 
-- **Solution:** Verify `KITE_API_KEY` and `KITE_API_SECRET` in `.env` file
+- **Solution:** Verify `KITE_API_KEY` and `KITE_API_SECRET` in `envs/dev.env`
 - **Check:** Copy exactly from Kite Connect app dashboard
 
 #### **3. "Token expired"**

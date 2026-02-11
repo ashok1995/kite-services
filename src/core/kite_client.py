@@ -7,7 +7,6 @@ Provides unified interface for market data, orders, and portfolio management.
 """
 
 import asyncio
-import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -30,8 +29,9 @@ class KiteClient:
         # Kite configuration
         self.kite_config = self.settings.kite
 
-        # Token manager for file-based token updates
-        self.token_manager = TokenManager()
+        # Token manager - uses KITE_TOKEN_FILE (default ~/.kite-services/kite_token.json)
+        token_path = Path(self.settings.kite.token_file).expanduser()
+        self.token_manager = TokenManager(token_file=token_path)
 
         # Kite instances
         self.kite: Optional[KiteConnect] = None
@@ -332,7 +332,7 @@ class KiteClient:
                 f"✅ Access token generated successfully for user: {data.get('user_id')}"
             )
 
-            # Save to token file (for daily updates)
+            # Save to token file (preserves api_key/api_secret, adds access_token)
             self.token_manager.save_token(
                 access_token=access_token,
                 user_id=data.get("user_id"),
@@ -343,47 +343,10 @@ class KiteClient:
                 exchanges=data.get("exchanges", []),
                 products=data.get("products", []),
                 order_types=data.get("order_types", []),
+                api_key=self.kite_config.api_key,
+                api_secret=api_secret,
             )
-
-            # Also save to legacy access_token.json for backward compatibility
-            import json
-
-            token_data = {
-                "access_token": access_token,
-                "user_id": data.get("user_id"),
-                "user_name": data.get("user_name"),
-                "user_type": data.get("user_type"),
-                "email": data.get("email"),
-                "broker": data.get("broker"),
-                "exchanges": data.get("exchanges", []),
-                "products": data.get("products", []),
-                "order_types": data.get("order_types", []),
-                "api_key": self.kite_config.api_key,
-                "api_secret": api_secret,
-                "request_token": request_token,
-                "generated_at": datetime.now().isoformat(),
-                "expires_at": (datetime.now() + timedelta(days=1)).isoformat(),
-                "status": "active",
-                "generated_by": "kite_services_api",
-            }
-
-            with open("access_token.json", "w") as f:
-                json.dump(token_data, f, indent=2)
-
-            # Also update .env file so next restart picks up the new token
-            try:
-                env_path = Path(__file__).parent.parent.parent / ".env"
-                if env_path.exists():
-                    env_content = env_path.read_text()
-                    env_content = re.sub(
-                        r"KITE_ACCESS_TOKEN=.*", f"KITE_ACCESS_TOKEN={access_token}", env_content
-                    )
-                    env_path.write_text(env_content)
-                    self.logger.info("✅ Token updated in .env file")
-            except Exception as env_err:
-                self.logger.warning(f"Could not update .env: {env_err}")
-
-            self.logger.info("✅ Token saved to access_token.json")
+            self.logger.info(f"✅ Token saved to {self.token_manager.token_file}")
 
             return access_token
 

@@ -1,6 +1,8 @@
 # Kite Services – Documentation
 
-**Start here for integration:** [integration/INTEGRATION_GUIDE.md](integration/INTEGRATION_GUIDE.md) – all endpoints and cURL examples.
+**Start here for integration:**
+[integration/INTEGRATION_GUIDE.md](integration/INTEGRATION_GUIDE.md)
+for endpoints and cURL examples.
 
 ---
 
@@ -20,5 +22,6 @@
 ## Base URLs
 
 - **Dev:** `http://localhost:8079`
+- **Staging (local):** `http://localhost:8279` — test before prod
 - **Prod:** `http://YOUR_HOST:8179`
 - **Swagger:** `/docs`

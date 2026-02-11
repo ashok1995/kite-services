@@ -39,6 +39,8 @@ class TestAuthTokenFlow:
         d = r.json()
         assert d.get("status") in ("authenticated", "expired", "invalid", "not_configured")
         assert "authenticated" in d
+        if "token_valid" in d and d.get("authenticated"):
+            assert d.get("token_valid") is True
 
     def test_login_url(self, base_url):
         r = httpx.get(f"{base_url}/api/auth/login-url", timeout=10)

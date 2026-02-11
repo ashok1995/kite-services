@@ -57,7 +57,7 @@ Generate access token from request token.
 
 #### GET /api/auth/status
 
-Check current auth status.
+Check current auth status. Verifies token via Kite API (profile call).
 
 **Response**: 200 OK
 
@@ -65,15 +65,16 @@ Check current auth status.
 {
   "status": "authenticated",
   "authenticated": true,
+  "token_valid": true,
   "user_id": "AB1234",
   "user_name": "User Name",
-  "message": "Token is valid and active"
+  "message": "Token verified via Kite API (profile)"
 }
 ```
 
 #### PUT /api/auth/token
 
-Update access token (for daily refresh without restart).
+Update access token (saved to KITE_TOKEN_FILE; survives git pull).
 
 **Request Body**:
 

@@ -11,7 +11,7 @@ services:
       - DEBUG=false
       - LOG_LEVEL=INFO
     env_file:
-      - config/production.env
+      - envs/production.env
     volumes:
       - ./logs:/app/logs
       - kite_data:/app/data
