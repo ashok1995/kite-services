@@ -198,7 +198,7 @@ class TestProdAnalysis:
     def test_analysis_stock(self, base_url):
         r = httpx.post(
             f"{base_url}/api/analysis/stock",
-            params={
+            json={
                 "symbol": "NSE:RELIANCE",
                 "analysis_type": "comprehensive",
                 "time_horizon": "intraday",

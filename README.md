@@ -39,6 +39,7 @@ docker compose -f docker-compose.prod.yml up -d
 ## API Endpoints
 
 ### Core
+
 - `GET /` - Service information
 - `GET /health` - Health check
 - `GET /health?detailed=true` - Detailed health with metrics
@@ -46,22 +47,26 @@ docker compose -f docker-compose.prod.yml up -d
 - `GET /docs` - API documentation (dev only)
 
 ### Authentication
+
 - `POST /api/auth/login` - Login with request token
 - `GET /api/auth/status` - Authentication status
 
 ### Market Data
+
 - `GET /api/market/status` - Market status
 - `GET /api/market/instruments` - Available instruments
 - `POST /api/market/quotes` - Get quotes
 - `POST /api/market/data` - Universal market data
 
 ### Analysis
+
 - `POST /api/analysis/context` - Market context
 - `POST /api/analysis/stock` - Stock analysis
 - `POST /api/analysis/context/enhanced` - Enhanced context
 - `POST /api/opportunities/quick` - Quick opportunities
 
 ### Trading
+
 - `GET /api/trading/status` - Trading status (positions, holdings)
 
 ## Configuration
@@ -71,6 +76,7 @@ docker compose -f docker-compose.prod.yml up -d
 See `config/production.env.example` for all configuration options.
 
 Key variables:
+
 - `KITE_API_KEY` - Kite Connect API key
 - `KITE_ACCESS_TOKEN` - Kite Connect access token
 - `SERVICE_PORT` - Server port (8079=dev, 8179=prod)
@@ -174,6 +180,7 @@ See [Production Monitoring Guide](docs/PRODUCTION_MONITORING.md) for details.
 Production deployments are automated via GitHub Actions when code is pushed to `main` branch.
 
 Manual deployment:
+
 ```bash
 ssh root@203.57.85.72
 cd /opt/kite-services
@@ -183,16 +190,15 @@ docker compose -f docker-compose.prod.yml up -d
 
 ### Environment URLs
 
-- **Development**: http://localhost:8079
-- **Production**: http://203.57.85.72:8179
+- **Development**: <http://localhost:8079>
+- **Production**: <http://203.57.85.72:8179>
 
 ## Documentation
 
-- [API Documentation](docs/api.md)
-- [Architecture](docs/architecture.md)
-- [CI/CD Pipeline](docs/CI_CD_PIPELINE.md)
-- [Production Monitoring](docs/PRODUCTION_MONITORING.md)
-- [Git Setup](docs/GIT_SETUP.md)
+- [Integration Guide](docs/integration/INTEGRATION_GUIDE.md) – endpoints and cURL examples
+- [API Reference](docs/api/api-reference.md)
+- [Architecture](docs/architecture/architecture.md)
+- [Deployment](docs/deployment/production.md)
 
 ## License
 
