@@ -41,6 +41,7 @@ Kite Services is a production-grade stock market data and intelligence service b
 ## Key Components
 
 ### 1. API Layer (`src/api/`)
+
 - **Responsibility**: HTTP endpoints, request/response handling
 - **Pattern**: Thin controllers - delegate to services
 - **Key Files**:
@@ -51,6 +52,7 @@ Kite Services is a production-grade stock market data and intelligence service b
   - `websocket_routes.py` - Real-time WebSocket streaming
 
 ### 2. Service Layer (`src/services/`)
+
 - **Responsibility**: Business logic, data orchestration
 - **Pattern**: Stateless services with dependency injection
 - **Key Services**:
@@ -61,6 +63,7 @@ Kite Services is a production-grade stock market data and intelligence service b
   - `KiteAuthService` - Kite Connect authentication
 
 ### 3. Core Layer (`src/core/`)
+
 - **Responsibility**: Low-level utilities, clients, infrastructure
 - **Key Components**:
   - `KiteClient` - Kite Connect API client
@@ -69,6 +72,7 @@ Kite Services is a production-grade stock market data and intelligence service b
   - `logging_config.py` - Centralized logging
 
 ### 4. Models Layer (`src/models/`)
+
 - **Responsibility**: Data contracts, validation
 - **Pattern**: Pydantic models for type safety
 - **Key Models**:
@@ -77,6 +81,7 @@ Kite Services is a production-grade stock market data and intelligence service b
   - `consolidated_models.py` - Consolidated response models
 
 ### 5. Configuration (`src/config/`)
+
 - **Responsibility**: Environment-based configuration
 - **Pattern**: Pydantic Settings with env var support
 - **Key Files**:
@@ -85,26 +90,31 @@ Kite Services is a production-grade stock market data and intelligence service b
 ## Design Principles
 
 ### 1. Separation of Concerns
+
 - **Routes**: Handle HTTP, validate input, return responses
 - **Services**: Implement business logic
 - **Core**: Provide infrastructure and utilities
 
 ### 2. Dependency Injection
+
 - Services receive dependencies via constructor
 - No global state or singletons (except configuration)
 - Easy to test and mock
 
 ### 3. Stateless Design
+
 - Services don't maintain state between requests
 - All state in database or external systems
 - Horizontally scalable
 
 ### 4. Clean Error Handling
+
 - Global exception handlers
 - Structured error responses
 - Comprehensive logging
 
 ### 5. Configuration-Driven
+
 - No hardcoded values
 - Environment-based configuration
 - Easy deployment across environments
@@ -148,11 +158,13 @@ Kite Services is a production-grade stock market data and intelligence service b
 ## Scalability Considerations
 
 ### Current Design
+
 - Single process (development)
 - In-memory caching
 - SQLite database
 
 ### Production Scaling
+
 - Multiple workers (Uvicorn)
 - Redis for caching and sessions
 - PostgreSQL for persistence
@@ -162,11 +174,13 @@ Kite Services is a production-grade stock market data and intelligence service b
 ## Security
 
 ### Authentication
+
 - Kite Connect OAuth flow
 - Token-based authentication
 - Secure credential storage
 
 ### API Security
+
 - CORS middleware
 - Rate limiting (configured)
 - Input validation (Pydantic)
@@ -175,12 +189,14 @@ Kite Services is a production-grade stock market data and intelligence service b
 ## Monitoring
 
 ### Logging
+
 - Structured JSON logs
 - Request/response logging
 - Error tracking
 - Performance metrics
 
 ### Health Checks
+
 - `/health` endpoint
 - Service status monitoring
 - Dependency health checks
@@ -188,11 +204,13 @@ Kite Services is a production-grade stock market data and intelligence service b
 ## Deployment
 
 ### Development
+
 ```bash
 python src/main.py
 ```
 
 ### Production (Docker)
+
 ```bash
 docker build -t kite-services .
 docker run -p 8179:8179 kite-services
@@ -206,4 +224,3 @@ docker run -p 8179:8179 kite-services
 4. **Monitoring**: Prometheus metrics
 5. **WebSocket**: Complete real-time streaming
 6. **Authentication**: JWT tokens, API keys
-

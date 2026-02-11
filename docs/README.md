@@ -1,30 +1,21 @@
 # Kite Services – Documentation
 
-## Integration (copy-paste ready)
+**Start here for integration:** [integration/INTEGRATION_GUIDE.md](integration/INTEGRATION_GUIDE.md) – all endpoints and cURL examples.
 
-| Guide | Purpose |
-|-------|---------|
-| **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** | Consolidated guide – all endpoints and cURL examples |
-| **[integration/](integration/)** | Per-service guides (auth, market data, analysis, trading) |
+---
 
-## Essential docs
+## Structure
 
-| Doc | Purpose |
-|-----|---------|
-| [api.md](api.md) | API reference |
-| [kite-connect-setup.md](kite-connect-setup.md) | Kite Connect auth setup |
-| [production-deployment.md](production-deployment.md) | Docker deployment |
-| [PRODUCTION_DEPLOYMENT_GUIDE.md](PRODUCTION_DEPLOYMENT_GUIDE.md) | Full deployment guide |
-| [TESTING_AND_DEPLOYMENT_WORKFLOW.md](TESTING_AND_DEPLOYMENT_WORKFLOW.md) | Branch strategy, deploy via git pull |
+| Folder | Purpose |
+|--------|---------|
+| **[integration/](integration/)** | Integration guides – primary for API consumers |
+| **[api/](api/)** | API reference, external APIs, data models |
+| **[architecture/](architecture/)** | System design, folder layout, services |
+| **[deployment/](deployment/)** | Production deployment, testing workflow |
+| **[development/](development/)** | Config, Kite Connect setup |
+| **[examples/](examples/)** | UI integration examples |
 
-## Reference
-
-| Doc | Purpose |
-|-----|---------|
-| [architecture.md](architecture.md) | System architecture |
-| [apis-used.md](apis-used.md) | External APIs consumed |
-| [config.md](config.md) | Configuration |
-| [folder-structure.md](folder-structure.md) | Project layout |
+---
 
 ## Base URLs
 

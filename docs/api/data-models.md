@@ -21,6 +21,7 @@ All data models use **Pydantic v2** for validation and serialization. This docum
 #### Enums
 
 **Exchange**
+
 ```python
 class Exchange(str, Enum):
     NSE = "NSE"  # National Stock Exchange
@@ -28,6 +29,7 @@ class Exchange(str, Enum):
 ```
 
 **Interval**
+
 ```python
 class Interval(str, Enum):
     MINUTE = "minute"
@@ -43,12 +45,14 @@ class Interval(str, Enum):
 #### Real-Time Data
 
 **RealTimeStockData**
+
 - Complete real-time stock information
 - Includes: price data, volume, order book, circuit limits
 - Uses `Decimal` for price precision
 - No analysis/intelligence - pure data
 
 **RealTimeRequest**
+
 ```python
 {
     "symbols": ["RELIANCE", "TCS"],  # 1-50 symbols
@@ -59,6 +63,7 @@ class Interval(str, Enum):
 ```
 
 **RealTimeResponse**
+
 ```python
 {
     "timestamp": "2024-10-13T...",
@@ -75,6 +80,7 @@ class Interval(str, Enum):
 #### Historical Data
 
 **Candle**
+
 ```python
 {
     "timestamp": "2024-01-01T...",
@@ -87,6 +93,7 @@ class Interval(str, Enum):
 ```
 
 **HistoricalStockData**
+
 - Contains list of candles
 - Metadata: symbol, exchange, interval
 - Date range: from_date, to_date
@@ -96,7 +103,9 @@ class Interval(str, Enum):
 ### 2. Market Context Models (`models/market_context_data_models.py`)
 
 #### QuickMarketContextResponse
+
 Fast market intelligence summary:
+
 ```python
 {
     "market_regime": "bullish" | "bearish" | "sideways" | "volatile",
@@ -110,22 +119,29 @@ Fast market intelligence summary:
 ```
 
 #### GlobalMarketData
+
 Global market indices:
+
 - S&P 500, Dow Jones, NASDAQ (US)
 - FTSE (UK), Nikkei (Japan), Hang Seng (HK)
 
 #### IndianMarketData
+
 Indian indices:
+
 - NIFTY 50, BANK NIFTY, SENSEX
 - Trend analysis, volatility
 
 #### VolatilityData
+
 - India VIX
 - VIX (US)
 - Fear & Greed Index
 
 #### SectorData
+
 Sector rotation analysis:
+
 - Leading sectors
 - Lagging sectors
 - Sector performance
@@ -135,6 +151,7 @@ Sector rotation analysis:
 ### 3. Consolidated Models (`models/consolidated_models.py`)
 
 #### DataScope
+
 ```python
 class DataScope(str, Enum):
     BASIC = "basic"          # Price + volume only
@@ -144,7 +161,9 @@ class DataScope(str, Enum):
 ```
 
 #### ConsolidatedStockData
+
 Multi-source aggregated data:
+
 - Kite Connect (real-time)
 - Yahoo Finance (fundamentals)
 - Market Context (intelligence)
@@ -154,6 +173,7 @@ Multi-source aggregated data:
 ### 4. Market Intelligence Models (`models/market_intelligence_models.py`)
 
 Market analysis and intelligence:
+
 - Market regime classification
 - Trend analysis
 - Sentiment scoring
@@ -164,6 +184,7 @@ Market analysis and intelligence:
 ### 5. Intraday Context Models (`models/intraday_context_models.py`)
 
 Intraday trading specific:
+
 - Intraday trends
 - Support/resistance levels
 - Momentum indicators
@@ -176,11 +197,13 @@ Intraday trading specific:
 ### Field Naming Conventions
 
 **Use**:
+
 - `snake_case` for field names
 - Descriptive names (e.g., `last_price`, not `lp`)
 - Consistent suffixes (`_percent`, `_ms`, `_count`)
 
 **Examples**:
+
 ```python
 ✅ last_price: Decimal
 ✅ change_percent: Decimal
@@ -195,6 +218,7 @@ Intraday trading specific:
 ### Type Usage
 
 **Decimals for Money/Prices**:
+
 ```python
 ✅ last_price: Decimal
 ✅ open_price: Decimal
@@ -202,6 +226,7 @@ Intraday trading specific:
 ```
 
 **Enums for Fixed Values**:
+
 ```python
 ✅ exchange: Exchange
 ✅ interval: Interval
@@ -209,6 +234,7 @@ Intraday trading specific:
 ```
 
 **Lists with Constraints**:
+
 ```python
 ✅ symbols: List[str] = Field(..., min_length=1, max_length=50)
 ❌ symbols: List[str]  # No limits
@@ -222,6 +248,7 @@ Intraday trading specific:
    - Use `default_factory` for mutable defaults
 
 2. **Field Constraints**:
+
    ```python
    volume: int = Field(..., ge=0)  # >= 0
    symbols: List[str] = Field(..., min_length=1, max_length=50)
@@ -239,16 +266,19 @@ Intraday trading specific:
 ### Fixed Deprecations
 
 **Before (Pydantic v1)**:
+
 ```python
 symbols: List[str] = Field(..., min_items=1, max_items=50)
 ```
 
 **After (Pydantic v2)**:
+
 ```python
 symbols: List[str] = Field(..., min_length=1, max_length=50)
 ```
 
-### All model files updated:
+### All model files updated
+
 - ✅ `data_models.py`
 - ⚠️ `market_models.py` - needs update
 - ⚠️ `intraday_context_models.py` - needs update
@@ -260,9 +290,11 @@ symbols: List[str] = Field(..., min_length=1, max_length=50)
 ## Testing Data Models
 
 ### Unit Tests Location
+
 `/tests/unit/test_models.py`
 
 ### Test Coverage
+
 - ✅ RealTimeRequest validation
 - ✅ RealTimeStockData creation
 - ✅ Candle validation
@@ -271,6 +303,7 @@ symbols: List[str] = Field(..., min_length=1, max_length=50)
 - ⚠️ Response models (needs field updates)
 
 ### Running Tests
+
 ```bash
 source venv/bin/activate
 pytest tests/unit/test_models.py -v
@@ -283,6 +316,7 @@ pytest tests/unit/test_models.py -v
 ## Model Usage Examples
 
 ### Creating Request
+
 ```python
 from models.data_models import RealTimeRequest, Exchange
 
@@ -293,6 +327,7 @@ request = RealTimeRequest(
 ```
 
 ### Validating Response
+
 ```python
 from models.data_models import RealTimeResponse
 
@@ -308,6 +343,7 @@ response = RealTimeResponse(
 ```
 
 ### JSON Serialization
+
 ```python
 # To JSON
 json_data = response.model_dump()
@@ -339,12 +375,14 @@ RealTimeResponse
 ## Future Enhancements
 
 ### Planned Models
+
 1. **OrderModels** - Order placement/tracking
 2. **PortfolioModels** - Portfolio management
 3. **AlertModels** - Price alerts
 4. **BacktestModels** - Strategy backtesting
 
 ### Model Improvements
+
 1. Add custom validators
 2. Add computed fields
 3. Add model config for strictness
@@ -371,6 +409,7 @@ src/models/
 ## Best Practices
 
 ### DO ✅
+
 - Use Pydantic v2 syntax
 - Add field descriptions
 - Use appropriate types (Decimal for money)
@@ -378,6 +417,7 @@ src/models/
 - Test all models
 
 ### DON'T ❌
+
 - Use deprecated Pydantic v1 syntax
 - Leave fields without descriptions
 - Use `float` for monetary values
@@ -389,6 +429,7 @@ src/models/
 ## Summary
 
 ### Completed
+
 - ✅ Core data models defined
 - ✅ Pydantic v2 compliance started
 - ✅ Field validation implemented
@@ -396,6 +437,7 @@ src/models/
 - ✅ Unit tests created (70% passing)
 
 ### Remaining Tasks
+
 - ⚠️ Fix all Pydantic v2 deprecations
 - ⚠️ Update test file for correct field names
 - ⚠️ Review and consolidate market_models.py
@@ -418,4 +460,3 @@ src/models/
 **Overall Status**: 85% Complete
 
 See `/tests/unit/test_models.py` for usage examples and validation tests.
-

@@ -54,6 +54,7 @@ nano .env  # or vim .env
 ```
 
 **Minimum required configuration:**
+
 ```bash
 KITE_API_KEY=your_api_key_here
 KITE_API_SECRET=your_api_secret_here
@@ -195,6 +196,7 @@ docker-compose -f docker-compose.production.yml ps
 ```
 
 Expected output:
+
 ```
 NAME                   STATUS              PORTS
 kite-services-prod     Up 10 minutes       0.0.0.0:8179->8179/tcp
@@ -212,6 +214,7 @@ curl http://localhost:8179/health
 ```
 
 **Expected Response:**
+
 ```json
 {
   "status": "healthy",
@@ -269,6 +272,7 @@ done
 ### Issue: Service Won't Start
 
 **Symptoms:**
+
 ```
 ERROR: Cannot start service kite-services: ...
 ```
@@ -276,22 +280,26 @@ ERROR: Cannot start service kite-services: ...
 **Solutions:**
 
 1. **Check Docker is running:**
+
    ```bash
    docker info
    ```
 
 2. **Check port availability:**
+
    ```bash
    lsof -i :8179
    # If something is using the port, stop it
    ```
 
 3. **Check logs:**
+
    ```bash
    docker-compose -f docker-compose.production.yml logs kite-services
    ```
 
 4. **Verify environment variables:**
+
    ```bash
    cat .env | grep KITE_API_KEY
    ```
@@ -301,6 +309,7 @@ ERROR: Cannot start service kite-services: ...
 ### Issue: Token Expired
 
 **Symptoms:**
+
 ```json
 {
   "error": "token_expired",
@@ -333,21 +342,25 @@ curl -X POST http://localhost:8179/api/auth/login \
 **Solutions:**
 
 1. **Check cache status:**
+
    ```bash
    docker-compose -f docker-compose.production.yml exec redis redis-cli INFO stats
    ```
 
 2. **Restart Redis:**
+
    ```bash
    docker-compose -f docker-compose.production.yml restart redis
    ```
 
 3. **Check resource usage:**
+
    ```bash
    docker stats
    ```
 
 4. **Increase workers (in .env):**
+
    ```bash
    WORKERS=8  # Increase from 4
    ```
@@ -359,16 +372,19 @@ curl -X POST http://localhost:8179/api/auth/login \
 **Solution:**
 
 1. **Restart services:**
+
    ```bash
    docker-compose -f docker-compose.production.yml restart
    ```
 
 2. **Adjust Redis memory limit (in docker-compose.production.yml):**
+
    ```yaml
    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
    ```
 
 3. **Reduce cache TTLs (in .env):**
+
    ```bash
    CACHE_TTL_PRIMARY_CONTEXT=30  # Reduce from 60
    ```
@@ -380,11 +396,13 @@ curl -X POST http://localhost:8179/api/auth/login \
 ### Daily Tasks
 
 #### Check Service Health
+
 ```bash
 curl http://localhost:8179/health
 ```
 
 #### Refresh Kite Token (Before 6:00 AM IST)
+
 ```bash
 # Token expires daily at 6:00 AM IST
 # Refresh proactively between 5:30-5:55 AM
@@ -393,6 +411,7 @@ curl http://localhost:8179/health
 ### Weekly Tasks
 
 #### Review Logs
+
 ```bash
 # Check for errors
 docker-compose -f docker-compose.production.yml logs --tail=1000 | grep ERROR
@@ -402,6 +421,7 @@ docker-compose -f docker-compose.production.yml logs --tail=1000 | grep WARN
 ```
 
 #### Backup Data
+
 ```bash
 # Backup token and database
 tar -czf backup-$(date +%Y%m%d).tar.gz data/
@@ -410,6 +430,7 @@ tar -czf backup-$(date +%Y%m%d).tar.gz data/
 ### Monthly Tasks
 
 #### Update Dependencies
+
 ```bash
 # Pull latest Python packages
 docker-compose -f docker-compose.production.yml build --no-cache
@@ -419,6 +440,7 @@ docker-compose -f docker-compose.production.yml build --no-cache
 ```
 
 #### Clean Up Old Logs
+
 ```bash
 # Remove logs older than 30 days
 find logs/ -name "*.log" -mtime +30 -delete
@@ -515,4 +537,3 @@ Post-Deployment:
 **Status:** ✅ **PRODUCTION-READY**  
 **Version:** 1.0.0  
 **Last Updated:** October 14, 2025
-

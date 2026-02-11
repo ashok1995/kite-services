@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Integration docs: `docs/INTEGRATION_GUIDE.md` (consolidated) and `docs/integration/` (per-service: auth, market-data, analysis, trading)
+- Master rule: no docs at root of `/docs/` except README.md; all docs in subfolders (`api/`, `architecture/`, `integration/`, `deployment/`, `development/`)
+- Integration docs: `docs/integration/INTEGRATION_GUIDE.md` (consolidated) and per-service guides
 - Request/response Pydantic models for all endpoints (master rule compliance):
   - `LoginUrlResponse` for GET `/auth/login-url`
   - `UpdateTokenRequest` for PUT `/auth/token` (body-based)
@@ -22,12 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PUT `/auth/token` now accepts JSON body instead of query params
 - POST `/analysis/stock` now accepts JSON body (`StockAnalysisRequest`) instead of query params
 - Refactored analysis_enhanced to use shared cache and helper modules
-- Updated `docs/api.md` for PUT `/auth/token` request body
+- Docs reorganized: all docs moved from `/docs/` root into subfolders (`api/`, `architecture/`, `integration/`, `deployment/`, `development/`). Only `docs/README.md` remains at root as navigation.
 
 ### Removed
 
-- `docs/PRODUCTION_DEPLOYMENT.md` (redundant)
-- `docs/api-integration-doc.md`, `api-integration-guide.md`, `API_INTEGRATION_GUIDE_PRODUCTION.md`, `API_QUICK_REFERENCE.md` (replaced by INTEGRATION_GUIDE.md and integration/)
+- Legacy docs: API_CONSOLIDATION_COMPLETE, CACHE_STRATEGY_DETAILED, CACHING_AUDIT_KITE_FIRST, CI_CD_PIPELINE, COMPLETE_STATUS, COMPLETE_TOKEN_FLOW, DATA_CONTRACT_V1, ENHANCED_MARKET_CONTEXT, GIT_SETUP, PRE_COMMIT_SETUP, PRE_PRODUCTION_TESTS, PRODUCTION_MONITORING, production-deployment, PROJECT_SUMMARY, QUICK_MONEY_OPPORTUNITIES, REAL_DATA_FEASIBILITY, refactoring-plan, SERVICE_ANALYSIS, stock-data-service, TEST_RELIABILITY, TOKEN_MANAGEMENT, TOKEN_STATUS_API, UNIFIED_API_GUIDE, V3_ML_MARKET_INTELLIGENCE_API_GUIDE, api-testing-guide, dev-server-curl-tests, endpoint-testing-results, market-context-*
 
 ### Fixed
 

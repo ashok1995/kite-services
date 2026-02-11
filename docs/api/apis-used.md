@@ -7,15 +7,17 @@ This document describes all external and internal APIs consumed by Kite Services
 ## 1. Kite Connect API
 
 ### API Information
+
 - **Name**: Kite Connect API
 - **Provider**: Zerodha
 - **Base URL**: `https://api.kite.trade`
-- **Documentation**: https://kite.trade/docs/connect/v3/
+- **Documentation**: <https://kite.trade/docs/connect/v3/>
 - **Purpose**: Real-time Indian stock market data
 
 ### Authentication
+
 - **Type**: OAuth 2.0
-- **Flow**: 
+- **Flow**:
   1. Redirect user to login URL
   2. Receive request token via callback
   3. Exchange for access token
@@ -24,11 +26,13 @@ This document describes all external and internal APIs consumed by Kite Services
 ### Endpoints Used
 
 #### 1.1 Quote API
+
 **Endpoint**: `/quote`  
 **Method**: GET  
 **Purpose**: Get real-time quotes for stocks
 
 **Request Model**:
+
 ```python
 {
     "instruments": ["NSE:RELIANCE", "NSE:TCS"]
@@ -36,6 +40,7 @@ This document describes all external and internal APIs consumed by Kite Services
 ```
 
 **Response Model**:
+
 ```python
 {
     "NSE:RELIANCE": {
@@ -53,16 +58,19 @@ This document describes all external and internal APIs consumed by Kite Services
 ```
 
 **Usage in System**:
+
 - File: `src/services/stock_data_service.py`
 - Function: `get_real_time_data()`
 - Frequency: On-demand (user requests)
 
 #### 1.2 Historical Data API
+
 **Endpoint**: `/instruments/historical/{instrument_token}/{interval}`  
 **Method**: GET  
 **Purpose**: Get historical candlestick data
 
 **Request Model**:
+
 ```python
 {
     "instrument_token": 738561,
@@ -73,6 +81,7 @@ This document describes all external and internal APIs consumed by Kite Services
 ```
 
 **Response Model**:
+
 ```python
 {
     "candles": [
@@ -83,26 +92,31 @@ This document describes all external and internal APIs consumed by Kite Services
 ```
 
 **Usage in System**:
+
 - File: `src/services/stock_data_service.py`
 - Function: `get_historical_data()`
 - Frequency: On-demand
 
 #### 1.3 Instruments List
+
 **Endpoint**: `/instruments`  
 **Method**: GET  
 **Purpose**: Get list of all tradable instruments
 
 **Usage in System**:
+
 - File: `src/core/kite_client.py`
 - Function: `get_instruments()`
 - Frequency: Daily cache update
 
 ### Rate Limits
+
 - 3 requests per second
 - 1000 requests per day for historical data
 - Implemented in: `src/core/kite_client.py`
 
 ### Error Handling
+
 - Token expiry: Refresh flow
 - Rate limit: Exponential backoff
 - Network errors: Retry with timeout
@@ -112,28 +126,33 @@ This document describes all external and internal APIs consumed by Kite Services
 ## 2. Yahoo Finance API
 
 ### API Information
+
 - **Name**: Yahoo Finance API
 - **Provider**: Yahoo / yfinance library
 - **Base URL**: `https://query1.finance.yahoo.com`
-- **Documentation**: https://github.com/ranaroussi/yfinance
+- **Documentation**: <https://github.com/ranaroussi/yfinance>
 - **Purpose**: Global market data, US indices, fundamentals
 
 ### Authentication
+
 - **Type**: None (public API)
 - **Rate Limits**: ~100 requests per minute
 
 ### Endpoints Used
 
 #### 2.1 Ticker Information
+
 **Purpose**: Get current quote for global instruments
 
 **Request Model** (yfinance):
+
 ```python
 import yfinance as yf
 ticker = yf.Ticker("^GSPC")  # S&P 500
 ```
 
 **Response Model**:
+
 ```python
 {
     "symbol": "^GSPC",
@@ -146,14 +165,17 @@ ticker = yf.Ticker("^GSPC")  # S&P 500
 ```
 
 **Usage in System**:
+
 - File: `src/services/yahoo_finance_service.py`
 - Function: `get_quote()`
 - Instruments: `^GSPC`, `^DJI`, `^IXIC`, `^FTSE`, `^N225`, `^HSI`
 
 #### 2.2 Historical Data
+
 **Purpose**: Get historical price data
 
 **Request Model**:
+
 ```python
 {
     "symbol": "^GSPC",
@@ -163,6 +185,7 @@ ticker = yf.Ticker("^GSPC")  # S&P 500
 ```
 
 **Response Model**:
+
 ```python
 DataFrame with columns:
 - Date (index)
@@ -174,26 +197,31 @@ DataFrame with columns:
 ```
 
 **Usage in System**:
+
 - File: `src/services/yahoo_finance_service.py`
 - Function: `get_historical_data()`
 - Frequency: As needed for analysis
 
 #### 2.3 Fundamental Data
+
 **Purpose**: Company fundamentals (PE ratio, market cap, etc.)
 
 **Response Fields Used**:
+
 - Market cap
 - PE ratio
 - Dividend yield
 - 52-week high/low
 
 **Usage in System**:
+
 - File: `src/services/yahoo_finance_service.py`
 - Function: `get_fundamentals()`
 
 ### Symbols Used
 
 **Global Indices**:
+
 - `^GSPC` - S&P 500
 - `^DJI` - Dow Jones Industrial Average
 - `^IXIC` - NASDAQ Composite
@@ -202,14 +230,17 @@ DataFrame with columns:
 - `^HSI` - Hang Seng (Hong Kong)
 
 **Volatility Indices**:
+
 - `^VIX` - CBOE Volatility Index
 - `^INDIA VIX` - India VIX (via Kite)
 
 ### Rate Limits
+
 - ~100 requests per minute (unofficial)
 - Implemented retry logic with backoff
 
 ### Error Handling
+
 - Missing data: Return None or default values
 - Network errors: Retry 3 times
 - Malformed responses: Log and skip
@@ -223,6 +254,7 @@ DataFrame with columns:
 **Purpose**: Generate market intelligence from raw data
 
 **Input Data Models**:
+
 ```python
 # From Kite Connect
 KiteQuote = {
@@ -240,6 +272,7 @@ GlobalQuote = {
 ```
 
 **Output Data Model**:
+
 ```python
 MarketContext = {
     "market_regime": "bullish" | "bearish" | "sideways" | "volatile",
@@ -252,6 +285,7 @@ MarketContext = {
 ```
 
 **Usage**:
+
 - Called by: `market_context_routes.py`, `consolidated_routes.py`
 - Frequency: On-demand
 
@@ -260,9 +294,11 @@ MarketContext = {
 ## API Client Wrappers
 
 ### Kite Client
+
 **File**: `src/core/kite_client.py`
 
 **Key Methods**:
+
 ```python
 class KiteClient:
     async def get_quote(self, symbols: List[str]) -> Dict
@@ -272,6 +308,7 @@ class KiteClient:
 ```
 
 **Features**:
+
 - Token management
 - Rate limiting
 - Error handling
@@ -279,9 +316,11 @@ class KiteClient:
 - Logging
 
 ### Yahoo Finance Service
+
 **File**: `src/services/yahoo_finance_service.py`
 
 **Key Methods**:
+
 ```python
 class YahooFinanceService:
     async def get_quote(self, symbol: str) -> Dict
@@ -291,6 +330,7 @@ class YahooFinanceService:
 ```
 
 **Features**:
+
 - Async wrapper around yfinance
 - Caching (future enhancement)
 - Error handling
@@ -339,6 +379,7 @@ class YahooFinanceService:
 ## Testing External APIs
 
 ### Mock Responses
+
 All external API calls are mocked in unit tests:
 
 **File**: `tests/unit/test_services/test_yahoo_finance_service.py`
@@ -353,6 +394,7 @@ def test_get_quote_mock(mock_ticker):
 ```
 
 ### Integration Tests
+
 Real API calls in integration tests (with rate limiting):
 
 **File**: `tests/integration/test_stock_data_service.py`
@@ -371,6 +413,7 @@ async def test_real_kite_api():
 ## Monitoring & Logging
 
 ### API Call Logging
+
 All external API calls are logged:
 
 ```python
@@ -387,6 +430,7 @@ logger.info(
 ```
 
 ### Metrics Tracked
+
 - API call count
 - Response times
 - Error rates
@@ -398,6 +442,7 @@ logger.info(
 ## Future APIs
 
 ### Planned Integrations
+
 1. **NSE API** - Direct NSE data feed
 2. **Redis** - Caching layer
 3. **Prometheus** - Metrics collection
@@ -412,4 +457,3 @@ logger.info(
 | Kite Connect | Indian stocks real-time | OAuth 2.0 | 3/sec | stock_data_service.py |
 | Yahoo Finance | Global markets | None | ~100/min | yahoo_finance_service.py |
 | Internal Services | Market intelligence | N/A | N/A | market_context_service.py |
-

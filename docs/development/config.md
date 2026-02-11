@@ -299,6 +299,7 @@ def port_must_be_valid(cls, v):
 ## Best Practices
 
 ### 1. Never Hardcode Credentials
+
 ```python
 # ❌ Bad
 kite_api_key = "abc123xyz"
@@ -308,6 +309,7 @@ kite_api_key = get_settings().kite.api_key
 ```
 
 ### 2. Use Environment Variables
+
 ```python
 # Set in shell or .env file
 export KITE_API_KEY="your_key"
@@ -317,22 +319,25 @@ api_key = get_settings().kite.api_key
 ```
 
 ### 3. Provide Defaults
+
 ```python
 # Good: Sensible default for development
 port: int = Field(8079, env="SERVICE_PORT")
 ```
 
 ### 4. Document All Config
+
 ```python
 class ServiceConfig(BaseSettings):
     port: int = Field(
-        8079, 
+        8079,
         env="SERVICE_PORT",
         description="HTTP server port (8079=dev, 8179=prod)"
     )
 ```
 
 ### 5. Validate Early
+
 ```python
 # Validate on startup, not at runtime
 settings = get_settings()  # Will raise if invalid
@@ -347,6 +352,7 @@ settings = get_settings()  # Will raise if invalid
 **Problem**: Environment variables not being read
 
 **Solution**:
+
 ```bash
 # Check .env file exists
 ls -la .env
@@ -363,6 +369,7 @@ file .env  # Should be ASCII or UTF-8
 **Problem**: `ValidationError` on startup
 
 **Solution**:
+
 ```python
 # Check Pydantic error details
 try:
@@ -376,6 +383,7 @@ except ValidationError as e:
 **Problem**: API calls failing due to missing credentials
 
 **Solution**:
+
 ```python
 # Check if credentials are configured
 settings = get_settings()
@@ -447,6 +455,7 @@ REDIS_DB=0
 ## Security Considerations
 
 ### 1. Never Commit .env Files
+
 ```bash
 # In .gitignore
 .env
@@ -455,15 +464,18 @@ REDIS_DB=0
 ```
 
 ### 2. Use Secret Management in Production
+
 - AWS Secrets Manager
 - HashiCorp Vault
 - Kubernetes Secrets
 
 ### 3. Rotate Credentials Regularly
+
 - Kite access tokens expire daily
 - API keys should be rotated periodically
 
 ### 4. Restrict Access
+
 ```bash
 # Make .env readable only by owner
 chmod 600 .env
@@ -476,4 +488,3 @@ chmod 600 .env
 - [Architecture](architecture.md) - System design
 - [APIs Used](apis-used.md) - External API configuration
 - [Deployment](production-deployment.md) - Production setup
-

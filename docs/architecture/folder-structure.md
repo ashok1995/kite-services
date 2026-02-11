@@ -138,84 +138,105 @@ kite-services/
 ## Directory Descriptions
 
 ### `/src/` - Source Code
+
 **Purpose**: All application source code  
-**Rules**: 
+**Rules**:
+
 - Organized by layer (api, services, models, core)
 - Max 300 LOC per file
 - All modules have docstrings
 
 ### `/src/api/` - API Routes
+
 **Purpose**: HTTP endpoint definitions  
 **Pattern**: Thin controllers that delegate to services  
 **Rules**:
+
 - One router per domain/resource
 - Use dependency injection for services
 - Return Pydantic models
 
 ### `/src/services/` - Business Logic
+
 **Purpose**: Stateless business logic  
 **Pattern**: Service classes with dependency injection  
 **Rules**:
+
 - No hardcoded values
 - Comprehensive logging
 - Proper error handling
 - Stateless design
 
 ### `/src/models/` - Data Models
+
 **Purpose**: Data validation and serialization  
 **Pattern**: Pydantic models  
 **Rules**:
+
 - Clear field descriptions
 - Proper validation
 - Example values in docstrings
 
 ### `/src/core/` - Core Infrastructure
+
 **Purpose**: Low-level utilities and clients  
 **Pattern**: Reusable infrastructure components  
 **Rules**:
+
 - Framework-agnostic where possible
 - Well-tested
 - Minimal dependencies
 
 ### `/src/config/` - Configuration
+
 **Purpose**: Application configuration  
 **Pattern**: Pydantic Settings  
 **Rules**:
+
 - All config from environment
 - Type-safe
 - Validation included
 
 ### `/tests/` - Test Suite
+
 **Purpose**: All test code  
 **Structure**:
+
 - `unit/` - Fast, isolated tests
 - `integration/` - Service interaction tests
 - `e2e/` - Complete workflow tests
 - `results/` - Test outputs
 
 **Rules**:
+
 - All tests under `/tests/`
 - Naming: `test_*.py` or `*_test.py`
 - Use fixtures from `conftest.py`
 
 ### `/docs/` - Documentation
+
 **Purpose**: All project documentation  
 **Rules**:
+
 - Markdown format
 - Linked from docs/README.md
 - Keep updated with code changes
 
 ### `/logs/` - Application Logs
+
 **Purpose**: Runtime logs  
 **Pattern**: Rotating file logs  
 **Rules**:
+
 - Git-ignored
 - JSON format in production
 - Rotation enabled
 
 ### `/data/` - Data Storage
+
 **Purpose**: Database and persistent data  
 **Rules**:
+
 - Git-ignored
 - Backed up in production
 - Migration scripts tracked
@@ -223,6 +244,7 @@ kite-services/
 ## File Naming Conventions
 
 ### Python Files
+
 - **Services**: `*_service.py` (e.g., `stock_data_service.py`)
 - **Routes**: `*_routes.py` (e.g., `auth_routes.py`)
 - **Models**: `*_models.py` (e.g., `data_models.py`)
@@ -230,16 +252,19 @@ kite-services/
 - **Config**: Descriptive names (e.g., `settings.py`)
 
 ### Documentation
+
 - **Markdown**: Kebab-case (e.g., `api-reference.md`)
 - **READMEs**: Always `README.md` (uppercase)
 
 ### Configuration
+
 - **Environment**: `.env.example`, `.env` (git-ignored)
 - **Docker**: `Dockerfile`, `docker-compose.yml`
 
 ## Import Conventions
 
 ### Absolute Imports
+
 ```python
 from config.settings import get_settings
 from models.data_models import StockQuote
@@ -247,6 +272,7 @@ from services.stock_data_service import StockDataService
 ```
 
 ### Relative Imports (within package)
+
 ```python
 from .models import StockQuote
 from ..core import KiteClient
@@ -255,18 +281,21 @@ from ..core import KiteClient
 ## Adding New Components
 
 ### New API Route
+
 1. Create file in `/src/api/`
 2. Register in `/src/main.py`
 3. Add tests in `/tests/integration/`
-4. Document in `/docs/api.md`
+4. Document in `/docs/api/api-reference.md`
 
 ### New Service
+
 1. Create file in `/src/services/`
 2. Add models in `/src/models/`
 3. Add unit tests in `/tests/unit/test_services/`
-4. Document in `/docs/services.md`
+4. Document in `/docs/architecture/services.md`
 
 ### New Core Module
+
 1. Create file in `/src/core/`
 2. Add tests in `/tests/unit/`
 3. Document usage in relevant docs
@@ -280,4 +309,3 @@ from ..core import KiteClient
 5. **Use dependency injection** everywhere
 6. **Comprehensive logging** to files
 7. **No hardcoded values** - use config
-
