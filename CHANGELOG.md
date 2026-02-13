@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Nifty 50 Constants** — `src/common/constants.py` with Nifty 50 constituent symbols
 - **Batch Quote Limit Increase** — `QUOTES_MAX_SYMBOLS` increased from 50 to 200 (Bayesian engine requirement)
 - **Market Breadth Config** — `MARKET_BREADTH_ENABLED` and `MARKET_BREADTH_CACHE_TTL` settings
-- **Integration Documentation** — Gap analysis and implementation plan for Bayesian engine
+- **Integration Documentation** — Gap analysis, implementation plan, and complete integration guide for Bayesian engine
+- **Comprehensive Testing** — 15 unit tests and 8 integration tests for market breadth service
+- **Testing Guide** — Complete testing documentation with manual and automated test procedures
+- **Integration Guide** — 680-line comprehensive guide with Python client and cURL examples
 - **envs/** — single folder for env config: `development.env`, `staging.env`, `production.env` (no .env.example or scattered .env)
 - **KITE_TOKEN_FILE** — store token outside project (`~/.kite-services/kite_token.json` by default) so it survives git pull
 - **token_valid** in GET `/api/auth/status` — true only when token verified via Kite API (profile call)

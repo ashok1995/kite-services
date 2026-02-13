@@ -147,7 +147,28 @@ List instruments. Query: `?limit=10`, `?exchange=NSE`.
 
 ### POST /api/market/quotes
 
-Real-time quotes. **Request:** `{"symbols": ["NSE:RELIANCE"], "exchange": "NSE"}`
+Real-time quotes for multiple symbols (up to 200).
+
+**Request:**
+```json
+{
+  "symbols": ["RELIANCE", "TCS", "INFY"],
+  "exchange": "NSE"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "total_symbols": 3,
+  "successful_symbols": 3,
+  "stocks": [...],
+  "processing_time_ms": 850
+}
+```
+
+**Limits:** Maximum 200 symbols per request (increased from 50)
 
 ---
 
@@ -155,9 +176,40 @@ Real-time quotes. **Request:** `{"symbols": ["NSE:RELIANCE"], "exchange": "NSE"}
 
 ### POST /api/analysis/context
 
-Market context (global, Indian, sentiment, technicals).
+Market context with breadth data (global, Indian, sentiment, technicals).
 
-**Request:** `{"symbols": [], "include_global": true, "include_indian": true}`
+**Request:**
+```json
+{
+  "include_global_data": true,
+  "include_sector_data": true
+}
+```
+
+**Response (Updated with Breadth Data)**:
+```json
+{
+  "market_context": {
+    "indian_data": {
+      "indices": {
+        "NIFTY 50": {"value": 21450.50, "change_percent": 0.75}
+      },
+      "market_regime": "bullish",
+      "advances": 35,
+      "declines": 15,
+      "unchanged": 0,
+      "advance_decline_ratio": "2.33",
+      "timestamp": "2026-02-13T14:30:00"
+    }
+  }
+}
+```
+
+**New Fields (Bayesian Engine Integration)**:
+- `advances`: Number of advancing stocks (from Nifty 50)
+- `declines`: Number of declining stocks (from Nifty 50)
+- `unchanged`: Number of unchanged stocks
+- `advance_decline_ratio`: Advance/Decline ratio (cached for 60s)
 
 ### POST /api/analysis/intelligence
 
