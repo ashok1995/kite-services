@@ -27,6 +27,7 @@ RUN poetry config virtualenvs.create false
 
 # Install dependencies
 RUN poetry install --no-dev --no-interaction --no-ansi && \
+    pip install --no-cache-dir watchdog && \
     rm -rf $POETRY_CACHE_DIR
 
 # Copy application code
@@ -34,7 +35,8 @@ COPY src/ ./src/
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs /app/data && \
-    chmod -R 777 /app/logs /app/data
+    chmod -R 777 /app/logs /app/data && \
+    touch /app/data/.gitkeep
 
 # Set Python path
 ENV PYTHONPATH=/app/src
