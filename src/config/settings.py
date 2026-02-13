@@ -212,8 +212,12 @@ class ServiceConfig(BaseSettings):
     rate_limit_requests: int = Field(100, env="RATE_LIMIT_REQUESTS")
     rate_limit_window: int = Field(60, env="RATE_LIMIT_WINDOW")
 
-    # Quotes endpoint limits
-    quotes_max_symbols: int = Field(50, env="QUOTES_MAX_SYMBOLS")
+    # Quotes endpoint limits (increased to 200 for Bayesian engine)
+    quotes_max_symbols: int = Field(200, env="QUOTES_MAX_SYMBOLS")
+
+    # Market breadth configuration
+    market_breadth_enabled: bool = Field(True, env="MARKET_BREADTH_ENABLED")
+    market_breadth_cache_ttl: int = Field(60, env="MARKET_BREADTH_CACHE_TTL")  # seconds
 
 
 class RedisConfig(BaseSettings):

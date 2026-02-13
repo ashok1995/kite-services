@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Market Breadth Calculation** — Real market breadth from Nifty 50 constituents (advance/decline ratio) for Bayesian engine integration
+- **MarketBreadthService** — New service with 60-second caching for efficient breadth calculation
+- **Nifty 50 Constants** — `src/common/constants.py` with Nifty 50 constituent symbols
+- **Batch Quote Limit Increase** — `QUOTES_MAX_SYMBOLS` increased from 50 to 200 (Bayesian engine requirement)
+- **Market Breadth Config** — `MARKET_BREADTH_ENABLED` and `MARKET_BREADTH_CACHE_TTL` settings
+- **Integration Documentation** — Gap analysis and implementation plan for Bayesian engine
 - **envs/** — single folder for env config: `development.env`, `staging.env`, `production.env` (no .env.example or scattered .env)
 - **KITE_TOKEN_FILE** — store token outside project (`~/.kite-services/kite_token.json` by default) so it survives git pull
 - **token_valid** in GET `/api/auth/status` — true only when token verified via Kite API (profile call)
@@ -24,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Market Context Breadth** — Market context now uses real Nifty 50 constituent data instead of sector-based approximation
+- **Batch Quote Configuration** — Default `QUOTES_MAX_SYMBOLS` changed from 50 to 200 across all environments
 - **Token file auto-create**: When missing, create template at `kite-credentials/kite_token.json`. No SCP; add api_key/api_secret via SSH edit after deploy.
 - **Docker prod**: Mount `./kite-credentials` → `/root/.kite-services` for token persistence.
 - **Kite credentials** in token file only — api_key, api_secret, access_token in `~/.kite-services/kite_token.json`, removed from env files.
