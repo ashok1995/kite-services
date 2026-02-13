@@ -13,6 +13,7 @@ The Kite service is a separate service that wraps Kite Connect (Zerodha) API.
 It runs on port **8179** and is referenced as `MARKET_CONTEXT_SERVICE_URL` in env config.
 
 **IMPORTANT**: Kite is the **PRIMARY and ONLY source** for all NSE/BSE stock data:
+
 - ✅ Real-time stock quotes (LTP, volume, OHLC)
 - ✅ Historical candles (5m, 15m, 1h, 1d)
 - ✅ Market context (Nifty regime, VIX India, breadth, sectors)
@@ -20,6 +21,7 @@ It runs on port **8179** and is referenced as `MARKET_CONTEXT_SERVICE_URL` in en
 - ❌ Does NOT provide: US indices, global VIX, commodities, forex → use Yahoo for these
 
 **Existing endpoints already used by seed-stocks-service:**
+
 - `GET /api/market-context-data/quick-context` — market regime, VIX, sectors
 - `GET /api/v1/quotes/{symbol}` — last traded price for a single symbol
 
@@ -40,6 +42,7 @@ GET /api/v1/quotes/batch?symbols=RELIANCE,SBIN,HDFCBANK,...
 ```
 
 **Expected response**:
+
 ```json
 {
   "quotes": {
@@ -91,11 +94,13 @@ GET /api/v1/quotes/batch?symbols=RELIANCE,SBIN,HDFCBANK,...
 **Current**: Already implemented via `GET /api/market-context-data/quick-context`.
 
 **What we need (verify these fields exist)**:
+
 ```
 GET /api/market-context-data/quick-context?include_global=true&include_sector=true&include_institutional=true
 ```
 
 **Expected response structure**:
+
 ```json
 {
   "market_regime": "bullish",
@@ -158,6 +163,7 @@ GET /api/v1/historical/{symbol}?interval=5minute&from=2026-02-12&to=2026-02-12
 ```
 
 **Expected response**:
+
 ```json
 {
   "candles": [
@@ -201,6 +207,7 @@ GET /api/v1/instruments?exchange=NSE&segment=EQ
 ```
 
 **Expected response**:
+
 ```json
 {
   "instruments": [
@@ -242,16 +249,19 @@ GET /api/v1/instruments?exchange=NSE&segment=EQ
 **Purpose**: Calculate market breadth (advance/decline ratio) if not provided by market context endpoint.
 
 **Option A**: Use batch quotes endpoint with Nifty 50 symbols
+
 ```
 GET /api/v1/quotes/batch?symbols=RELIANCE,TCS,HDFCBANK,...(all 50)
 ```
 
 **Option B**: Dedicated Nifty 50 endpoint (if available)
+
 ```
 GET /api/v1/indices/nifty50/constituents
 ```
 
 **Expected response (Option B)**:
+
 ```json
 {
   "index": "NIFTY 50",
@@ -286,6 +296,7 @@ GET /api/v1/quotes/depth?symbols=RELIANCE,SBIN
 ```
 
 **Expected response**:
+
 ```json
 {
   "RELIANCE": {
@@ -335,42 +346,97 @@ See [Data Source Boundaries](./data-source-boundaries.md) for full matrix.
 
 ---
 
-## Pre-integration verification
+## Pre-integration verification & Testing Results (2026-02-13)
 
-Before integrating with seed-stocks-service, run these commands to verify kite-services is ready:
+### ✅ Tests Completed
+
+| # | Endpoint | Status | Notes |
+|---|----------|--------|-------|
+| 1 | `/health` | ✅ PASS | All services running |
+| 2 | `/api/market/quotes` (batch) | ✅ PASS | Tested with 3 symbols, max 200 |
+| 3 | `/api/market/instruments` | ✅ PASS | 1000 NSE instruments returned |
+| 4 | `/api/analysis/context` | ❌ FAIL | Returns empty data (GAP 1) |
+| 5 | `/api/market-context-data/quick-context` | ❌ FAIL | 404 Not Found (GAP 2) |
+| 6 | `/api/market/historical/{symbol}` | ⚠️ SKIP | Not tested (needs auth) (GAP 3) |
+
+**Test commands used**:
 
 ```bash
-# 1. Batch quotes (CRITICAL - check if endpoint exists)
-curl -s "http://localhost:8179/api/v1/quotes/batch?symbols=RELIANCE,SBIN,TCS" | jq .
-# Expected: {"quotes": {"RELIANCE": {"ltp": ..., "volume": ...}, ...}}
+# 1. Health check (PASS ✅)
+curl -s http://localhost:8079/health | jq .
+# Result: {"status": "healthy", "services": {...}}
 
-# 2. Market context (CRITICAL - verify breadth data exists)
-curl -s "http://localhost:8179/api/market-context-data/quick-context?include_global=true&include_sector=true" | jq .
-# Expected: {"market_regime": "bullish", "india_vix": 12.45, "market_breadth": {"advance_decline_ratio": 2.3, ...}}
-# IMPORTANT: Check if "market_breadth" or "advance_decline_ratio" exists
+# 2. Batch quotes (PASS ✅)
+curl -s -X POST http://localhost:8079/api/market/quotes \
+  -H "Content-Type: application/json" \
+  -d '{"symbols": ["RELIANCE", "TCS", "INFY"], "exchange": "NSE"}' | jq .
+# Result: 3 stocks with OHLC, volume, change_percent
 
-# 3. Historical candles (IMPORTANT - for return calculation)
-curl -s "http://localhost:8179/api/v1/historical/RELIANCE?interval=5minute&from=2026-02-12&to=2026-02-12" | jq .
-# Expected: {"candles": [{"timestamp": ..., "open": ..., "close": ..., "volume": ...}], ...}
+# 3. Instruments (PASS ✅)
+curl -s "http://localhost:8079/api/market/instruments?exchange=NSE&segment=EQUITY" | jq '.instruments | length'
+# Result: 1000
 
-# 4. Instruments (IMPORTANT - for instrument tokens)
-curl -s "http://localhost:8179/api/v1/instruments?exchange=NSE&segment=EQ" | jq . | head -50
-# Expected: {"instruments": [{"instrument_token": 738561, "tradingsymbol": "RELIANCE", ...}]}
+# 4. Market context (FAIL ❌ — GAP 1)
+curl -s -X POST http://localhost:8079/api/analysis/context \
+  -H "Content-Type: application/json" \
+  -d '{"include_global": false, "include_indian": true, "include_sector": true}' | jq .
+# Result: {"indian_markets": [], "market_breadth": null}  ← EMPTY DATA
 
-# 5. Nifty 50 constituents (OPTIONAL - only if breadth not in #2)
-curl -s "http://localhost:8179/api/v1/indices/nifty50/constituents" | jq .
-# OR use batch quotes with all 50 symbols
+# 5. Quick context (FAIL ❌ — GAP 2)
+curl -s "http://localhost:8079/api/market-context-data/quick-context" | jq .
+# Result: {"detail": "Not Found"}
 
-# 6. Single quote (existing fallback for testing)
-curl -s "http://localhost:8179/api/v1/quotes/RELIANCE" | jq .
+# 6. Historical (SKIPPED ⚠️ — GAP 3)
+# Not tested — requires authenticated token
 ```
 
-**Checklist**:
-- [ ] Batch quotes endpoint exists and returns valid data
-- [ ] Market context includes `market_breadth` or `advance_decline_ratio`
-- [ ] Historical endpoint returns OHLCV candles
-- [ ] Instruments endpoint returns NSE equity list with tokens
-- [ ] Service is running on port 8179 and reachable
+### 🔴 Critical Gaps Identified
+
+**See [KITE-SERVICE-GAPS.md](../../KITE-SERVICE-GAPS.md) for complete details**
+
+**GAP 1 (CRITICAL)**: `/api/analysis/context` returns empty `indian_markets` and no `market_breadth`
+
+- **Impact**: Blocks Phase 1C (market breadth integration)
+- **Required**: Return Nifty 50 data, market breadth, regime, sectors
+- **Workaround**: Calculate breadth from Nifty 50 batch quotes in seed-stocks-service
+- **Fix needed by**: End of Week 1
+
+**GAP 2 (HIGH)**: `/api/market-context-data/quick-context` endpoint doesn't exist (404)
+
+- **Impact**: Medium — we can use `/api/analysis/context` instead
+- **Required**: Either create this endpoint OR fix GAP 1
+- **Recommendation**: Fix GAP 1, remove this endpoint from requirements
+
+**GAP 3 (MEDIUM)**: `/api/market/historical/{symbol}` not tested
+
+- **Impact**: Low for Phase 1, HIGH for Phase 2 (return calculation)
+- **Required**: Test with authenticated token before Phase 2
+- **Fix needed by**: End of Week 2
+
+### ✅ Integration Readiness
+
+**Can start integration**: YES (with workarounds)
+
+**Phase 1A**: ✅ Ready (uses Yahoo service, not Kite)
+**Phase 1B**: ✅ Ready (batch quotes working)
+**Phase 1C**: ⚠️ Workaround needed (calculate breadth ourselves)
+**Phase 2**: ⚠️ Blocked until GAP 3 tested
+
+**Workaround for Phase 1C**:
+
+```python
+# Fetch Nifty 50 constituents via batch quotes
+nifty_50 = ["RELIANCE", "TCS", "INFY", ...]  # all 50 symbols
+response = await httpx.post(
+    "http://localhost:8079/api/market/quotes",
+    json={"symbols": nifty_50, "exchange": "NSE"}
+)
+
+# Calculate breadth
+advances = sum(1 for s in stocks if s["change_percent"] > 0.01)
+declines = sum(1 for s in stocks if s["change_percent"] < -0.01)
+ad_ratio = advances / declines if declines > 0 else advances
+```
 
 ---
 

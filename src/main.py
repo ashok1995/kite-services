@@ -24,9 +24,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Import consolidated API modules (after path setup)
 from api import (  # noqa: E402
     analysis,
-    analysis_enhanced,
     auth,
     market_data,
+    quick_context,
     quick_opportunities,
     trading,
 )
@@ -343,11 +343,14 @@ def setup_routes(app: FastAPI):
             "api_prefix": "/api",
         }
 
-    # Include consolidated API routes (5 modules, 9+ endpoints total)
+    # Include consolidated API routes (6 modules, 10+ endpoints total)
     app.include_router(auth.router, prefix="/api")
     app.include_router(market_data.router, prefix="/api")
     app.include_router(analysis.router, prefix="/api")
-    app.include_router(analysis_enhanced.router, prefix="/api")  # Enhanced hierarchical context
+    app.include_router(
+        quick_context.router, prefix="/api"
+    )  # Quick market context for Bayesian engine
+    # app.include_router(analysis_enhanced.router, prefix="/api")  # Disabled - service removed
     app.include_router(
         quick_opportunities.router, prefix="/api"
     )  # Quick money-making opportunities

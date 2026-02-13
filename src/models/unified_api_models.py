@@ -276,12 +276,25 @@ class TechnicalAnalysis(BaseModel):
     timestamp: Optional[datetime] = None
 
 
+class MarketBreadth(BaseModel):
+    """Market breadth data."""
+
+    advances: int = Field(..., description="Number of advancing stocks")
+    declines: int = Field(..., description="Number of declining stocks")
+    unchanged: int = Field(0, description="Number of unchanged stocks")
+    advance_decline_ratio: float = Field(..., description="Advance/Decline ratio")
+    total_stocks: int = Field(..., description="Total stocks analyzed")
+    data_source: str = Field(..., description="Data source (e.g., nifty50_constituents)")
+    timestamp: str = Field(..., description="Timestamp of breadth calculation")
+
+
 class MarketContextResponse(BaseModel):
     """Market context response."""
 
     success: bool
     global_markets: List[GlobalMarketData] = Field(default_factory=list)
     indian_markets: List[GlobalMarketData] = Field(default_factory=list)
+    market_breadth: Optional[MarketBreadth] = None
     market_sentiment: Optional[MarketSentiment] = None
     technical_analysis: List[TechnicalAnalysis] = Field(default_factory=list)
     processing_time_ms: float

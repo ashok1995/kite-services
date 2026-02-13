@@ -174,6 +174,41 @@ class KiteClient:
             self.logger.error(f"Error getting quotes for {symbols}: {e}")
             return {}
 
+    async def historical_data(
+        self, instrument_token: int, from_date: str, to_date: str, interval: str
+    ) -> List[Dict]:
+        """
+        Get historical OHLCV candles for an instrument.
+
+        Args:
+            instrument_token: Instrument token from instruments API
+            from_date: Start date (YYYY-MM-DD)
+            to_date: End date (YYYY-MM-DD)
+            interval: Interval (minute, 5minute, 15minute, hour, day)
+
+        Returns:
+            List of candles with date, open, high, low, close, volume
+        """
+        try:
+            if not self.kite:
+                self.logger.warning("Kite client not initialized")
+                return []
+
+            # Call kite.historical_data() in a thread pool since it's synchronous
+            loop = asyncio.get_event_loop()
+            candles = await loop.run_in_executor(
+                None, self.kite.historical_data, instrument_token, from_date, to_date, interval
+            )
+
+            self.logger.info(
+                f"Fetched {len(candles) if candles else 0} candles for token {instrument_token}"
+            )
+            return candles or []
+
+        except Exception as e:
+            self.logger.error(f"Error getting historical data for {instrument_token}: {e}")
+            return []
+
     async def get_instrument_data(self, symbol: str) -> Optional[Dict]:
         """Get real-time instrument data."""
         try:
@@ -700,3 +735,395 @@ class KiteClient:
             )
 
         return data
+
+    # ===================================================================
+    # ORDER MANAGEMENT (with Paper Trading Support)
+    # ===================================================================
+
+    # Paper trading storage (class-level, shared across instances)
+    _paper_orders: Dict[str, Dict] = {}
+    _paper_order_history: Dict[str, List[Dict]] = {}
+
+    def _is_paper_trading(self) -> bool:
+        """Check if paper trading mode is enabled."""
+        return self.settings.kite.paper_trading_mode
+
+    async def place_order(
+        self,
+        symbol: str,
+        exchange: str,
+        transaction_type: str,
+        quantity: int,
+        order_type: str,
+        product: str,
+        price: Optional[float] = None,
+        trigger_price: Optional[float] = None,
+        validity: str = "DAY",
+        disclosed_quantity: Optional[int] = None,
+        tag: Optional[str] = None,
+    ) -> Dict:
+        """
+        Place an order (real or simulated based on paper_trading_mode).
+
+        🚨 CRITICAL: Check paper_trading_mode before calling!
+        - If True: Order is simulated (NO REAL MONEY)
+        - If False: Order is placed on Kite (REAL MONEY AT RISK)
+
+        Args:
+            symbol: Trading symbol (e.g., 'RELIANCE')
+            exchange: Exchange (NSE/BSE/NFO)
+            transaction_type: BUY or SELL
+            quantity: Order quantity
+            order_type: MARKET/LIMIT/SL/SL-M
+            product: CNC/MIS/NRML
+            price: Limit price (required for LIMIT/SL)
+            trigger_price: Trigger price (required for SL/SL-M)
+            validity: DAY or IOC
+            disclosed_quantity: For iceberg orders
+            tag: Order tag (max 20 chars)
+
+        Returns:
+            Dict with order_id and paper_trading flag
+        """
+        import uuid
+
+        if self._is_paper_trading():
+            # PAPER TRADING MODE - Simulate order
+            self.logger.warning(
+                f"🧪 PAPER TRADING: Simulating {transaction_type} order for {symbol} (qty: {quantity})"
+            )
+
+            # Generate fake order ID
+            order_id = f"PAPER_{uuid.uuid4().hex[:12].upper()}"
+
+            # Store paper order
+            KiteClient._paper_orders[order_id] = {
+                "order_id": order_id,
+                "exchange_order_id": f"EX{order_id}",
+                "symbol": symbol,
+                "exchange": exchange,
+                "transaction_type": transaction_type,
+                "quantity": quantity,
+                "filled_quantity": quantity if order_type == "MARKET" else 0,
+                "pending_quantity": 0 if order_type == "MARKET" else quantity,
+                "order_type": order_type,
+                "product": product,
+                "price": price,
+                "trigger_price": trigger_price,
+                "average_price": price if order_type != "MARKET" else None,
+                "status": "COMPLETE" if order_type == "MARKET" else "OPEN",
+                "status_message": (
+                    "Paper trade executed" if order_type == "MARKET" else "Paper trade pending"
+                ),
+                "validity": validity,
+                "tag": tag,
+                "order_timestamp": datetime.now(),
+                "paper_trading": True,
+            }
+
+            # Initialize history
+            KiteClient._paper_order_history[order_id] = [
+                {
+                    "order_id": order_id,
+                    "status": "OPEN" if order_type != "MARKET" else "COMPLETE",
+                    "status_message": "Paper order placed",
+                    "filled_quantity": quantity if order_type == "MARKET" else 0,
+                    "timestamp": datetime.now(),
+                }
+            ]
+
+            return {
+                "order_id": order_id,
+                "paper_trading": True,
+                "message": f"🧪 Paper order placed (NOT REAL)",
+            }
+
+        else:
+            # REAL TRADING MODE - Place actual order on Kite
+            self.logger.critical(
+                f"🚨 REAL ORDER: Placing {transaction_type} order for {symbol} (qty: {quantity}) - REAL MONEY!"
+            )
+
+            if not self.kite:
+                raise Exception("Kite client not initialized")
+
+            try:
+                # Call Kite API
+                loop = asyncio.get_event_loop()
+                order_id = await loop.run_in_executor(
+                    None,
+                    lambda: self.kite.place_order(
+                        variety=self.kite.VARIETY_REGULAR,
+                        exchange=exchange,
+                        tradingsymbol=symbol,
+                        transaction_type=transaction_type,
+                        quantity=quantity,
+                        product=product,
+                        order_type=order_type,
+                        price=price,
+                        trigger_price=trigger_price,
+                        validity=validity,
+                        disclosed_quantity=disclosed_quantity,
+                        tag=tag,
+                    ),
+                )
+
+                self.logger.info(f"✅ Real order placed: {order_id}")
+
+                return {
+                    "order_id": order_id,
+                    "paper_trading": False,
+                    "message": "Real order placed successfully",
+                }
+
+            except Exception as e:
+                self.logger.error(f"Failed to place real order: {e}")
+                raise
+
+    async def modify_order(
+        self,
+        order_id: str,
+        quantity: Optional[int] = None,
+        price: Optional[float] = None,
+        trigger_price: Optional[float] = None,
+        order_type: Optional[str] = None,
+        validity: Optional[str] = None,
+    ) -> Dict:
+        """
+        Modify an existing order (real or simulated).
+
+        Args:
+            order_id: Order ID to modify
+            quantity: New quantity (optional)
+            price: New price (optional)
+            trigger_price: New trigger price (optional)
+            order_type: New order type (optional)
+            validity: New validity (optional)
+
+        Returns:
+            Dict with success status and paper_trading flag
+        """
+        if self._is_paper_trading() or order_id.startswith("PAPER_"):
+            # PAPER TRADING MODE
+            self.logger.warning(f"🧪 PAPER TRADING: Modifying order {order_id}")
+
+            if order_id not in KiteClient._paper_orders:
+                raise Exception(f"Paper order {order_id} not found")
+
+            # Update paper order
+            order = KiteClient._paper_orders[order_id]
+            if quantity is not None:
+                order["quantity"] = quantity
+            if price is not None:
+                order["price"] = price
+            if trigger_price is not None:
+                order["trigger_price"] = trigger_price
+            if order_type is not None:
+                order["order_type"] = order_type
+            if validity is not None:
+                order["validity"] = validity
+
+            order["status"] = "MODIFIED"
+
+            # Add to history
+            KiteClient._paper_order_history[order_id].append(
+                {
+                    "order_id": order_id,
+                    "status": "MODIFIED",
+                    "status_message": "Paper order modified",
+                    "timestamp": datetime.now(),
+                }
+            )
+
+            return {
+                "order_id": order_id,
+                "paper_trading": True,
+                "message": "🧪 Paper order modified (NOT REAL)",
+            }
+
+        else:
+            # REAL TRADING MODE
+            self.logger.critical(f"🚨 REAL ORDER: Modifying order {order_id}")
+
+            if not self.kite:
+                raise Exception("Kite client not initialized")
+
+            try:
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: self.kite.modify_order(
+                        variety=self.kite.VARIETY_REGULAR,
+                        order_id=order_id,
+                        quantity=quantity,
+                        price=price,
+                        trigger_price=trigger_price,
+                        order_type=order_type,
+                        validity=validity,
+                    ),
+                )
+
+                self.logger.info(f"✅ Real order modified: {order_id}")
+
+                return {
+                    "order_id": order_id,
+                    "paper_trading": False,
+                    "message": "Real order modified successfully",
+                }
+
+            except Exception as e:
+                self.logger.error(f"Failed to modify real order: {e}")
+                raise
+
+    async def cancel_order(self, order_id: str, variety: str = "regular") -> Dict:
+        """
+        Cancel an order (real or simulated).
+
+        Args:
+            order_id: Order ID to cancel
+            variety: Order variety (regular/amo/co/iceberg)
+
+        Returns:
+            Dict with success status and paper_trading flag
+        """
+        if self._is_paper_trading() or order_id.startswith("PAPER_"):
+            # PAPER TRADING MODE
+            self.logger.warning(f"🧪 PAPER TRADING: Cancelling order {order_id}")
+
+            if order_id not in KiteClient._paper_orders:
+                raise Exception(f"Paper order {order_id} not found")
+
+            # Update paper order
+            order = KiteClient._paper_orders[order_id]
+            order["status"] = "CANCELLED"
+            order["status_message"] = "Paper order cancelled"
+            order["pending_quantity"] = 0
+
+            # Add to history
+            KiteClient._paper_order_history[order_id].append(
+                {
+                    "order_id": order_id,
+                    "status": "CANCELLED",
+                    "status_message": "Paper order cancelled",
+                    "timestamp": datetime.now(),
+                }
+            )
+
+            return {
+                "order_id": order_id,
+                "paper_trading": True,
+                "message": "🧪 Paper order cancelled (NOT REAL)",
+            }
+
+        else:
+            # REAL TRADING MODE
+            self.logger.critical(f"🚨 REAL ORDER: Cancelling order {order_id}")
+
+            if not self.kite:
+                raise Exception("Kite client not initialized")
+
+            try:
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: self.kite.cancel_order(
+                        variety=variety,
+                        order_id=order_id,
+                    ),
+                )
+
+                self.logger.info(f"✅ Real order cancelled: {order_id}")
+
+                return {
+                    "order_id": order_id,
+                    "paper_trading": False,
+                    "message": "Real order cancelled successfully",
+                }
+
+            except Exception as e:
+                self.logger.error(f"Failed to cancel real order: {e}")
+                raise
+
+    async def get_orders(self) -> Dict:
+        """
+        Get all orders for the day (real or simulated).
+
+        Returns:
+            Dict with list of orders and paper_trading flag
+        """
+        if self._is_paper_trading():
+            # PAPER TRADING MODE
+            self.logger.info("🧪 PAPER TRADING: Fetching paper orders")
+
+            orders = list(KiteClient._paper_orders.values())
+
+            return {
+                "orders": orders,
+                "total": len(orders),
+                "paper_trading": True,
+            }
+
+        else:
+            # REAL TRADING MODE
+            if not self.kite:
+                raise Exception("Kite client not initialized")
+
+            try:
+                loop = asyncio.get_event_loop()
+                orders = await loop.run_in_executor(None, self.kite.orders)
+
+                return {
+                    "orders": orders,
+                    "total": len(orders),
+                    "paper_trading": False,
+                }
+
+            except Exception as e:
+                self.logger.error(f"Failed to fetch real orders: {e}")
+                raise
+
+    async def get_order_history(self, order_id: str) -> Dict:
+        """
+        Get order history (real or simulated).
+
+        Args:
+            order_id: Order ID
+
+        Returns:
+            Dict with order history and paper_trading flag
+        """
+        if self._is_paper_trading() or order_id.startswith("PAPER_"):
+            # PAPER TRADING MODE
+            self.logger.info(f"🧪 PAPER TRADING: Fetching history for paper order {order_id}")
+
+            if order_id not in KiteClient._paper_order_history:
+                raise Exception(f"Paper order {order_id} not found")
+
+            history = KiteClient._paper_order_history[order_id]
+
+            return {
+                "order_id": order_id,
+                "history": history,
+                "paper_trading": True,
+            }
+
+        else:
+            # REAL TRADING MODE
+            if not self.kite:
+                raise Exception("Kite client not initialized")
+
+            try:
+                loop = asyncio.get_event_loop()
+                history = await loop.run_in_executor(
+                    None, lambda: self.kite.order_history(order_id)
+                )
+
+                return {
+                    "order_id": order_id,
+                    "history": history,
+                    "paper_trading": False,
+                }
+
+            except Exception as e:
+                self.logger.error(f"Failed to fetch real order history: {e}")
+                raise

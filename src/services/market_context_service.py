@@ -16,8 +16,6 @@ from core.kite_client import KiteClient
 from core.logging_config import get_logger
 from models.market_context_data_models import (
     CurrencyData,
-    GlobalMarketData,
-    GlobalSentiment,
     IndianMarketData,
     InstitutionalData,
     MarketContextData,
@@ -31,7 +29,6 @@ from models.market_context_data_models import (
     VolatilityLevel,
 )
 from services.market_breadth_service import MarketBreadthService
-from services.yahoo_finance_service import YahooFinanceService
 
 
 class MarketContextService:
@@ -40,11 +37,9 @@ class MarketContextService:
     def __init__(
         self,
         kite_client: KiteClient,
-        yahoo_service: YahooFinanceService,
         logger: Optional[logging.Logger] = None,
     ):
         self.kite_client = kite_client
-        self.yahoo_service = yahoo_service
         self.logger = logger or get_logger(__name__)
 
         # Initialize market breadth service (Bayesian engine requirement)
@@ -119,6 +114,29 @@ class MarketContextService:
             self.logger.warning(f"get_indian_market_data failed: {e}")
             return []
 
+    async def get_market_breadth(self) -> Optional[Dict]:
+        """Get market breadth data for the analysis API."""
+        try:
+            # Get breadth from the breadth service
+            breadth_data = await self.breadth_service.get_market_breadth()
+
+            return {
+                "advances": breadth_data.get("advancing_stocks", 0),
+                "declines": breadth_data.get("declining_stocks", 0),
+                "unchanged": breadth_data.get("unchanged_stocks", 0),
+                "advance_decline_ratio": float(breadth_data.get("advance_decline_ratio", 1.0)),
+                "total_stocks": breadth_data.get("total_stocks", 0),
+                "data_source": breadth_data.get("data_source", "nifty50_constituents"),
+                "timestamp": (
+                    breadth_data.get("timestamp", datetime.now()).isoformat()
+                    if isinstance(breadth_data.get("timestamp"), datetime)
+                    else str(breadth_data.get("timestamp", datetime.now()))
+                ),
+            }
+        except Exception as e:
+            self.logger.warning(f"get_market_breadth failed: {e}")
+            return None
+
     async def get_market_sentiment(self) -> Optional[Dict]:
         """Get market sentiment data for the analysis API."""
         try:
@@ -185,7 +203,7 @@ class MarketContextService:
             global_data = (
                 await self._get_global_market_data(request_id)
                 if request.include_global_data
-                else self._create_empty_global_data()
+                else None
             )
             indian_data = await self._get_indian_market_data(request_id)
             volatility_data = await self._get_volatility_data(request_id)
@@ -298,72 +316,10 @@ class MarketContextService:
 
     # Helper methods (simplified for brevity)
 
-    async def _get_global_market_data(self, request_id: str) -> GlobalMarketData:
-        """Get global market data from Yahoo Finance."""
-        try:
-            indices = await self.yahoo_service.get_market_indices()
-
-            us_markets = {}
-            european_markets = {}
-            asian_markets = {}
-            overnight_changes = {}
-            total_change = Decimal("0")
-            count = 0
-
-            region_map = {
-                "^GSPC": ("US", "us"),
-                "^IXIC": ("US", "us"),
-                "^DJI": ("US", "us"),
-                "^FTSE": ("Europe", "eu"),
-                "^N225": ("Asia", "asia"),
-                "^HSI": ("Asia", "asia"),
-            }
-
-            for index in indices:
-                change_pct = round(index.change_percent, 2)
-                entry = {"value": round(index.last_price, 2), "change_percent": change_pct}
-
-                region_info = region_map.get(index.symbol)
-                if region_info:
-                    region, key = region_info
-                    if region == "US":
-                        us_markets[index.symbol] = entry
-                    elif region == "Europe":
-                        european_markets[index.symbol] = entry
-                    elif region == "Asia":
-                        asian_markets[index.symbol] = entry
-                    overnight_changes[key] = Decimal(str(change_pct))
-
-                total_change += Decimal(str(change_pct))
-                count += 1
-
-            avg_change = total_change / count if count > 0 else Decimal("0")
-
-            # Determine global sentiment from average change
-            if avg_change > Decimal("1"):
-                sentiment = GlobalSentiment.VERY_POSITIVE
-            elif avg_change > Decimal("0.3"):
-                sentiment = GlobalSentiment.POSITIVE
-            elif avg_change > Decimal("-0.3"):
-                sentiment = GlobalSentiment.NEUTRAL
-            elif avg_change > Decimal("-1"):
-                sentiment = GlobalSentiment.NEGATIVE
-            else:
-                sentiment = GlobalSentiment.VERY_NEGATIVE
-
-            return GlobalMarketData(
-                timestamp=datetime.now(),
-                us_markets=us_markets,
-                european_markets=european_markets,
-                asian_markets=asian_markets,
-                global_sentiment=sentiment,
-                global_momentum_score=max(Decimal("-100"), min(Decimal("100"), avg_change * 10)),
-                overnight_changes=overnight_changes,
-                correlations={"us_india": Decimal("0.75")},
-            )
-        except Exception as e:
-            self.logger.warning(f"Failed to get global market data: {e}")
-            return self._create_empty_global_data()
+    async def _get_global_market_data(self, request_id: str):
+        """Global market data not supported - use separate Yahoo service."""
+        self.logger.warning("Global market data requested but not supported by Kite service")
+        return None
 
     async def _get_indian_market_data(self, request_id: str) -> IndianMarketData:
         """Get Indian market data from Kite Connect and Yahoo Finance."""
@@ -383,17 +339,9 @@ class MarketContextService:
                 if "NIFTY 50" in symbol:
                     nifty_change_pct = Decimal(str(change_pct))
 
-            # If Kite is not connected, fall back to Yahoo Finance
+            # If Kite returns no indices, log warning
             if not indices:
-                yf_indices = await self.yahoo_service.get_market_indices()
-                for idx in yf_indices:
-                    if idx.symbol in ("^NSEI", "^NSEBANK"):
-                        indices[idx.symbol] = {
-                            "value": round(idx.last_price, 2),
-                            "change_percent": round(idx.change_percent, 2),
-                        }
-                        if idx.symbol == "^NSEI":
-                            nifty_change_pct = Decimal(str(round(idx.change_percent, 2)))
+                self.logger.warning("No indices data from Kite Connect")
 
             # Determine market regime from Nifty change
             if nifty_change_pct > Decimal("1"):
@@ -447,10 +395,12 @@ class MarketContextService:
             )
 
     async def _get_volatility_data(self, request_id: str) -> VolatilityData:
-        """Get volatility data from Yahoo Finance."""
+        """Get volatility data - India VIX from Kite Connect."""
         try:
-            indicators = await self.yahoo_service.get_economic_indicators()
-            vix_value = Decimal(str(round(indicators.get("india_vix", 18), 2)))
+            # Get India VIX from Kite Connect
+            quotes = await self.kite_client.quote(["NSE:INDIA VIX"])
+            vix_data = quotes.get("NSE:INDIA VIX", {})
+            vix_value = Decimal(str(vix_data.get("last_price", 18)))
 
             # Classify volatility level
             if vix_value < Decimal("12"):
@@ -498,9 +448,9 @@ class MarketContextService:
             # Primary: Use Kite Connect for Indian Nifty sector indices
             sector_performance = await self.kite_client.get_sector_performance()
 
-            # Fallback to Yahoo Finance if Kite returns empty
+            # If no sector data, log warning
             if not sector_performance:
-                sector_performance = await self.yahoo_service.get_sector_performance()
+                self.logger.warning("No sector performance data available from Kite")
 
             sorted_sectors = sorted(sector_performance.items(), key=lambda x: x[1], reverse=True)
 
@@ -536,54 +486,11 @@ class MarketContextService:
         )
 
     async def _get_currency_data(self, request_id: str) -> CurrencyData:
-        """Get currency and commodity data from Yahoo Finance."""
-        try:
-            indicators = await self.yahoo_service.get_economic_indicators()
-
-            usd_inr = (
-                Decimal(str(round(indicators.get("usd_inr", 0), 2)))
-                if indicators.get("usd_inr")
-                else None
-            )
-            crude = (
-                Decimal(str(round(indicators.get("crude_oil", 0), 2)))
-                if indicators.get("crude_oil")
-                else None
-            )
-            gold = (
-                Decimal(str(round(indicators.get("gold_usd", 0), 2)))
-                if indicators.get("gold_usd")
-                else None
-            )
-
-            # Determine currency trend
-            currency_trend = "stable"
-            if usd_inr and usd_inr > Decimal("84"):
-                currency_trend = "weakening"
-            elif usd_inr and usd_inr < Decimal("82"):
-                currency_trend = "strengthening"
-
-            # Determine commodity impact
-            commodity_impact = "neutral"
-            if crude and crude > Decimal("85"):
-                commodity_impact = "negative"
-            elif crude and crude < Decimal("65"):
-                commodity_impact = "positive"
-
-            return CurrencyData(
-                timestamp=datetime.now(),
-                usd_inr=usd_inr,
-                usd_inr_change=None,
-                crude_oil=crude,
-                gold=gold,
-                currency_trend=currency_trend,
-                commodity_impact=commodity_impact,
-            )
-        except Exception as e:
-            self.logger.warning(f"Failed to get currency data: {e}")
-            return CurrencyData(
-                timestamp=datetime.now(), currency_trend="unknown", commodity_impact="unknown"
-            )
+        """Currency and commodity data not supported - use separate Yahoo service."""
+        self.logger.warning("Currency/commodity data requested but not supported by Kite service")
+        return CurrencyData(
+            timestamp=datetime.now(), currency_trend="unknown", commodity_impact="unknown"
+        )
 
     # Analysis methods
 
@@ -684,13 +591,7 @@ class MarketContextService:
 
     # Empty data creators
 
-    def _create_empty_global_data(self) -> GlobalMarketData:
-        """Create empty global data."""
-        return GlobalMarketData(
-            timestamp=datetime.now(),
-            global_sentiment=GlobalSentiment.NEUTRAL,
-            global_momentum_score=Decimal("0"),
-        )
+    # _create_empty_global_data removed - global data not supported
 
     def _create_empty_sector_data(self) -> SectorData:
         """Create empty sector data."""

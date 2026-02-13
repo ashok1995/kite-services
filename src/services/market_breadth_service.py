@@ -121,15 +121,15 @@ class MarketBreadthService:
                     failed += 1
                     continue
 
-                change_percent = quote_data.get("net_change_percent")
+                # Calculate change_percent from last_price and close (Kite doesn't provide net_change_percent)
+                last_price = quote_data.get("last_price", 0)
+                close_price = quote_data.get("ohlc", {}).get("close", 0)
 
-                if change_percent is None:
-                    # Try alternate field names
-                    change_percent = quote_data.get("change_percent")
-
-                if change_percent is None:
+                if not last_price or not close_price or close_price == 0:
                     failed += 1
                     continue
+
+                change_percent = ((last_price - close_price) / close_price) * 100
 
                 # Classify as advancing/declining/unchanged
                 if change_percent > 0.01:  # >0.01% threshold to avoid noise

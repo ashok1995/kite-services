@@ -1,8 +1,9 @@
 # Kite Services – Documentation
 
-**Start here for integration:**
-[integration/INTEGRATION_GUIDE.md](integration/INTEGRATION_GUIDE.md)
-for endpoints and cURL examples.
+**⭐ START HERE FOR INTEGRATION:**
+
+- **[Kite Service Integration Guide](integration/KITE-SERVICE-INTEGRATION-GUIDE.md)** - Complete guide for using this service
+- [Authentication Guide](integration/auth-curl-commands.md) - How to authenticate with Kite Connect
 
 ---
 
