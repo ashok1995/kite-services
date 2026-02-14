@@ -60,6 +60,14 @@ class KiteConfig(BaseSettings):
     api_secret: str = ""
     access_token: str = ""
 
+    # 🚨 CRITICAL: Paper trading mode for order execution
+    # When True: Orders are simulated (NO REAL MONEY)
+    # When False: Orders are placed on Kite (REAL MONEY)
+    paper_trading_mode: bool = Field(
+        default=True,  # Default to SAFE mode
+        description="Enable paper trading mode (simulated orders, no real money)",
+    )
+
     model_config = {"extra": "ignore"}
 
     def __init__(self, **data):
@@ -102,15 +110,7 @@ class KiteConfig(BaseSettings):
     )
 
 
-class YahooConfig(BaseSettings):
-    """Yahoo Finance API configuration."""
-
-    api_key: Optional[str] = Field(None, env="YAHOO_API_KEY")
-    base_url: str = Field("https://query1.finance.yahoo.com", env="YAHOO_BASE_URL")
-    timeout: int = Field(30, env="YAHOO_TIMEOUT")
-    rate_limit: int = Field(100, env="YAHOO_RATE_LIMIT")  # requests per minute
-
-    model_config = {"extra": "ignore"}
+# Yahoo Finance configuration removed - use separate Yahoo service
 
 
 class TradingConfig(BaseSettings):
@@ -255,7 +255,6 @@ class Settings(BaseSettings):
 
     # Sub-configurations
     kite: KiteConfig = Field(default_factory=KiteConfig)
-    yahoo: YahooConfig = Field(default_factory=YahooConfig)
     trading: TradingConfig = Field(default_factory=TradingConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)

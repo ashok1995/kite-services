@@ -28,7 +28,6 @@ from models.unified_api_models import (
     StockIntelligence,
 )
 from services.market_context_service import MarketContextService
-from services.market_intelligence_service import MarketIntelligenceService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -63,6 +62,7 @@ async def get_market_context(request: MarketContextRequest):
         # Initialize response data
         global_markets = []
         indian_markets = []
+        market_breadth = None
         market_sentiment = None
         technical_analysis = []
 
@@ -103,6 +103,16 @@ async def get_market_context(request: MarketContextRequest):
                     ]
             except Exception as e:
                 logger.warning(f"Failed to get Indian market data: {str(e)}")
+
+        # Get market breadth (Nifty 50 constituents)
+        try:
+            breadth_data = await market_context_service.get_market_breadth()
+            if breadth_data:
+                from models.unified_api_models import MarketBreadth
+
+                market_breadth = MarketBreadth(**breadth_data)
+        except Exception as e:
+            logger.warning(f"Failed to get market breadth: {str(e)}")
 
         # Get market sentiment
         if request.include_sentiment:
@@ -151,6 +161,7 @@ async def get_market_context(request: MarketContextRequest):
             success=True,
             global_markets=global_markets,
             indian_markets=indian_markets,
+            market_breadth=market_breadth,
             market_sentiment=market_sentiment,
             technical_analysis=technical_analysis,
             processing_time_ms=round(processing_time, 2),
@@ -163,10 +174,11 @@ async def get_market_context(request: MarketContextRequest):
         raise HTTPException(status_code=500, detail=f"Market context analysis failed: {str(e)}")
 
 
-@router.post("/analysis/intelligence", response_model=IntelligenceResponse)
-async def get_stock_intelligence(request: IntelligenceRequest):
+# Endpoint disabled - depends on deleted market_intelligence_service
+# @router.post("/analysis/intelligence", response_model=IntelligenceResponse)
+async def get_stock_intelligence_DISABLED(request: IntelligenceRequest):
     """
-    Stock-specific intelligence analysis.
+    Stock-specific intelligence analysis - DISABLED.
 
     Provides comprehensive stock analysis including:
     - Overall trend analysis and strength
@@ -275,10 +287,11 @@ async def get_stock_intelligence(request: IntelligenceRequest):
         raise HTTPException(status_code=500, detail=f"Intelligence analysis failed: {str(e)}")
 
 
-@router.post("/analysis/stock", response_model=StockAnalysisResponse)
-async def get_stock_analysis(request: StockAnalysisRequest):
+# Endpoint disabled - depends on deleted market_intelligence_service
+# @router.post("/analysis/stock", response_model=StockAnalysisResponse)
+async def get_stock_analysis_DISABLED(request: StockAnalysisRequest):
     """
-    Single-instrument analysis endpoint.
+    Single-instrument analysis endpoint - DISABLED.
 
     Performs detailed analysis for one stock including:
     - Current price and OHLC data
