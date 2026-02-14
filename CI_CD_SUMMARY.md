@@ -41,7 +41,7 @@
 
 ### Step 1: Create GitHub Repository
 
-1. Go to: https://github.com/new
+1. Go to: <https://github.com/new>
 2. Name: `kite-services`
 3. Choose: **Private**
 4. **Don't** initialize with README/gitignore
@@ -67,6 +67,7 @@ git checkout main
 Go to: `Settings` → `Secrets and variables` → `Actions`
 
 Add:
+
 - `KITE_API_KEY` - Your Kite API key
 - `KITE_ACCESS_TOKEN` - Your Kite access token  
 - `PROD_SSH_PRIVATE_KEY` - SSH key for production server
@@ -74,11 +75,13 @@ Add:
 ### Step 4: Protect Branches
 
 **Main Branch**:
+
 - Require PR before merging
 - Require 1 approval
 - Require status checks to pass
 
 **Develop Branch**:
+
 - Require PR before merging
 - Require status checks to pass
 

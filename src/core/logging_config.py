@@ -10,26 +10,26 @@ import logging
 import logging.handlers
 import sys
 import uuid
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Optional
+
 import structlog
-from datetime import datetime
-from contextvars import ContextVar
 
 from config.settings import LoggingConfig
 
 # Context variables for request tracking
-request_id_var: ContextVar[Optional[str]] = ContextVar('request_id', default=None)
-user_id_var: ContextVar[Optional[str]] = ContextVar('user_id', default=None)
+request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+user_id_var: ContextVar[Optional[str]] = ContextVar("user_id", default=None)
 
 
 def setup_logging(config: LoggingConfig):
     """Setup application logging."""
-    
+
     # Create logs directory
     log_file = Path(config.file_path)
     log_file.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Add context processors for request/user tracking
     def add_request_context(logger, method_name, event_dict):
         """Add request context to log entries."""
@@ -40,7 +40,7 @@ def setup_logging(config: LoggingConfig):
         if user_id:
             event_dict["user_id"] = user_id
         return event_dict
-    
+
     # Configure structlog
     processors = [
         structlog.stdlib.filter_by_level,
@@ -53,13 +53,13 @@ def setup_logging(config: LoggingConfig):
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
     ]
-    
+
     # Add renderer based on format
     if config.format == "json":
         processors.append(structlog.processors.JSONRenderer())
     else:
         processors.append(structlog.dev.ConsoleRenderer())
-    
+
     structlog.configure(
         processors=processors,
         context_class=dict,
@@ -67,34 +67,32 @@ def setup_logging(config: LoggingConfig):
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
-    
+
     # Configure standard logging
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, config.level.upper()))
-    
+
     # Remove existing handlers
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(getattr(logging, config.level.upper()))
-    
+
     if config.format == "json":
-        console_formatter = logging.Formatter('%(message)s')
+        console_formatter = logging.Formatter("%(message)s")
     else:
         console_formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-    
+
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
-    
+
     # File handler with rotation
     file_handler = logging.handlers.RotatingFileHandler(
-        filename=config.file_path,
-        maxBytes=config.max_file_size,
-        backupCount=config.backup_count
+        filename=config.file_path, maxBytes=config.max_file_size, backupCount=config.backup_count
     )
     file_handler.setLevel(getattr(logging, config.level.upper()))
     file_handler.setFormatter(console_formatter)

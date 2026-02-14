@@ -6,13 +6,15 @@ Pydantic models for market data structures used throughout the Kite Services.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional, Any
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class MarketStatus(str, Enum):
     """Market status enumeration."""
+
     OPEN = "open"
     CLOSED = "closed"
     PRE_MARKET = "pre_market"
@@ -22,6 +24,7 @@ class MarketStatus(str, Enum):
 
 class TechnicalIndicators(BaseModel):
     """Technical indicators for a symbol."""
+
     symbol: str
     timestamp: datetime
     rsi: float = Field(default=50.0, description="RSI (14 period)")
@@ -35,9 +38,9 @@ class TechnicalIndicators(BaseModel):
     bollinger_lower: float = Field(default=0.0, description="Bollinger Band Lower")
     volume_sma: float = Field(default=0.0, description="Volume SMA (20 period)")
     atr: float = Field(default=0.0, description="Average True Range (14 period)")
-    
+
     @classmethod
-    def default(cls) -> 'TechnicalIndicators':
+    def default(cls) -> "TechnicalIndicators":
         """Create default technical indicators."""
         return cls(
             symbol="",
@@ -52,12 +55,13 @@ class TechnicalIndicators(BaseModel):
             bollinger_middle=0.0,
             bollinger_lower=0.0,
             volume_sma=0.0,
-            atr=0.0
+            atr=0.0,
         )
 
 
 class InstrumentData(BaseModel):
     """Real-time instrument data."""
+
     symbol: str
     timestamp: datetime
     last_price: float
@@ -73,6 +77,7 @@ class InstrumentData(BaseModel):
 
 class MarketSentiment(BaseModel):
     """Market sentiment analysis."""
+
     timestamp: datetime
     overall_sentiment: str = Field(description="BULLISH, BEARISH, NEUTRAL, etc.")
     sentiment_score: float = Field(description="Sentiment score (-1 to 1)")
@@ -83,6 +88,7 @@ class MarketSentiment(BaseModel):
 
 class IndexRealTimeData(BaseModel):
     """Real-time data for an index."""
+
     symbol: str = Field(..., description="Index symbol (e.g., ^NSEI, ^NSEBANK)")
     name: str = Field(..., description="Index name")
     current_level: float = Field(..., description="Current index level")
@@ -95,6 +101,7 @@ class IndexRealTimeData(BaseModel):
 
 class SupportResistanceLevel(BaseModel):
     """Support and resistance levels for an index."""
+
     level: float = Field(..., description="Price level")
     level_type: str = Field(..., description="Type of level (support/resistance/pivot)")
     strength: str = Field(..., description="Strength of the level (strong/moderate/weak)")
@@ -113,18 +120,24 @@ class ComprehensiveMarketSentiment(BaseModel):
     technical_indicators: TechnicalIndicators = Field(..., description="Technical indicators")
 
     # Support and resistance levels
-    support_resistance_levels: List[SupportResistanceLevel] = Field(..., description="Key support and resistance levels")
+    support_resistance_levels: List[SupportResistanceLevel] = Field(
+        ..., description="Key support and resistance levels"
+    )
 
     # Multi-timeframe sentiment analysis
     short_term_sentiment: str = Field(..., description="Short-term sentiment (1-5 days)")
     short_term_confidence: float = Field(..., description="Short-term sentiment confidence (0-100)")
     medium_term_sentiment: str = Field(..., description="Medium-term sentiment (1-4 weeks)")
-    medium_term_confidence: float = Field(..., description="Medium-term sentiment confidence (0-100)")
+    medium_term_confidence: float = Field(
+        ..., description="Medium-term sentiment confidence (0-100)"
+    )
     long_term_sentiment: str = Field(..., description="Long-term sentiment (1-6 months)")
     long_term_confidence: float = Field(..., description="Long-term sentiment confidence (0-100)")
 
     # Overall market regime
-    overall_market_regime: str = Field(..., description="Overall market regime (bullish/bearish/sideways)")
+    overall_market_regime: str = Field(
+        ..., description="Overall market regime (bullish/bearish/sideways)"
+    )
     regime_confidence: float = Field(..., description="Confidence in market regime (0-100)")
 
     # Risk indicators
@@ -140,7 +153,9 @@ class ComprehensiveMarketSentiment(BaseModel):
     new_highs_lows_ratio: float = Field(..., description="New highs to lows ratio")
 
     # Institutional indicators
-    institutional_flow: str = Field(..., description="Institutional money flow (buying/selling/neutral)")
+    institutional_flow: str = Field(
+        ..., description="Institutional money flow (buying/selling/neutral)"
+    )
     fii_activity: str = Field(..., description="FII activity trend")
 
     # Market internals
@@ -159,14 +174,20 @@ class ComprehensiveMarketSentiment(BaseModel):
 
 class MarketSentimentResponse(BaseModel):
     """Response model for market sentiment endpoint."""
-    indices: List[ComprehensiveMarketSentiment] = Field(..., description="Market sentiment for each index")
-    overall_market_sentiment: str = Field(..., description="Overall market sentiment across all indices")
+
+    indices: List[ComprehensiveMarketSentiment] = Field(
+        ..., description="Market sentiment for each index"
+    )
+    overall_market_sentiment: str = Field(
+        ..., description="Overall market sentiment across all indices"
+    )
     analysis_timestamp: datetime = Field(..., description="When this analysis was generated")
     data_sources: List[str] = Field(..., description="Data sources used for this analysis")
 
 
 class MarketIndex(BaseModel):
     """Market index data."""
+
     symbol: str
     name: str
     last_price: float
@@ -177,6 +198,7 @@ class MarketIndex(BaseModel):
 
 class MarketContext(BaseModel):
     """Comprehensive market context."""
+
     timestamp: datetime
     market_status: MarketStatus
     instruments: Dict[str, InstrumentData] = Field(default_factory=dict)
@@ -188,6 +210,7 @@ class MarketContext(BaseModel):
 
 class SymbolSearchResult(BaseModel):
     """Symbol search result."""
+
     symbol: str
     name: str
     exchange: str
@@ -196,6 +219,7 @@ class SymbolSearchResult(BaseModel):
 
 class HistoricalCandle(BaseModel):
     """Historical price candle."""
+
     timestamp: datetime
     open: float
     high: float
@@ -206,6 +230,7 @@ class HistoricalCandle(BaseModel):
 
 class QuoteData(BaseModel):
     """Real-time quote data."""
+
     symbol: str
     instrument_token: int
     timestamp: datetime
@@ -223,6 +248,7 @@ class QuoteData(BaseModel):
 
 class MarketDepth(BaseModel):
     """Market depth (order book) data."""
+
     symbol: str
     timestamp: datetime
     buy_orders: List[Dict[str, Any]] = Field(default_factory=list)
@@ -233,8 +259,10 @@ class MarketDepth(BaseModel):
 
 # Request/Response models for API
 
+
 class SymbolSearchRequest(BaseModel):
     """Symbol search request."""
+
     query: str = Field(min_length=2, max_length=50)
     exchange: str = Field(default="NSE")
     limit: int = Field(default=10, le=50)
@@ -242,6 +270,7 @@ class SymbolSearchRequest(BaseModel):
 
 class SymbolSearchResponse(BaseModel):
     """Symbol search response."""
+
     results: List[SymbolSearchResult]
     total_count: int
     query: str
@@ -249,6 +278,7 @@ class SymbolSearchResponse(BaseModel):
 
 class MarketContextRequest(BaseModel):
     """Market context request."""
+
     symbols: Optional[List[str]] = None
     include_sentiment: bool = True
     include_indices: bool = True
@@ -257,12 +287,14 @@ class MarketContextRequest(BaseModel):
 
 class MarketContextResponse(BaseModel):
     """Market context response."""
+
     context: MarketContext
     request_id: Optional[str] = None
 
 
 class HistoricalDataRequest(BaseModel):
     """Historical data request."""
+
     symbol: str
     from_date: Optional[datetime] = None
     to_date: Optional[datetime] = None
@@ -272,6 +304,7 @@ class HistoricalDataRequest(BaseModel):
 
 class HistoricalDataResponse(BaseModel):
     """Historical data response."""
+
     symbol: str
     interval: str
     data: List[HistoricalCandle]
@@ -280,17 +313,20 @@ class HistoricalDataResponse(BaseModel):
 
 class QuoteRequest(BaseModel):
     """Quote request."""
+
     symbols: List[str] = Field(min_items=1, max_items=100)
 
 
 class QuoteResponse(BaseModel):
     """Quote response."""
+
     quotes: Dict[str, QuoteData]
     timestamp: datetime
 
 
 class WebSocketMessage(BaseModel):
     """WebSocket message structure."""
+
     type: str  # tick, quote, order_update, etc.
     data: Dict[str, Any]
     timestamp: datetime
@@ -298,6 +334,7 @@ class WebSocketMessage(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Health check response."""
+
     status: str
     service: str
     version: str
@@ -308,6 +345,7 @@ class HealthCheckResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response."""
+
     error: str
     message: str
     type: str
@@ -317,6 +355,7 @@ class ErrorResponse(BaseModel):
 
 class StockPrice(BaseModel):
     """Current stock price data."""
+
     symbol: str
     name: Optional[str] = None
     last_price: float
@@ -333,6 +372,7 @@ class StockPrice(BaseModel):
 
 class MultiStockPricesRequest(BaseModel):
     """Request for multiple stock prices."""
+
     symbols: List[str] = Field(min_items=1, max_items=100)
     include_fundamentals: bool = Field(default=False)
     include_technical_indicators: bool = Field(default=False)
@@ -340,6 +380,7 @@ class MultiStockPricesRequest(BaseModel):
 
 class MultiStockPricesResponse(BaseModel):
     """Response for multiple stock prices."""
+
     prices: Dict[str, StockPrice]
     market_status: MarketStatus
     timestamp: datetime
@@ -348,6 +389,7 @@ class MultiStockPricesResponse(BaseModel):
 
 class HistoricalPriceData(BaseModel):
     """Enhanced historical price data with additional metrics."""
+
     symbol: str
     interval: str
     from_date: datetime
@@ -364,6 +406,7 @@ class HistoricalPriceData(BaseModel):
 
 class MarketOverview(BaseModel):
     """Market overview with key metrics."""
+
     timestamp: datetime
     market_status: MarketStatus
     major_indices: List[MarketIndex]
@@ -377,12 +420,14 @@ class MarketOverview(BaseModel):
 
 class WatchlistRequest(BaseModel):
     """Watchlist request."""
+
     name: str
     symbols: List[str] = Field(min_items=1, max_items=50)
-    
-    
+
+
 class WatchlistResponse(BaseModel):
     """Watchlist response with current prices."""
+
     name: str
     symbols: List[str]
     prices: Dict[str, StockPrice]

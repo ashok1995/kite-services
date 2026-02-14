@@ -63,7 +63,7 @@ log_test "Batch Quotes - Multiple Symbols (50 symbols)"
 RESPONSE=$(curl -s -X POST "$BASE_URL/api/market/quotes" \
   -H "Content-Type: application/json" \
   -d '{
-    "symbols": ["RELIANCE", "TCS", "INFY", "HDFC", "ICICIBANK", "HINDUNILVR", 
+    "symbols": ["RELIANCE", "TCS", "INFY", "HDFC", "ICICIBANK", "HINDUNILVR",
                 "BHARTIARTL", "KOTAKBANK", "ITC", "LT", "SBIN", "AXISBANK",
                 "BAJFINANCE", "ASIANPAINT", "MARUTI", "HCLTECH", "WIPRO",
                 "ULTRACEMCO", "TITAN", "NESTLEIND", "SUNPHARMA", "TECHM",
@@ -105,7 +105,7 @@ log_info "Testing increased QUOTES_MAX_SYMBOLS limit (50→200)"
 # Generate 200 symbols (repeat Nifty 50 four times with variations)
 LARGE_BATCH=$(python3 -c "
 import json
-base_symbols = ['RELIANCE', 'TCS', 'INFY', 'HDFC', 'ICICIBANK', 'HINDUNILVR', 
+base_symbols = ['RELIANCE', 'TCS', 'INFY', 'HDFC', 'ICICIBANK', 'HINDUNILVR',
                 'BHARTIARTL', 'KOTAKBANK', 'ITC', 'LT', 'SBIN', 'AXISBANK',
                 'BAJFINANCE', 'ASIANPAINT', 'MARUTI', 'HCLTECH', 'WIPRO',
                 'ULTRACEMCO', 'TITAN', 'NESTLEIND', 'SUNPHARMA', 'TECHM',

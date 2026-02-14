@@ -1,12 +1,12 @@
 # Push Code to GitHub - Quick Guide
 
-## ✅ Repository is Ready!
+## ✅ Repository is Ready
 
 Your code has been committed and is ready to push to GitHub.
 
 ## Step 1: Create GitHub Repository
 
-1. Go to https://github.com/new
+1. Go to <https://github.com/new>
 2. Repository name: `kite-services`
 3. Description: "Kite Trading Services API with CI/CD"
 4. Choose: **Private** (recommended for trading app)
@@ -46,18 +46,21 @@ Go to your repository: `Settings` → `Secrets and variables` → `Actions`
 Add these secrets:
 
 ### 1. KITE_API_KEY
+
 - Name: `KITE_API_KEY`
 - Value: Your Kite Connect API key (from `.env`)
 
 ### 2. KITE_ACCESS_TOKEN
+
 - Name: `KITE_ACCESS_TOKEN`
 - Value: Your current Kite Connect access token
 
 ### 3. PROD_SSH_PRIVATE_KEY
+
 - Name: `PROD_SSH_PRIVATE_KEY`
 - Value: SSH private key for production server
 
-#### Generate SSH Key for Production:
+#### Generate SSH Key for Production
 
 ```bash
 # Generate SSH key
@@ -108,13 +111,15 @@ git push origin main
 
 ## CI/CD Pipeline Behavior
 
-### When you push to `develop`:
+### When you push to `develop`
+
 - ✅ Runs all tests
 - ✅ Builds Docker image
 - ✅ Tests Docker image (runs container, checks health)
 - ❌ **Does NOT deploy to production**
 
-### When you push to `main`:
+### When you push to `main`
+
 - ✅ Runs all tests
 - ✅ Builds Docker image
 - ✅ Deploys to production (203.57.85.72:8179)
@@ -122,7 +127,8 @@ git push origin main
 
 ## Workflow
 
-### Feature Development:
+### Feature Development
+
 ```bash
 # Create feature branch
 git checkout -b feature/new-feature
@@ -136,7 +142,8 @@ git push origin feature/new-feature
 # Create PR: feature/new-feature → develop
 ```
 
-### Deploy to Production:
+### Deploy to Production
+
 ```bash
 # Merge develop to main
 git checkout main
@@ -149,17 +156,20 @@ git push origin main
 ## Troubleshooting
 
 ### Push Fails - Authentication
+
 ```bash
 # Use personal access token instead
 git remote set-url origin https://YOUR_TOKEN@github.com/YOUR_USERNAME/kite-services.git
 ```
 
 ### Pipeline Fails
+
 - Check `Actions` tab for error details
 - Verify secrets are set correctly
 - Check SSH key permissions
 
 ### Production Deployment Fails
+
 - Verify `PROD_SSH_PRIVATE_KEY` secret is correct
 - Check server connectivity
 - Review deployment logs in Actions

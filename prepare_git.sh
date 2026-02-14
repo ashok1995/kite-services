@@ -33,7 +33,7 @@ else
 - Comprehensive test suite
 - Docker production deployment
 - Git setup documentation"
-    
+
     echo "✅ Commit created"
 fi
 

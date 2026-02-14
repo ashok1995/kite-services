@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Test Stock Data Service - Pure Data Provision
 ==============================================
@@ -13,7 +12,7 @@ No analysis, no intelligence - just rich market data.
 import asyncio
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import requests
 
@@ -24,7 +23,7 @@ try:
             if "=" in line and not line.strip().startswith("#"):
                 key, value = line.strip().split("=", 1)
                 os.environ[key] = value
-except:
+except Exception:
     pass
 
 
@@ -36,16 +35,11 @@ def test_data_models():
     try:
         # Test importing the models
         from src.models.data_models import (
-            Candle,
             DataExamples,
             Exchange,
             HistoricalRequest,
-            HistoricalResponse,
-            HistoricalStockData,
             Interval,
             RealTimeRequest,
-            RealTimeResponse,
-            RealTimeStockData,
         )
 
         print("✅ Model imports successful")
@@ -276,9 +270,9 @@ def test_real_api_endpoints():
                 # Show sample data structure
                 if real_time_data.get("stocks"):
                     sample_stock = real_time_data["stocks"][0]
-                    print(
-                        f"      Sample Data: {sample_stock.get('symbol', 'N/A')} @ ₹{sample_stock.get('last_price', 'N/A')}"
-                    )
+                    sym = sample_stock.get("symbol", "N/A")
+                    price = sample_stock.get("last_price", "N/A")
+                    print(f"      Sample Data: {sym} @ ₹{price}")
                     print(f"      Volume: {sample_stock.get('volume', 'N/A'):,}")
                     print(f"      Change: {sample_stock.get('change_percent', 'N/A')}%")
 
@@ -320,9 +314,13 @@ def test_real_api_endpoints():
 
                     if candles:
                         latest_candle = candles[-1]
-                        print(
-                            f"      Latest: O:{latest_candle.get('open')} H:{latest_candle.get('high')} L:{latest_candle.get('low')} C:{latest_candle.get('close')}"
+                        o, h, l, c = (
+                            latest_candle.get("open"),
+                            latest_candle.get("high"),
+                            latest_candle.get("low"),
+                            latest_candle.get("close"),
                         )
+                        print(f"      Latest: O:{o} H:{h} L:{l} C:{c}")
 
             else:
                 print(f"   ⚠️ Historical Data: Status {response.status_code}")

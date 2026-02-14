@@ -112,8 +112,9 @@ coverage.xml
 celerybeat-schedule
 celerybeat.pid
 
-# Secrets
+# Secrets (do not commit; may contain private keys or placeholders)
 secrets/
+SETUP_SECRETS.md
 *.pem
 *.key
 *.crt

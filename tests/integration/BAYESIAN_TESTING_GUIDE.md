@@ -8,6 +8,7 @@
 ## Overview
 
 This guide covers testing for the Bayesian engine integration features:
+
 - Market breadth calculation
 - Increased batch quote limit (200 symbols)
 - Market context with breadth data
@@ -21,6 +22,7 @@ This guide covers testing for the Bayesian engine integration features:
 **File**: `tests/unit/test_services/test_market_breadth_service.py`
 
 **Test Cases** (15 tests):
+
 1. ✅ Service initialization
 2. ✅ Successful market breadth calculation
 3. ✅ All stocks advancing scenario
@@ -38,6 +40,7 @@ This guide covers testing for the Bayesian engine integration features:
 15. ✅ Failed symbols tracking
 
 **Run Unit Tests**:
+
 ```bash
 # Install dependencies first
 pip install pytest pytest-asyncio
@@ -56,6 +59,7 @@ python -m pytest tests/unit/test_services/test_market_breadth_service.py -v --co
 **File**: `tests/integration/test_bayesian_endpoints.sh`
 
 **Test Cases** (7 tests):
+
 1. ✅ Health check
 2. ✅ Batch quotes with 50 symbols
 3. ✅ Batch quotes with 200 symbols (new limit)
@@ -66,6 +70,7 @@ python -m pytest tests/unit/test_services/test_market_breadth_service.py -v --co
 8. ✅ Real breadth data verification
 
 **Run Integration Tests**:
+
 ```bash
 # Start the service first
 python src/main.py
@@ -80,6 +85,7 @@ python src/main.py
 ```
 
 **Expected Output**:
+
 ```
 ========================================================
   Bayesian Engine Endpoints - Integration Tests
@@ -133,6 +139,7 @@ print(f'MARKET_BREADTH_CACHE_TTL: {s.service.market_breadth_cache_ttl}')
 ```
 
 **Expected Output**:
+
 ```
 QUOTES_MAX_SYMBOLS: 200
 MARKET_BREADTH_ENABLED: True
@@ -147,7 +154,7 @@ MARKET_BREADTH_CACHE_TTL: 60
 curl -X POST http://localhost:8079/api/market/quotes \
   -H "Content-Type: application/json" \
   -d '{
-    "symbols": ["RELIANCE", "TCS", "INFY", "HDFC", "ICICIBANK", 
+    "symbols": ["RELIANCE", "TCS", "INFY", "HDFC", "ICICIBANK",
                 "HINDUNILVR", "BHARTIARTL", "KOTAKBANK", "ITC", "LT",
                 "SBIN", "AXISBANK", "BAJFINANCE", "ASIANPAINT", "MARUTI",
                 "HCLTECH", "WIPRO", "ULTRACEMCO", "TITAN", "NESTLEIND",
@@ -183,6 +190,7 @@ curl -X POST http://localhost:8079/api/market/quotes \
 ```
 
 **Expected**:
+
 - `total_symbols`: 200
 - `successful_symbols`: 150-200 (depending on market data availability)
 - `processing_time_ms`: <5000ms
@@ -206,6 +214,7 @@ curl -X POST http://localhost:8079/api/analysis/context \
 ```
 
 **Expected Output**:
+
 ```json
 {
   "advances": 35,
@@ -216,6 +225,7 @@ curl -X POST http://localhost:8079/api/analysis/context \
 ```
 
 **Verify**:
+
 - Values should be real (not 0 or default)
 - Total (advances + declines + unchanged) should be ≤50 (Nifty 50)
 - AD ratio should match: advances / declines
@@ -254,6 +264,7 @@ curl -s "http://localhost:8079/api/market/instruments?exchange=NSE&instrument_ty
 ```
 
 **Expected Output**:
+
 ```json
 {
   "tradingsymbol": "RELIANCE",
@@ -292,6 +303,7 @@ time curl -X POST http://localhost:8079/api/market/quotes \
 ```
 
 **Expected**:
+
 - 50 symbols: ~1-2s
 - 100 symbols: ~2-3s
 - 200 symbols: ~3-5s
@@ -315,6 +327,7 @@ time curl -s -X POST http://localhost:8079/api/analysis/context \
 ```
 
 **Expected**:
+
 - First call: 500-1000ms
 - Second call: 50-200ms (much faster due to cache)
 
@@ -407,6 +420,7 @@ echo "Done!"
 ## Test Data
 
 ### Nifty 50 Symbols (for breadth testing)
+
 ```
 RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK, HINDUNILVR, BHARTIARTL, KOTAKBANK,
 ITC, LT, SBIN, AXISBANK, BAJFINANCE, ASIANPAINT, MARUTI, HCLTECH, WIPRO,
@@ -422,7 +436,9 @@ ADANIENT, HDFCLIFE, TATACONSUM
 ## Troubleshooting
 
 ### Issue: Unit tests fail with import errors
-**Solution**: 
+
+**Solution**:
+
 ```bash
 # Add src to PYTHONPATH
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
@@ -430,19 +446,25 @@ pytest tests/unit/test_services/test_market_breadth_service.py -v
 ```
 
 ### Issue: Integration tests fail - "Service not accessible"
-**Solution**: 
+
+**Solution**:
+
 - Ensure service is running: `python src/main.py`
 - Check port: `netstat -an | grep 8079`
 - Verify health: `curl http://localhost:8079/health`
 
 ### Issue: Market breadth returns all zeros
+
 **Solution**:
+
 - Check if Kite Connect is authenticated
 - Verify during market hours (9:15 AM - 3:30 PM IST)
 - Check logs: `tail -f logs/kite_services.log`
 
 ### Issue: Batch quotes fail with 200 symbols
+
 **Solution**:
+
 - Verify config: `grep QUOTES_MAX_SYMBOLS envs/development.env`
 - Restart service after config change
 - Check service logs for errors

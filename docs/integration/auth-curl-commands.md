@@ -3,6 +3,7 @@
 Complete reference for all authentication endpoints with ready-to-use cURL commands.
 
 **Base URLs:**
+
 - **Development**: `http://localhost:8079`
 - **Production**: `http://203.57.85.72:8179`
 
@@ -21,6 +22,7 @@ curl -s http://localhost:8079/api/auth/credentials/status | python3 -m json.tool
 ```
 
 **Response:**
+
 ```json
 {
     "api_key_configured": true,
@@ -42,6 +44,7 @@ curl -X POST http://203.57.85.72:8179/api/auth/credentials \
     "api_key": "YOUR_KITE_API_KEY",
     "api_secret": "YOUR_KITE_API_SECRET"
   }' | python3 -m json.tool
+<!-- pragma: allowlist secret -->
 
 # Development
 curl -X POST http://localhost:8079/api/auth/credentials \
@@ -53,6 +56,7 @@ curl -X POST http://localhost:8079/api/auth/credentials \
 ```
 
 **Response:**
+
 ```json
 {
     "success": true,
@@ -75,6 +79,7 @@ curl -s http://localhost:8079/api/token/callback-url | python3 -m json.tool
 ```
 
 **Response:**
+
 ```json
 {
     "callback_url": "http://203.57.85.72:8179/api/redirect",
@@ -100,6 +105,7 @@ curl -s http://localhost:8079/api/auth/login-url | python3 -m json.tool
 ```
 
 **Response:**
+
 ```json
 {
     "login_url": "https://kite.zerodha.com/connect/login?api_key=dmy4m1i95o6myj60&v=3",
@@ -107,7 +113,8 @@ curl -s http://localhost:8079/api/auth/login-url | python3 -m json.tool
 }
 ```
 
-**Action:** 
+**Action:**
+
 1. Open the `login_url` in your browser
 2. Log in to Kite
 3. After login, Kite redirects to your callback URL with `request_token` in the query string
@@ -136,6 +143,7 @@ curl -X POST http://localhost:8079/api/auth/login \
 ```
 
 **Response:**
+
 ```json
 {
     "status": "authenticated",
@@ -179,6 +187,7 @@ curl -X PUT http://localhost:8079/api/auth/token \
 ```
 
 **Response:**
+
 ```json
 {
     "status": "authenticated",
@@ -210,6 +219,7 @@ curl -s http://localhost:8079/api/auth/token-status | python3 -m json.tool
 ```
 
 **Response (Token Valid):**
+
 ```json
 {
     "api_key_configured": true,
@@ -224,6 +234,7 @@ curl -s http://localhost:8079/api/auth/token-status | python3 -m json.tool
 ```
 
 **Response (Token Missing/Invalid):**
+
 ```json
 {
     "api_key_configured": true,
@@ -252,6 +263,7 @@ curl -s http://localhost:8079/api/auth/status | python3 -m json.tool
 ```
 
 **Response (Authenticated):**
+
 ```json
 {
     "status": "authenticated",
@@ -268,6 +280,7 @@ curl -s http://localhost:8079/api/auth/status | python3 -m json.tool
 ```
 
 **Response (Not Configured):**
+
 ```json
 {
     "status": "not_configured",
@@ -294,6 +307,7 @@ curl -s http://localhost:8079/api/auth/status | python3 -m json.tool
 curl -X POST http://203.57.85.72:8179/api/auth/credentials \
   -H "Content-Type: application/json" \
   -d '{"api_key":"dmy4m1i95o6myj60","api_secret":"vwquiugjo9degz32sj2mrzot4d1nrmll"}' | python3 -m json.tool
+<!-- pragma: allowlist secret -->
 
 # Step 2: Get login URL
 curl -s http://203.57.85.72:8179/api/auth/login-url | python3 -m json.tool
@@ -352,13 +366,17 @@ curl -X PUT http://203.57.85.72:8179/api/auth/token \
 ## Troubleshooting
 
 ### "api_key not configured"
+
 - Run: `POST /api/auth/credentials` with your `api_key` and `api_secret`
 
 ### "No access_token in file"
+
 - Complete the login flow: `GET /api/auth/login-url` → open URL → copy `request_token` → `POST /api/auth/login`
 
 ### "Token invalid or expired"
+
 - Token expired (daily at 6 AM IST). Refresh using the daily token refresh flow above.
 
 ### "Token verification failed"
+
 - Token may be invalid. Generate a new one using the complete flow.

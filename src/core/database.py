@@ -69,7 +69,7 @@ async def init_database():
                 target = Path(db_dir).resolve()
                 target.mkdir(parents=True, exist_ok=True)
                 try:
-                    os.chmod(str(target), 0o777)
+                    os.chmod(str(target), 0o777)  # nosec B103 - db dir for container
                 except OSError:
                     pass  # May fail in restricted envs
                 logger.info(f"✅ Database directory ensured: {target}")

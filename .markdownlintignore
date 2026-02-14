@@ -1,2 +1,5 @@
 # Keep a Changelog format conflicts with MD013/MD024
 CHANGELOG.md
+# Root-level docs (placement rule: prefer docs/ subfolders)
+SETUP_SECRETS.md
+PUSH_TO_GIT.md

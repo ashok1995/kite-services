@@ -5,9 +5,10 @@ Pytest Configuration and Fixtures
 Shared fixtures and configuration for all tests.
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add src to Python path for imports
 src_path = Path(__file__).parent.parent / "src"
@@ -24,4 +25,3 @@ def sample_symbols():
 def sample_indices():
     """Sample index symbols for testing."""
     return ["^NSEI", "^NSEBANK"]
-
