@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Integration – Kite Services</title>
+  <style>
+    :root { --bg: #0f1419; --fg: #e6edf3; --accent: #58a6ff; --muted: #8b949e; --code-bg: #161b22; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 2rem; line-height: 1.6; max-width: 56rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .back { margin-bottom: 1.5rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h2 { font-size: 1.15rem; margin: 2rem 0 0.75rem 0; border-bottom: 1px solid #30363d; padding-bottom: 0.25rem; }
+    pre { background: var(--code-bg); border: 1px solid #30363d; border-radius: 6px; padding: 1rem; overflow-x: auto; font-size: 0.875rem; white-space: pre-wrap; }
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #30363d; }
+    th { color: var(--muted); font-weight: 500; }
+    p { margin: 0.5rem 0; color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="back"><a href="index.html">← Documentation index</a></div>
+  <h1>Integration guide</h1>
+  <p>Single source: <a href="../integration/INTEGRATION.md">INTEGRATION.md</a>. Use <code>BASE</code> = dev <code>http://localhost:8079</code> or prod <code>http://YOUR_HOST:8179</code>.</p>
+
+  <h2>Base URLs</h2>
+  <table>
+    <tr><th>Env</th><th>URL</th><th>Port</th></tr>
+    <tr><td>Dev</td><td>http://localhost:8079</td><td>8079</td></tr>
+    <tr><td>Staging</td><td>http://localhost:8279</td><td>8279</td></tr>
+    <tr><td>Prod</td><td>http://YOUR_HOST:8179</td><td>8179</td></tr>
+  </table>
+
+  <h2>1. Authentication</h2>
+  <p>Set credentials (first-time), get login URL, open in browser, then exchange request_token for access_token.</p>
+  <!-- pragma: allowlist secret -->
+  <pre>curl -X POST "$BASE/api/auth/credentials" -H "Content-Type: application/json" \
+  -d '{"api_key": "YOUR_KITE_API_KEY", "api_secret": "YOUR_KITE_API_SECRET"}' | python3 -m json.tool
+
+curl -s "$BASE/api/auth/login-url" | python3 -m json.tool
+# Open login_url in browser, copy request_token from redirect
+
+curl -X POST "$BASE/api/auth/login" -H "Content-Type: application/json" \
+  -d '{"request_token": "YOUR_REQUEST_TOKEN"}' | python3 -m json.tool
+
+curl -s "$BASE/api/auth/status" | python3 -m json.tool</pre>
+
+  <h2>2. Health</h2>
+  <pre>curl -s "$BASE/health" | python3 -m json.tool
+curl -s "$BASE/"      | python3 -m json.tool</pre>
+
+  <h2>3. Market data</h2>
+  <pre>curl -s "$BASE/api/market/status" | python3 -m json.tool
+curl -s -X POST "$BASE/api/market/quotes" -H "Content-Type: application/json" \
+  -d '{"symbols": ["RELIANCE", "TCS"], "exchange": "NSE"}' | python3 -m json.tool
+curl -s -X POST "$BASE/api/market/data" -H "Content-Type: application/json" \
+  -d '{"symbols": ["RELIANCE", "TCS"], "exchange": "NSE", "data_type": "quote"}' | python3 -m json.tool
+curl -s "$BASE/api/market/historical/RELIANCE?interval=day&from_date=2025-02-01&to_date=2025-02-14" | python3 -m json.tool</pre>
+
+  <h2>4. Analysis</h2>
+  <pre>curl -s -X POST "$BASE/api/analysis/context" -H "Content-Type: application/json" \
+  -d '{"include_global_data": true, "include_sector_data": true}' | python3 -m json.tool
+curl -s -X POST "$BASE/api/analysis/context/enhanced" -H "Content-Type: application/json" \
+  -d '{"include_primary": true}' | python3 -m json.tool</pre>
+
+  <h2>5. Trading</h2>
+  <pre>curl -s "$BASE/api/trading/status" | python3 -m json.tool
+curl -s -X POST "$BASE/api/opportunities/quick" -H "Content-Type: application/json" \
+  -d '{"symbols": ["NSE:NIFTY 50"], "timeframe": "5minute"}' | python3 -m json.tool</pre>
+
+  <p style="margin-top: 2rem;">Full request-body reference: <a href="request-response-models.html">request-response-models.html</a>. Interactive API: <code>$BASE/docs</code> (Swagger).</p>
+</body>
+</html>

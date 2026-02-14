@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kite Services – Documentation</title>
+  <style>
+    :root { --bg: #0f1419; --fg: #e6edf3; --accent: #58a6ff; --muted: #8b949e; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 2rem; line-height: 1.6; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; }
+    nav { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.25rem; max-width: 32rem; }
+    .card h2 { font-size: 1.1rem; margin: 0 0 0.5rem 0; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    ul { margin: 0.5rem 0 0 1.2rem; padding: 0; }
+    li { margin: 0.25rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Kite Services – Documentation</h1>
+  <p class="sub">Single source of truth: API reference, integration, and request/response models.</p>
+
+  <nav>
+    <a href="api-reference.html">API Reference (full, all endpoints)</a>
+    <a href="integration.html">Integration (cURL)</a>
+    <a href="request-response-models.html">Quick request/response copy-paste</a>
+    <a href="../api/api-reference.md">API Reference (Markdown)</a>
+    <a href="../integration/INTEGRATION.md">Integration Guide (Markdown)</a>
+  </nav>
+
+  <section>
+    <h2 style="font-size:1rem; color: var(--muted); margin-bottom: 0.75rem;">Canonical docs</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+      <div class="card">
+        <h2>API reference (HTML)</h2>
+        <p>All endpoints, request/response, errors — nothing missing.</p>
+        <ul>
+          <li><a href="api-reference.html">api-reference.html</a></li>
+          <li><a href="../api/api-reference.md">api-reference.md</a></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Integration</h2>
+        <p>Auth flow, base URLs, cURL examples.</p>
+        <ul>
+          <li><a href="integration.html">integration.html</a></li>
+          <li><a href="../integration/INTEGRATION.md">INTEGRATION.md</a></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Data models</h2>
+        <p>Pydantic/data structures; quick copy-paste in HTML.</p>
+        <ul>
+          <li><a href="api-reference.html">api-reference.html</a> (full request/response)</li>
+          <li><a href="../api/data-models.md">data-models.md</a></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Architecture &amp; deployment</h2>
+        <p>Design, folder structure, deployment.</p>
+        <ul>
+          <li><a href="../architecture/architecture.md">architecture.md</a></li>
+          <li><a href="../deployment/README.md">deployment/README.md</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <p style="margin-top: 2rem; color: var(--muted); font-size: 0.85rem;">
+    Live Swagger: <code>http://localhost:8079/docs</code> (dev) or <code>http://YOUR_HOST:8179/docs</code> (prod).
+  </p>
+</body>
+</html>

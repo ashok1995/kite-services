@@ -42,7 +42,7 @@ class MarketContextService:
         self.kite_client = kite_client
         self.logger = logger or get_logger(__name__)
 
-        # Initialize market breadth service (Bayesian engine requirement)
+        # Initialize market breadth service for advance/decline data
         self.breadth_service = MarketBreadthService(kite_client, logger)
 
         self.global_indices = {
@@ -355,7 +355,7 @@ class MarketContextService:
             else:
                 regime = MarketRegime.BEARISH
 
-            # Get market breadth from Nifty 50 constituents (Bayesian engine requirement)
+            # Get market breadth from Nifty 50 constituents
             breadth_data = await self.breadth_service.get_market_breadth()
 
             # Extract breadth metrics

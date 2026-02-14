@@ -315,7 +315,7 @@ curl -X DELETE http://localhost:8079/api/trading/orders/PAPER_CCE6E4CC92F6/cance
 
 ---
 
-## 🎯 **Integration with Your Bayesian Engine**
+## 🎯 **Integration with Your Trading / Signal System**
 
 ### Scenario 1: Test Order Execution Logic
 
@@ -351,11 +351,11 @@ async def test_order_placement():
 ### Scenario 2: Validate Order Logic Before Production
 
 ```python
-async def validate_bayesian_signals():
+async def validate_trading_signals():
     """Validate trading signals with paper trading."""
 
-    # Get signals from Bayesian engine
-    signals = await get_bayesian_signals()  # Your function
+    # Get signals from your signal/analysis system
+    signals = await get_trading_signals()  # Your function
 
     for signal in signals:
         if signal["score"] > 0.75:
@@ -434,7 +434,7 @@ async def place_real_order(signal):
 - ✅ Test all order types
 - ✅ Verify order lifecycle
 - ✅ Check error handling
-- ✅ Validate with Bayesian engine
+- ✅ Validate with your signal/trading system
 
 ### Staging (Paper Trading)
 
@@ -485,7 +485,7 @@ Status: ✅ READY FOR TESTING
 
 ## 🚀 **Next Steps**
 
-### 1. Test with Your Bayesian Engine (Development)
+### 1. Test with Your Trading System (Development)
 
 ```bash
 # Your service is running on port 8079 with paper trading ON
@@ -580,7 +580,7 @@ All responses include `paper_trading` flag:
 - ✅ Paper trading enabled (SAFE)
 - ✅ All order types working
 - ✅ Complete order lifecycle tested
-- ✅ Ready for integration with Bayesian engine
+- ✅ Ready for integration with your trading/signal system
 - ✅ NO RISK of accidental real orders
 
 **Start testing your order execution logic now!** 🚀

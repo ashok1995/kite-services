@@ -41,7 +41,6 @@ Generate access token from request token.
   "request_token": "from_redirect_url",
   "api_secret": "optional_if_in_env"
 }
-<!-- pragma: allowlist secret -->
 ```
 
 **Response**: 200 OK
@@ -146,6 +145,44 @@ Market open/closed status.
 
 List instruments. Query: `?limit=10`, `?exchange=NSE`.
 
+### GET /api/market/historical/{symbol}
+
+Historical OHLCV candles for a symbol.
+
+**Query params:**
+
+- `symbol` (path) – e.g. RELIANCE, TCS
+- `interval` – minute, 5minute, 15minute, 30minute, hour, day (default: 5minute)
+- `from_date` – YYYY-MM-DD (default: 7 days ago)
+- `to_date` – YYYY-MM-DD (default: today)
+
+**Example:** `GET /api/market/historical/RELIANCE?interval=day&from_date=2025-02-01&to_date=2025-02-14`
+
+**Response:** 200 OK
+
+```json
+{
+  "symbol": "RELIANCE",
+  "instrument_token": 738561,
+  "interval": "day",
+  "from_date": "2025-02-01",
+  "to_date": "2025-02-14",
+  "candles": [
+    {
+      "date": "2025-02-01",
+      "open": 2500.0,
+      "high": 2520.0,
+      "low": 2490.0,
+      "close": 2510.0,
+      "volume": 1000000
+    }
+  ],
+  "total_candles": 10,
+  "processing_time_ms": 450,
+  "timestamp": "2025-02-14T12:00:00"
+}
+```
+
 ### POST /api/market/quotes
 
 Real-time quotes for multiple symbols (up to 200).
@@ -210,7 +247,7 @@ Market context with breadth data (global, Indian, sentiment, technicals).
 }
 ```
 
-**New Fields (Bayesian Engine Integration)**:
+**New Fields (market breadth)**:
 
 - `advances`: Number of advancing stocks (from Nifty 50)
 - `declines`: Number of declining stocks (from Nifty 50)

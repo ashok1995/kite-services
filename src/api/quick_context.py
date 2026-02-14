@@ -7,7 +7,6 @@ Optimized for frequent polling by trading systems.
 """
 
 from datetime import datetime
-from decimal import Decimal
 from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -58,7 +57,7 @@ async def get_quick_market_context():
     """
     Get quick market context for trading systems.
 
-    **Purpose:** Fast endpoint for frequent polling by Bayesian engine and trading systems.
+    **Purpose:** Fast endpoint for frequent polling by trading systems and dashboards.
 
     **Returns:**
     - Market regime (bullish/bearish/sideways)

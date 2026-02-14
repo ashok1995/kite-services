@@ -1,4 +1,6 @@
 FROM python:3.13-slim
+# Label so cleanup scripts only remove this project's images (VM may run other services)
+LABEL project=kite-services
 
 # Set working directory
 WORKDIR /app

@@ -3,7 +3,7 @@ Market Breadth Service
 ======================
 
 Calculates market breadth metrics (advance/decline ratio, advancing/declining stocks).
-Used for market context enrichment in Bayesian engine integration.
+Used for market context enrichment (advance/decline ratio).
 
 Following workspace rules:
 - Stateless service logic
@@ -121,7 +121,7 @@ class MarketBreadthService:
                     failed += 1
                     continue
 
-                # Calculate change_percent from last_price and close (Kite doesn't provide net_change_percent)
+                # change_percent from last_price and close (Kite has no net_change_percent)
                 last_price = quote_data.get("last_price", 0)
                 close_price = quote_data.get("ohlc", {}).get("close", 0)
 
