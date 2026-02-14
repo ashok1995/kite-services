@@ -1,6 +1,6 @@
 /**
  * Simple Kite Token Manager for UI Integration
- * 
+ *
  * Clean, minimal solution for token management in your existing UI
  */
 
@@ -43,13 +43,13 @@ class SimpleKiteTokenManager {
                 request_token: requestToken
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (!data.success) {
             throw new Error(data.detail || 'Failed to generate access token');
         }
-        
+
         return data;
     }
 
@@ -62,11 +62,11 @@ class SimpleKiteTokenManager {
         try {
             const url = new URL(callbackUrl);
             const token = url.searchParams.get('request_token');
-            
+
             if (!token) {
                 throw new Error('No request_token found in URL');
             }
-            
+
             return token;
         } catch (error) {
             throw new Error('Invalid callback URL: ' + error.message);
@@ -153,35 +153,35 @@ function extractRequestTokenFromUrl(callbackUrl) {
 // Create a simple token status widget
 function createTokenStatusWidget(containerId, apiBase = 'http://localhost:8079') {
     const container = document.getElementById(containerId);
-    
+
     container.innerHTML = `
         <div id="token-widget" style="
-            border: 2px solid #e9ecef; 
-            border-radius: 8px; 
-            padding: 15px; 
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
             background: #f8f9fa;
         ">
             <div id="token-status-display">Loading token status...</div>
             <button id="refresh-status-btn" style="
-                background: #3498db; 
-                color: white; 
-                border: none; 
-                padding: 8px 16px; 
-                border-radius: 4px; 
-                cursor: pointer; 
+                background: #3498db;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                cursor: pointer;
                 margin-top: 10px;
             ">
                 🔄 Check Status
             </button>
         </div>
     `;
-    
+
     const updateStatus = async () => {
         try {
             const status = await new SimpleKiteTokenManager(apiBase).checkTokenStatus();
             const statusColor = status.token_valid ? '#27ae60' : '#e74c3c';
             const statusText = status.token_valid ? '✅ Valid' : '❌ Expired';
-            
+
             document.getElementById('token-status-display').innerHTML = `
                 <div style="color: ${statusColor}; font-weight: bold;">
                     Kite Token: ${statusText}
@@ -191,11 +191,11 @@ function createTokenStatusWidget(containerId, apiBase = 'http://localhost:8079')
                 </div>
             `;
         } catch (error) {
-            document.getElementById('token-status-display').innerHTML = 
+            document.getElementById('token-status-display').innerHTML =
                 '<div style="color: #e74c3c;">Error loading status</div>';
         }
     };
-    
+
     document.getElementById('refresh-status-btn').onclick = updateStatus;
     updateStatus(); // Initial load
 }
@@ -203,79 +203,79 @@ function createTokenStatusWidget(containerId, apiBase = 'http://localhost:8079')
 // Create a simple token refresh form
 function createTokenRefreshForm(containerId, apiBase = 'http://localhost:8079') {
     const container = document.getElementById(containerId);
-    
+
     container.innerHTML = `
         <div style="border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; background: white;">
             <h3>🔄 Refresh Kite Token</h3>
-            
+
             <div style="margin: 15px 0;">
                 <button id="open-login-btn" style="
-                    background: #3498db; 
-                    color: white; 
-                    border: none; 
-                    padding: 12px 20px; 
-                    border-radius: 6px; 
-                    cursor: pointer; 
+                    background: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    cursor: pointer;
                     font-weight: bold;
                 ">
                     🔗 Open Kite Login
                 </button>
             </div>
-            
+
             <div style="margin: 15px 0;">
                 <label style="display: block; margin-bottom: 5px; font-weight: bold;">
                     Request Token:
                 </label>
                 <input type="text" id="request-token-input" placeholder="Paste request token here..." style="
-                    width: 100%; 
-                    padding: 10px; 
-                    border: 2px solid #e9ecef; 
-                    border-radius: 4px; 
+                    width: 100%;
+                    padding: 10px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 4px;
                     box-sizing: border-box;
                 ">
             </div>
-            
+
             <button id="submit-token-btn" style="
-                background: #27ae60; 
-                color: white; 
-                border: none; 
-                padding: 12px 20px; 
-                border-radius: 6px; 
-                cursor: pointer; 
+                background: #27ae60;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                cursor: pointer;
                 font-weight: bold;
             ">
                 ✅ Generate Access Token
             </button>
-            
+
             <div id="refresh-result" style="margin-top: 15px;"></div>
         </div>
     `;
-    
+
     const manager = new SimpleKiteTokenManager(apiBase);
-    
+
     document.getElementById('open-login-btn').onclick = async () => {
         try {
             await openKiteLogin(apiBase);
-            document.getElementById('refresh-result').innerHTML = 
+            document.getElementById('refresh-result').innerHTML =
                 '<div style="color: #3498db; padding: 10px; background: #e8f4fd; border-radius: 4px;">Login page opened! After login, paste the request token above.</div>';
         } catch (error) {
-            document.getElementById('refresh-result').innerHTML = 
+            document.getElementById('refresh-result').innerHTML =
                 `<div style="color: #e74c3c; padding: 10px; background: #fadbd8; border-radius: 4px;">Error: ${error.message}</div>`;
         }
     };
-    
+
     document.getElementById('submit-token-btn').onclick = async () => {
         const requestToken = document.getElementById('request-token-input').value.trim();
         const resultDiv = document.getElementById('refresh-result');
-        
+
         if (!requestToken) {
             resultDiv.innerHTML = '<div style="color: #e74c3c;">Please enter a request token</div>';
             return;
         }
-        
+
         try {
             const tokenData = await manager.submitRequestToken(requestToken);
-            
+
             resultDiv.innerHTML = `
                 <div style="color: #27ae60; padding: 15px; background: #d5f4e6; border-radius: 4px;">
                     <h4>✅ Success!</h4>
@@ -287,12 +287,12 @@ function createTokenRefreshForm(containerId, apiBase = 'http://localhost:8079') 
                     <p><strong>Next:</strong> Update KITE_ACCESS_TOKEN and restart service</p>
                 </div>
             `;
-            
+
             // Clear input
             document.getElementById('request-token-input').value = '';
-            
+
         } catch (error) {
-            resultDiv.innerHTML = 
+            resultDiv.innerHTML =
                 `<div style="color: #e74c3c; padding: 10px; background: #fadbd8; border-radius: 4px;">Error: ${error.message}</div>`;
         }
     };
@@ -317,7 +317,7 @@ console.log('Configure this URL:', callbackUrl);
 await openKiteLogin();
 
 // Example 4: Convert request token
-const tokenData = await convertRequestToken('qQDXpFOTSBW59mcej7cmRmM0xtBWA1Iw');
+const tokenData = await convertRequestToken('qQDXpFOTSBW59mcej7cmRmM0xtBWA1Iw'); // pragma: allowlist secret
 console.log('New access token:', tokenData.access_token);
 
 // Example 5: Create status widget
@@ -329,7 +329,7 @@ createTokenRefreshForm('refresh-container');
 
 // Export for different module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { 
+    module.exports = {
         SimpleKiteTokenManager,
         isKiteTokenValid,
         getKiteCallbackUrl,

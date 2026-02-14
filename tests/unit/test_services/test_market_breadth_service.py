@@ -5,10 +5,11 @@ Unit Tests for Market Breadth Service
 Tests for market breadth calculation logic.
 """
 
-import pytest
 from datetime import datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from services.market_breadth_service import MarketBreadthService
 
@@ -38,9 +39,7 @@ class TestMarketBreadthService:
         assert service._cache_timestamp is None
 
     @pytest.mark.asyncio
-    async def test_market_breadth_calculation_success(
-        self, service, mock_kite_client
-    ):
+    async def test_market_breadth_calculation_success(self, service, mock_kite_client):
         """Test successful market breadth calculation."""
         # Mock quote response with advancing/declining stocks
         mock_kite_client.quote.return_value = {
@@ -128,9 +127,7 @@ class TestMarketBreadthService:
         assert mock_kite_client.quote.call_count == 2  # New call made
 
     @pytest.mark.asyncio
-    async def test_market_breadth_no_quotes_returned(
-        self, service, mock_kite_client
-    ):
+    async def test_market_breadth_no_quotes_returned(self, service, mock_kite_client):
         """Test handling when no quotes are returned."""
         mock_kite_client.quote.return_value = None
 
@@ -157,9 +154,7 @@ class TestMarketBreadthService:
         assert "error" in breadth["message"].lower()
 
     @pytest.mark.asyncio
-    async def test_market_breadth_missing_change_percent(
-        self, service, mock_kite_client
-    ):
+    async def test_market_breadth_missing_change_percent(self, service, mock_kite_client):
         """Test handling of missing net_change_percent field."""
         mock_kite_client.quote.return_value = {
             "NSE:RELIANCE": {"last_price": 2500},  # No net_change_percent
@@ -174,9 +169,7 @@ class TestMarketBreadthService:
         assert breadth["total_stocks"] == 1
 
     @pytest.mark.asyncio
-    async def test_market_breadth_threshold_boundaries(
-        self, service, mock_kite_client
-    ):
+    async def test_market_breadth_threshold_boundaries(self, service, mock_kite_client):
         """Test classification at threshold boundaries (0.01% threshold)."""
         mock_kite_client.quote.return_value = {
             "NSE:SYM1": {"net_change_percent": 0.011},  # Advancing

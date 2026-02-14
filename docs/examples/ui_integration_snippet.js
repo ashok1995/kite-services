@@ -1,6 +1,6 @@
 /**
  * Kite Token Manager - UI Integration Snippet
- * 
+ *
  * Simple JavaScript class to integrate Kite token status into your existing UI
  * Usage: Include this in your existing application and initialize with your API base URL
  */
@@ -29,12 +29,12 @@ class KiteTokenManager {
         try {
             const response = await fetch(`${this.apiBase}/api/token/status`);
             const data = await response.json();
-            
+
             // Trigger callback if provided
             if (this.onStatusChange) {
                 this.onStatusChange(data);
             }
-            
+
             return data;
         } catch (error) {
             console.error('Error checking token status:', error);
@@ -98,7 +98,7 @@ class KiteTokenManager {
         if (this.autoRefreshInterval) {
             clearInterval(this.autoRefreshInterval);
         }
-        
+
         this.autoRefreshInterval = setInterval(() => {
             this.checkTokenStatus().catch(error => {
                 console.error('Auto-refresh error:', error);
@@ -140,7 +140,7 @@ class KiteTokenManager {
      */
     async getFormattedStatus() {
         const status = await this.checkTokenStatus();
-        
+
         return {
             tokenStatus: status.kite_token_valid ? 'Valid' : 'Expired',
             tokenIcon: status.kite_token_valid ? '✅' : '❌',
@@ -162,10 +162,10 @@ class KiteTokenManager {
 async function createTokenStatusWidget(containerId, apiBase = 'http://localhost:8079') {
     const container = document.getElementById(containerId);
     const tokenManager = await new KiteTokenManager(apiBase).init();
-    
+
     async function updateWidget() {
         const status = await tokenManager.getFormattedStatus();
-        
+
         container.innerHTML = `
             <div class="token-status-widget">
                 <div class="status-item">
@@ -185,13 +185,13 @@ async function createTokenStatusWidget(containerId, apiBase = 'http://localhost:
             </div>
         `;
     }
-    
+
     // Initial load
     await updateWidget();
-    
+
     // Auto-refresh every 30 seconds
     setInterval(updateWidget, 30000);
-    
+
     return tokenManager;
 }
 
@@ -205,7 +205,7 @@ async function refreshToken(apiBase = 'http://localhost:8079') {
 async function ensureTokenValid(apiBase = 'http://localhost:8079') {
     const tokenManager = new KiteTokenManager(apiBase);
     const isValid = await tokenManager.isTokenValid();
-    
+
     if (!isValid) {
         const shouldRefresh = confirm('Kite token has expired. Would you like to refresh it now?');
         if (shouldRefresh) {
@@ -213,7 +213,7 @@ async function ensureTokenValid(apiBase = 'http://localhost:8079') {
         }
         throw new Error('Kite token expired. Please refresh your token.');
     }
-    
+
     return true;
 }
 

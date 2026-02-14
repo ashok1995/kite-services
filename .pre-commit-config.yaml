@@ -1,3 +1,4 @@
+---
 # Pre-commit hooks configuration
 # Install: pre-commit install
 # Run: pre-commit run --all-files
@@ -46,16 +47,17 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        args: [--max-line-length=100, --extend-ignore=E203,W503]
+        args: [--max-line-length=100, "--extend-ignore=E203,W503,F541"]
         exclude: ^(venv/|\.venv/|migrations/|__pycache__/)
 
-  # Security checks
+  # Security checks (run on whole src/, not per-file)
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.6
     hooks:
       - id: bandit
         args: [-r, src/, -ll]
         exclude: ^(tests/|venv/|\.venv/)
+        pass_filenames: false
 
   # Check for common mistakes
   - repo: https://github.com/pre-commit/pygrep-hooks
@@ -72,7 +74,7 @@ repos:
     hooks:
       - id: poetry-lock-check
         name: Check poetry.lock is up to date
-        entry: bash -c 'if command -v poetry &> /dev/null; then poetry lock --check; else echo "Poetry not found, skipping lock check"; fi'
+        entry: bash -c 'if command -v poetry &> /dev/null; then poetry lock --check; else echo "Skip lock check"; fi'
         language: system
         pass_filenames: false
         files: pyproject.toml

@@ -169,7 +169,7 @@ class ServiceConfig(BaseSettings):
 
     name: str = Field("kite-services", env="SERVICE_NAME")
     version: str = Field("1.0.0", env="SERVICE_VERSION")
-    host: str = Field("0.0.0.0", env="SERVICE_HOST")
+    host: str = Field("0.0.0.0", env="SERVICE_HOST")  # nosec B104 - Docker/bind all
     port: int = Field(8079, env="SERVICE_PORT")  # DEV on 8079, PROD on 8179
     workers: int = Field(1, env="SERVICE_WORKERS")
 

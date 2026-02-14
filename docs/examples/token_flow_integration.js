@@ -1,6 +1,6 @@
 /**
  * Kite Token Flow Integration
- * 
+ *
  * Complete token refresh workflow for your UI
  * Handles the full flow: login -> request token -> access token
  */
@@ -87,11 +87,11 @@ class KiteTokenFlow {
         try {
             const url = new URL(callbackUrl);
             const requestToken = url.searchParams.get('request_token');
-            
+
             if (!requestToken) {
                 throw new Error('No request_token found in callback URL');
             }
-            
+
             return requestToken;
         } catch (error) {
             throw new Error('Invalid callback URL format: ' + error.message);
@@ -168,14 +168,14 @@ class KiteTokenFlow {
 function createTokenRefreshButton(containerId, apiBase = 'http://localhost:8079') {
     const container = document.getElementById(containerId);
     const tokenFlow = new KiteTokenFlow(apiBase);
-    
+
     container.innerHTML = `
         <button id="refresh-token-btn" class="token-refresh-btn" style="
-            background: #e67e22; 
-            color: white; 
-            border: none; 
-            padding: 10px 20px; 
-            border-radius: 5px; 
+            background: #e67e22;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
         ">
@@ -195,26 +195,26 @@ function createTokenRefreshButton(containerId, apiBase = 'http://localhost:8079'
             <div id="token-result" style="margin-top: 10px;"></div>
         </div>
     `;
-    
+
     // Event listeners
     document.getElementById('refresh-token-btn').addEventListener('click', async () => {
         await tokenFlow.init();
         tokenFlow.openLoginPage();
         document.getElementById('token-instructions').style.display = 'block';
     });
-    
+
     document.getElementById('generate-token-btn').addEventListener('click', async () => {
         const callbackUrl = document.getElementById('callback-input').value.trim();
         const resultDiv = document.getElementById('token-result');
-        
+
         if (!callbackUrl) {
             resultDiv.innerHTML = '<div style="color: red;">Please paste the callback URL</div>';
             return;
         }
-        
+
         try {
             const tokenData = await tokenFlow.completeTokenRefresh(callbackUrl);
-            
+
             resultDiv.innerHTML = `
                 <div style="color: green; background: #d5f4e6; padding: 10px; border-radius: 4px; margin-top: 10px;">
                     <strong>✅ Success!</strong><br>
@@ -235,20 +235,20 @@ function createTokenRefreshButton(containerId, apiBase = 'http://localhost:8079'
 async function createTokenStatusIndicator(containerId, apiBase = 'http://localhost:8079') {
     const container = document.getElementById(containerId);
     const tokenFlow = new KiteTokenFlow(apiBase);
-    
+
     try {
         const status = await tokenFlow.getTokenStatus();
         const statusColor = status.kite_token_valid ? '#27ae60' : '#e74c3c';
         const statusText = status.kite_token_valid ? 'Valid' : 'Expired';
         const statusIcon = status.kite_token_valid ? '✅' : '❌';
-        
+
         container.innerHTML = `
             <div class="token-status-indicator" style="
-                display: flex; 
-                align-items: center; 
-                padding: 10px; 
-                background: #f8f9fa; 
-                border-radius: 5px; 
+                display: flex;
+                align-items: center;
+                padding: 10px;
+                background: #f8f9fa;
+                border-radius: 5px;
                 border-left: 4px solid ${statusColor};
             ">
                 <span style="margin-right: 10px; font-size: 16px;">${statusIcon}</span>
@@ -258,12 +258,12 @@ async function createTokenStatusIndicator(containerId, apiBase = 'http://localho
                 </div>
                 ${status.needs_refresh ? `
                     <button onclick="createTokenRefreshButton('${containerId}', '${apiBase}')" style="
-                        margin-left: auto; 
-                        background: #e67e22; 
-                        color: white; 
-                        border: none; 
-                        padding: 5px 10px; 
-                        border-radius: 3px; 
+                        margin-left: auto;
+                        background: #e67e22;
+                        color: white;
+                        border: none;
+                        padding: 5px 10px;
+                        border-radius: 3px;
                         cursor: pointer;
                         font-size: 12px;
                     ">
@@ -281,26 +281,26 @@ async function createTokenStatusIndicator(containerId, apiBase = 'http://localho
 async function ensureValidToken(apiBase = 'http://localhost:8079') {
     const tokenFlow = new KiteTokenFlow(apiBase);
     const needsRefresh = await tokenFlow.needsRefresh();
-    
+
     if (needsRefresh) {
         const shouldRefresh = confirm(
             'Your Kite token has expired. Would you like to refresh it now?\n\n' +
             'Click OK to open the login page, or Cancel to continue (API calls may fail).'
         );
-        
+
         if (shouldRefresh) {
             await tokenFlow.init();
             tokenFlow.openLoginPage();
-            
+
             // Return a promise that resolves when user provides new token
             return new Promise((resolve, reject) => {
                 const modal = document.createElement('div');
                 modal.style.cssText = `
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                    background: rgba(0,0,0,0.8); display: flex; align-items: center; 
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.8); display: flex; align-items: center;
                     justify-content: center; z-index: 10000;
                 `;
-                
+
                 modal.innerHTML = `
                     <div style="background: white; padding: 20px; border-radius: 10px; max-width: 500px; width: 90%;">
                         <h3>🔐 Complete Token Refresh</h3>
@@ -313,23 +313,23 @@ async function ensureValidToken(apiBase = 'http://localhost:8079') {
                         <div id="modal-result" style="margin-top: 10px;"></div>
                     </div>
                 `;
-                
+
                 document.body.appendChild(modal);
-                
+
                 document.getElementById('modal-cancel').onclick = () => {
                     document.body.removeChild(modal);
                     reject(new Error('Token refresh cancelled'));
                 };
-                
+
                 document.getElementById('modal-generate').onclick = async () => {
                     const callbackUrl = document.getElementById('modal-callback-input').value.trim();
                     const resultDiv = document.getElementById('modal-result');
-                    
+
                     if (!callbackUrl) {
                         resultDiv.innerHTML = '<div style="color: red;">Please paste the callback URL</div>';
                         return;
                     }
-                    
+
                     try {
                         const tokenData = await tokenFlow.completeTokenRefresh(callbackUrl);
                         resultDiv.innerHTML = `
@@ -338,12 +338,12 @@ async function ensureValidToken(apiBase = 'http://localhost:8079') {
                                 Please update your environment variables and restart the service.
                             </div>
                         `;
-                        
+
                         setTimeout(() => {
                             document.body.removeChild(modal);
                             resolve(tokenData);
                         }, 2000);
-                        
+
                     } catch (error) {
                         resultDiv.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
                     }
@@ -353,7 +353,7 @@ async function ensureValidToken(apiBase = 'http://localhost:8079') {
             throw new Error('Token expired and refresh declined');
         }
     }
-    
+
     return true; // Token is valid
 }
 
@@ -361,11 +361,11 @@ async function ensureValidToken(apiBase = 'http://localhost:8079') {
  * Export for different module systems
  */
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { 
-        KiteTokenFlow, 
-        createTokenRefreshButton, 
-        createTokenStatusIndicator, 
-        ensureValidToken 
+    module.exports = {
+        KiteTokenFlow,
+        createTokenRefreshButton,
+        createTokenStatusIndicator,
+        ensureValidToken
     };
 }
 
@@ -406,10 +406,10 @@ await tokenFlow.init();
 if (await tokenFlow.needsRefresh()) {
     // Open login page
     tokenFlow.openLoginPage();
-    
+
     // User provides callback URL
     const callbackUrl = prompt('Paste callback URL:');
-    
+
     // Generate access token
     const tokenData = await tokenFlow.completeTokenRefresh(callbackUrl);
     console.log('New token:', tokenData.access_token);

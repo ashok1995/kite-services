@@ -5,20 +5,21 @@ End-to-End Workflow Tests
 Complete workflow tests for the entire system.
 """
 
-import pytest
-from httpx import AsyncClient
 import sys
 from pathlib import Path
+
+import pytest
+from httpx import AsyncClient
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from main import app
+from main import app  # noqa: E402
 
 
 class TestCompleteWorkflow:
     """End-to-end workflow tests."""
-    
+
     @pytest.mark.asyncio
     async def test_health_check_endpoint(self):
         """Test health check endpoint is accessible."""
@@ -28,7 +29,7 @@ class TestCompleteWorkflow:
             data = response.json()
             assert "status" in data
             assert data["service"] == "kite-services"
-    
+
     @pytest.mark.asyncio
     async def test_root_endpoint(self):
         """Test root endpoint provides service info."""
@@ -39,7 +40,7 @@ class TestCompleteWorkflow:
             assert "service" in data
             assert "version" in data
             assert "health_url" in data
-    
+
     @pytest.mark.asyncio
     async def test_api_documentation_available(self):
         """Test that API documentation is available in debug mode."""
@@ -51,4 +52,3 @@ class TestCompleteWorkflow:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-

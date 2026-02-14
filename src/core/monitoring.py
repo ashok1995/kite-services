@@ -5,21 +5,20 @@ Monitoring and Metrics
 Production monitoring, metrics collection, and health checks.
 """
 
-import time
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Deque
-from collections import defaultdict, deque
-from dataclasses import dataclass, field, asdict
 import sys
+from collections import defaultdict, deque
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Deque, Dict, Optional
 
 # Add src to path for imports
 src_path = Path(__file__).parent.parent
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from core.logging_config import get_logger
+from core.logging_config import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 
@@ -27,6 +26,7 @@ logger = get_logger(__name__)
 @dataclass
 class RequestMetric:
     """Request metric data."""
+
     method: str
     path: str
     status_code: int
@@ -37,6 +37,7 @@ class RequestMetric:
 @dataclass
 class ServiceHealth:
     """Service health status."""
+
     status: str  # healthy, degraded, unhealthy
     uptime_seconds: float
     total_requests: int
@@ -51,7 +52,7 @@ class ServiceHealth:
 
 class MetricsCollector:
     """Collects and aggregates application metrics."""
-    
+
     def __init__(self, max_metrics: int = 10000):
         self.max_metrics = max_metrics
         self.start_time = datetime.now()
@@ -60,14 +61,8 @@ class MetricsCollector:
         self.request_counts = defaultdict(int)
         self.status_counts = defaultdict(int)
         self._lock = asyncio.Lock()
-    
-    async def record_request(
-        self,
-        method: str,
-        path: str,
-        status_code: int,
-        duration_ms: float
-    ):
+
+    async def record_request(self, method: str, path: str, status_code: int, duration_ms: float):
         """Record a request metric."""
         async with self._lock:
             metric = RequestMetric(
@@ -75,21 +70,23 @@ class MetricsCollector:
                 path=path,
                 status_code=status_code,
                 duration_ms=duration_ms,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             self.metrics.append(metric)
             self.request_counts[f"{method} {path}"] += 1
             self.status_counts[status_code] += 1
-            
+
             if status_code >= 400:
-                self.error_log.append({
-                    "timestamp": datetime.now().isoformat(),
-                    "method": method,
-                    "path": path,
-                    "status_code": status_code,
-                    "duration_ms": duration_ms,
-                })
-    
+                self.error_log.append(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "method": method,
+                        "path": path,
+                        "status_code": status_code,
+                        "duration_ms": duration_ms,
+                    }
+                )
+
     async def get_health(self) -> ServiceHealth:
         """Get current service health."""
         async with self._lock:
@@ -103,14 +100,14 @@ class MetricsCollector:
                     average_response_time_ms=0.0,
                     error_rate=0.0,
                 )
-            
+
             # Calculate metrics
             total = len(self.metrics)
             successful = sum(1 for m in self.metrics if 200 <= m.status_code < 400)
             failed = sum(1 for m in self.metrics if m.status_code >= 400)
             avg_duration = sum(m.duration_ms for m in self.metrics) / total
             error_rate = (failed / total) * 100 if total > 0 else 0.0
-            
+
             # Determine status
             if error_rate > 10:
                 status = "unhealthy"
@@ -118,15 +115,16 @@ class MetricsCollector:
                 status = "degraded"
             else:
                 status = "healthy"
-            
+
             # Get last error
             last_error = None
             last_error_time = None
             if self.error_log:
                 last_error_data = self.error_log[-1]
-                last_error = f"{last_error_data['method']} {last_error_data['path']} - {last_error_data['status_code']}"
-                last_error_time = datetime.fromisoformat(last_error_data['timestamp'])
-            
+                last_err = last_error_data
+                last_error = f"{last_err['method']} {last_err['path']} - {last_err['status_code']}"
+                last_error_time = datetime.fromisoformat(last_error_data["timestamp"])
+
             return ServiceHealth(
                 status=status,
                 uptime_seconds=(datetime.now() - self.start_time).total_seconds(),
@@ -138,7 +136,7 @@ class MetricsCollector:
                 last_error=last_error,
                 last_error_time=last_error_time,
             )
-    
+
     async def get_metrics_summary(self) -> Dict[str, Any]:
         """Get metrics summary."""
         async with self._lock:
@@ -151,28 +149,24 @@ class MetricsCollector:
                     "top_endpoints": [],
                     "status_code_distribution": {},
                 }
-            
+
             # Calculate time window
             now = datetime.now()
             one_minute_ago = now - timedelta(minutes=1)
             recent_metrics = [m for m in self.metrics if m.timestamp >= one_minute_ago]
-            
+
             total = len(self.metrics)
             recent_count = len(recent_metrics)
             avg_duration = sum(m.duration_ms for m in self.metrics) / total
             failed = sum(1 for m in self.metrics if m.status_code >= 400)
             error_rate = (failed / total) * 100 if total > 0 else 0.0
-            
+
             # Top endpoints
             endpoint_counts = defaultdict(int)
             for m in self.metrics:
                 endpoint_counts[f"{m.method} {m.path}"] += 1
-            top_endpoints = sorted(
-                endpoint_counts.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:10]
-            
+            top_endpoints = sorted(endpoint_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+
             return {
                 "total_requests": total,
                 "requests_per_minute": recent_count,

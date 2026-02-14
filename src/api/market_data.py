@@ -14,25 +14,21 @@ import logging
 import time
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from core.kite_client import KiteClient
 from core.service_manager import get_service_manager
 from models.data_models import RealTimeRequest, RealTimeResponse
 from models.unified_api_models import (
-    Exchange,
     InstrumentInfo,
     InstrumentsResponse,
-    Interval,
     MarketDataRequest,
     MarketDataResponse,
     MarketStatus,
     MarketStatusResponse,
     StockData,
 )
-from services.stock_data_service import StockDataService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -71,12 +67,14 @@ async def get_market_data(request: MarketDataRequest):
 
         # Handle different data types
         if request.data_type == "quote":
-            # Real-time quotes
+            # Real-time quotes — Kite expects EXCHANGE:SYMBOL format
+            exchange_prefix = f"{request.exchange.value}:"
             for symbol in request.symbols:
                 try:
-                    quote = await kite_client.quote([symbol])
-                    if quote and symbol in quote:
-                        quote_data = quote[symbol]
+                    full_symbol = symbol if ":" in symbol else f"{exchange_prefix}{symbol}"
+                    quote = await kite_client.quote([full_symbol])
+                    if quote and full_symbol in quote:
+                        quote_data = quote[full_symbol]
                         data[symbol] = StockData(
                             symbol=symbol,
                             instrument_token=quote_data.get("instrument_token"),

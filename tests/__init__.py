@@ -8,4 +8,3 @@ Test structure:
 - e2e/ - End-to-end workflow tests
 - results/ - Test results and coverage reports
 """
-

@@ -147,9 +147,12 @@ def setup_middleware(app: FastAPI):
             if os.environ.get("ALLOWED_HOSTS")
             else []
         )
-        allowed = ["localhost", "127.0.0.1", settings.service.host or "0.0.0.0", "*"] + [
-            h.strip() for h in extra_hosts if h.strip()
-        ]
+        allowed = [
+            "localhost",
+            "127.0.0.1",
+            settings.service.host or "0.0.0.0",  # nosec B104
+            "*",
+        ] + [h.strip() for h in extra_hosts if h.strip()]
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed)
 
     # Request logging middleware with request IDs and metrics

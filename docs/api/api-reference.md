@@ -41,6 +41,7 @@ Generate access token from request token.
   "request_token": "from_redirect_url",
   "api_secret": "optional_if_in_env"
 }
+<!-- pragma: allowlist secret -->
 ```
 
 **Response**: 200 OK
@@ -150,6 +151,7 @@ List instruments. Query: `?limit=10`, `?exchange=NSE`.
 Real-time quotes for multiple symbols (up to 200).
 
 **Request:**
+
 ```json
 {
   "symbols": ["RELIANCE", "TCS", "INFY"],
@@ -158,6 +160,7 @@ Real-time quotes for multiple symbols (up to 200).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -179,6 +182,7 @@ Real-time quotes for multiple symbols (up to 200).
 Market context with breadth data (global, Indian, sentiment, technicals).
 
 **Request:**
+
 ```json
 {
   "include_global_data": true,
@@ -187,6 +191,7 @@ Market context with breadth data (global, Indian, sentiment, technicals).
 ```
 
 **Response (Updated with Breadth Data)**:
+
 ```json
 {
   "market_context": {
@@ -206,6 +211,7 @@ Market context with breadth data (global, Indian, sentiment, technicals).
 ```
 
 **New Fields (Bayesian Engine Integration)**:
+
 - `advances`: Number of advancing stocks (from Nifty 50)
 - `declines`: Number of declining stocks (from Nifty 50)
 - `unchanged`: Number of unchanged stocks

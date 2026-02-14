@@ -10,11 +10,13 @@
 ## Quick Start
 
 ### Prerequisites
+
 1. Kite Services running on port 8179 (production) or 8079 (development)
 2. Valid Kite Connect authentication (handled by service)
 3. Network access to service endpoint
 
 ### Base URLs
+
 - **Production**: `http://localhost:8179`
 - **Development**: `http://localhost:8079`
 - **Staging**: `http://localhost:8279` (local only)
@@ -30,6 +32,7 @@
 **Endpoint**: `POST /api/market/quotes`
 
 **Request**:
+
 ```json
 {
   "symbols": ["RELIANCE", "TCS", "INFY", ... up to 200],
@@ -38,6 +41,7 @@
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -68,12 +72,14 @@
 ```
 
 **Usage Recommendations**:
+
 - **Frequency**: Every 1 minute during market hours
 - **Max Symbols**: 200 per request
 - **Timeout**: 5 seconds
 - **Error Handling**: Check `successful_symbols` vs `total_symbols`
 
 **Python Example**:
+
 ```python
 import httpx
 from typing import List
@@ -95,6 +101,7 @@ print(f"Fetched {quotes['successful_symbols']} of {quotes['total_symbols']} symb
 ```
 
 **cURL Example**:
+
 ```bash
 curl -X POST http://localhost:8179/api/market/quotes \
   -H "Content-Type: application/json" \
@@ -113,6 +120,7 @@ curl -X POST http://localhost:8179/api/market/quotes \
 **Endpoint**: `POST /api/analysis/context`
 
 **Request**:
+
 ```json
 {
   "include_global_data": true,
@@ -122,12 +130,13 @@ curl -X POST http://localhost:8179/api/market/quotes \
 ```
 
 **Response**:
+
 ```json
 {
   "market_context": {
     "timestamp": "2026-02-13T14:30:00+05:30",
     "request_id": "context_1707820800",
-    
+
     "indian_data": {
       "timestamp": "2026-02-13T14:30:00+05:30",
       "indices": {
@@ -142,18 +151,18 @@ curl -X POST http://localhost:8179/api/market/quotes \
       },
       "market_regime": "bullish",
       "volatility_level": "low",
-      
+
       "advances": 35,
       "declines": 15,
       "unchanged": 0,
       "advance_decline_ratio": "2.33",
-      
+
       "new_highs": 0,
       "new_lows": 0,
       "total_volume": null,
       "volume_trend": "stable"
     },
-    
+
     "volatility_data": {
       "india_vix": 12.45,
       "vix_change": -0.50,
@@ -161,7 +170,7 @@ curl -X POST http://localhost:8179/api/market/quotes \
       "volatility_level": "low",
       "fear_greed_index": 65
     },
-    
+
     "sector_data": {
       "sectors": {
         "IT": {"change_percent": 1.2, "is_leader": true},
@@ -190,11 +199,13 @@ curl -X POST http://localhost:8179/api/market/quotes \
 | `sectors` | Sector-wise performance | SHOULD |
 
 **Usage Recommendations**:
+
 - **Frequency**: Every 5 minutes during market hours
 - **Timeout**: 10 seconds
 - **Caching**: Breadth data is cached for 60 seconds internally
 
 **Python Example**:
+
 ```python
 async def fetch_market_context() -> dict:
     """Fetch market context from kite-services."""
@@ -218,6 +229,7 @@ print(f"Market Regime: {breadth['market_regime']}")
 ```
 
 **cURL Example**:
+
 ```bash
 curl -X POST http://localhost:8179/api/analysis/context \
   -H "Content-Type: application/json" \
@@ -236,6 +248,7 @@ curl -X POST http://localhost:8179/api/analysis/context \
 **Endpoint**: `POST /api/market/data`
 
 **Request**:
+
 ```json
 {
   "symbols": ["RELIANCE"],
@@ -248,6 +261,7 @@ curl -X POST http://localhost:8179/api/analysis/context \
 ```
 
 **Supported Intervals**:
+
 - `minute` - 1 minute
 - `5minute` - 5 minutes ✅ (Bayesian requirement)
 - `15minute` - 15 minutes ✅ (Bayesian requirement)
@@ -256,6 +270,7 @@ curl -X POST http://localhost:8179/api/analysis/context \
 - `day` - Daily
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -272,11 +287,13 @@ curl -X POST http://localhost:8179/api/analysis/context \
 ```
 
 **Usage Recommendations**:
+
 - **Frequency**: Every 10 minutes (only for tracked symbols)
 - **Symbols**: 10-50 per call
 - **Timeout**: 10 seconds
 
 **Python Example**:
+
 ```python
 from datetime import date
 
@@ -287,7 +304,7 @@ async def fetch_historical_candles(
 ) -> dict:
     """Fetch historical candles for return calculation."""
     date_str = (date_ or date.today()).isoformat()
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.post(
             "http://localhost:8179/api/market/data",
@@ -316,11 +333,13 @@ candles = await fetch_historical_candles("RELIANCE", "5minute")
 **Endpoint**: `GET /api/market/instruments`
 
 **Request**:
+
 ```bash
 GET /api/market/instruments?exchange=NSE&instrument_type=EQ&limit=1000
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -342,10 +361,12 @@ GET /api/market/instruments?exchange=NSE&instrument_type=EQ&limit=1000
 ```
 
 **Usage Recommendations**:
+
 - **Frequency**: Once at startup (cache for 24 hours)
 - **Timeout**: 30 seconds
 
 **Python Example**:
+
 ```python
 async def fetch_instruments(exchange: str = "NSE") -> dict:
     """Fetch all instruments for exchange."""
@@ -415,13 +436,13 @@ logger = logging.getLogger(__name__)
 
 class KiteServicesClient:
     """Client for Kite Services API integration."""
-    
+
     def __init__(self, base_url: str = "http://localhost:8179"):
         self.base_url = base_url
         self.timeout = httpx.Timeout(10.0)
         self._instruments_cache = None
         self._cache_timestamp = None
-    
+
     async def health_check(self) -> bool:
         """Check if kite-services is accessible."""
         try:
@@ -434,7 +455,7 @@ class KiteServicesClient:
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return False
-    
+
     async def fetch_batch_quotes(
         self,
         symbols: List[str],
@@ -443,7 +464,7 @@ class KiteServicesClient:
         """Fetch batch quotes for up to 200 symbols."""
         if len(symbols) > 200:
             raise ValueError(f"Maximum 200 symbols allowed, got {len(symbols)}")
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/api/market/quotes",
@@ -452,7 +473,7 @@ class KiteServicesClient:
             )
             response.raise_for_status()
             return response.json()
-    
+
     async def fetch_market_context(self) -> Dict:
         """Fetch market context with breadth data."""
         async with httpx.AsyncClient() as client:
@@ -466,7 +487,7 @@ class KiteServicesClient:
             )
             response.raise_for_status()
             return response.json()
-    
+
     async def fetch_historical_candles(
         self,
         symbol: str,
@@ -477,7 +498,7 @@ class KiteServicesClient:
         """Fetch historical OHLCV candles."""
         from_date = from_date or date.today()
         to_date = to_date or date.today()
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/api/market/data",
@@ -493,7 +514,7 @@ class KiteServicesClient:
             )
             response.raise_for_status()
             return response.json()
-    
+
     async def fetch_instruments(
         self,
         exchange: str = "NSE",
@@ -505,7 +526,7 @@ class KiteServicesClient:
             age = (datetime.now() - self._cache_timestamp).total_seconds()
             if age < 86400:  # 24 hours
                 return self._instruments_cache
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.base_url}/api/market/instruments",
@@ -514,11 +535,11 @@ class KiteServicesClient:
             )
             response.raise_for_status()
             data = response.json()
-            
+
             # Cache it
             self._instruments_cache = data
             self._cache_timestamp = datetime.now()
-            
+
             return data
 
 
@@ -526,27 +547,27 @@ class KiteServicesClient:
 async def main():
     """Example usage of Kite Services client."""
     client = KiteServicesClient("http://localhost:8179")
-    
+
     # 1. Health check
     if not await client.health_check():
         logger.error("Kite services not available")
         return
-    
+
     # 2. Fetch batch quotes
     symbols = ["RELIANCE", "TCS", "INFY", "HDFC", "ICICIBANK"]
     quotes = await client.fetch_batch_quotes(symbols)
     logger.info(f"Fetched quotes for {quotes['successful_symbols']} symbols")
-    
+
     # 3. Fetch market context
     context = await client.fetch_market_context()
     breadth = context['market_context']['indian_data']
     logger.info(f"Market breadth: {breadth['advances']} up, {breadth['declines']} down")
     logger.info(f"AD Ratio: {breadth['advance_decline_ratio']}")
-    
+
     # 4. Fetch historical data
     candles = await client.fetch_historical_candles("RELIANCE", "5minute")
     logger.info(f"Fetched historical data for RELIANCE")
-    
+
     # 5. Fetch instruments (once at startup)
     instruments = await client.fetch_instruments("NSE")
     logger.info(f"Loaded {instruments['total_count']} instruments")
@@ -561,12 +582,14 @@ if __name__ == "__main__":
 ## Rate Limits & Performance
 
 ### Rate Limits
+
 - **Batch Quotes**: 100 requests/minute
 - **Market Context**: 100 requests/minute
 - **Historical Data**: 100 requests/minute
 - **Instruments**: 10 requests/minute
 
 ### Performance Expectations
+
 - **Batch Quotes (50 symbols)**: ~1-2s
 - **Batch Quotes (200 symbols)**: ~3-5s
 - **Market Context**: ~0.5-1s (cached breadth)
@@ -574,6 +597,7 @@ if __name__ == "__main__":
 - **Instruments**: ~5-10s (one-time)
 
 ### Optimization Tips
+
 1. **Batch requests**: Fetch 200 symbols at once instead of individual calls
 2. **Cache instruments**: Load once at startup, refresh daily
 3. **Respect cache**: Market breadth is cached for 60s, don't fetch more frequently
@@ -586,27 +610,33 @@ if __name__ == "__main__":
 ### Common Errors
 
 **1. Maximum Symbols Exceeded**
+
 ```json
 {
   "detail": "Maximum 200 symbols allowed. Requested: 250"
 }
 ```
+
 **Solution**: Split into multiple batches of 200
 
 **2. Service Unavailable**
+
 ```json
 {
   "detail": "Service manager not available"
 }
 ```
+
 **Solution**: Check if kite-services is running, check health endpoint
 
 **3. Authentication Failed**
+
 ```json
 {
   "detail": "Kite Connect authentication required"
 }
 ```
+
 **Solution**: Check Kite Connect credentials in kite-services
 
 ### Retry Strategy
@@ -681,13 +711,13 @@ curl "http://localhost:8179/api/market/instruments?exchange=NSE&limit=5" | \
 async def monitor_health():
     """Monitor kite-services health."""
     client = KiteServicesClient()
-    
+
     while True:
         healthy = await client.health_check()
         if not healthy:
             logger.error("Kite services health check failed!")
             # Alert or fallback
-        
+
         await asyncio.sleep(60)  # Check every minute
 ```
 
@@ -702,7 +732,7 @@ async def fetch_with_metrics(client, symbols):
     start = time.time()
     response = await client.fetch_batch_quotes(symbols)
     duration = (time.time() - start) * 1000
-    
+
     logger.info(f"Batch quotes: {len(symbols)} symbols in {duration:.0f}ms")
     return response
 ```
@@ -729,6 +759,7 @@ Before going live:
 ## Support & Troubleshooting
 
 ### Logs Location
+
 - **Service**: `/app/logs/kite_services.log` (production)
 - **Service**: `logs/kite_services.log` (development)
 
@@ -744,6 +775,7 @@ Before going live:
 **Solution**: Data only available during market hours for intraday intervals
 
 ### Contact
+
 - **Documentation**: `docs/integration/`
 - **API Reference**: `docs/api/api-reference.md`
 - **Testing Guide**: `tests/integration/BAYESIAN_TESTING_GUIDE.md`

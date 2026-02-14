@@ -63,7 +63,7 @@
         }
         .status-valid { color: #28a745; }
         .status-expired { color: #dc3545; }
-        
+
         .input-group {
             margin: 25px 0;
         }
@@ -87,7 +87,7 @@
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
+
         .btn {
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
@@ -120,7 +120,7 @@
         .btn-success:hover {
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
         }
-        
+
         .prod-url {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: #ecf0f1;
@@ -131,7 +131,7 @@
             margin: 15px 0;
             font-size: 14px;
         }
-        
+
         .result-box {
             margin: 25px 0;
             padding: 20px;
@@ -149,7 +149,7 @@
             border-left: 5px solid #dc3545;
             color: #721c24;
         }
-        
+
         .access-token {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: #ecf0f1;
@@ -162,7 +162,7 @@
             max-height: 120px;
             overflow-y: auto;
         }
-        
+
         .endpoint-info {
             background: linear-gradient(135deg, #e3f2fd, #bbdefb);
             border: 2px solid #2196f3;
@@ -171,7 +171,7 @@
             margin: 20px 0;
             font-size: 14px;
         }
-        
+
         .step-indicator {
             background: #f8f9fa;
             border-left: 4px solid #667eea;
@@ -185,7 +185,7 @@
     <div class="container">
         <div class="prod-badge">🚀 PRODUCTION</div>
         <h1>🔐 Production Kite Token Manager</h1>
-        
+
         <div class="endpoint-info">
             <strong>🌐 Production Endpoint:</strong> http://localhost:8179<br>
             <strong>🔧 Environment:</strong> Production Docker Container<br>
@@ -193,7 +193,7 @@
             <strong>💾 Token Storage:</strong> /app/data/ (Container Volume)<br>
             <strong>✅ Status:</strong> Permission Issues Fixed
         </div>
-        
+
         <!-- Token Status -->
         <div class="status-box">
             <h3>📊 Current Production Token Status</h3>
@@ -204,17 +204,17 @@
             </div>
             <button class="btn" onclick="checkStatus()">🔄 Refresh Status</button>
         </div>
-        
+
         <!-- Token Refresh -->
         <div class="status-box">
             <h3>🔄 Production Token Refresh</h3>
-            
+
             <div class="step-indicator">
                 <strong>Step 1:</strong> Click to get Kite Connect login URL:
             </div>
             <button class="btn" onclick="openKiteLogin()">🔗 Open Kite Login (Production)</button>
             <div id="login-url-display" class="prod-url" style="display: none;"></div>
-            
+
             <div class="step-indicator">
                 <strong>Step 2:</strong> After login, paste the request token here:
             </div>
@@ -222,15 +222,15 @@
                 <label for="request-token-input">
                     Request Token from Kite Connect Callback:
                 </label>
-                <input type="text" id="request-token-input" 
+                <input type="text" id="request-token-input"
                        placeholder="Paste request token from callback URL (e.g., qQDXpFOTSBW59mcej7cmRmM0xtBWA1Iw)"
                        style="font-family: 'Courier New', monospace;">
             </div>
-            
+
             <button class="btn btn-success" onclick="submitRequestToken()">
                 ✅ Generate Production Access Token
             </button>
-            
+
             <div id="token-result" class="result-box"></div>
         </div>
     </div>
@@ -251,14 +251,14 @@
                 console.log('📊 Checking production token status...');
                 const response = await fetch(`${API_BASE}/api/token/status`);
                 const data = await response.json();
-                
+
                 console.log('📊 Status response:', data);
-                
+
                 const statusContainer = document.getElementById('token-status');
                 const validClass = data.token_valid ? 'status-valid' : 'status-expired';
                 const validText = data.token_valid ? '✅ Valid' : '❌ Expired/Invalid';
                 const refreshText = data.needs_refresh ? '⚠️ Required' : '✅ Not Required';
-                
+
                 statusContainer.innerHTML = `
                     <div class="status-item">
                         <span class="status-label">Production Token Status:</span>
@@ -277,10 +277,10 @@
                         <span class="status-value">Docker Container (Port 8179)</span>
                     </div>
                 `;
-                
+
             } catch (error) {
                 console.error('❌ Error checking status:', error);
-                document.getElementById('token-status').innerHTML = 
+                document.getElementById('token-status').innerHTML =
                     '<div class="status-item"><span class="status-label">❌ Error loading production status</span></div>';
             }
         }
@@ -290,25 +290,25 @@
                 console.log('🔗 Getting production login URL...');
                 const response = await fetch(`${API_BASE}/api/token/refresh-info`);
                 const data = await response.json();
-                
+
                 console.log('🔗 Refresh info response:', data);
-                
+
                 if (data.step_1 && data.step_1.login_url) {
                     loginUrl = data.step_1.login_url;
-                    
+
                     // Display the URL
                     const urlDisplay = document.getElementById('login-url-display');
                     urlDisplay.textContent = loginUrl;
                     urlDisplay.style.display = 'block';
-                    
+
                     // Open in new tab
                     window.open(loginUrl, '_blank');
-                    
+
                     showResult('🚀 Production login page opened! After login, copy the request token from the callback URL.', 'success');
                 } else {
                     showResult('❌ Failed to get production login URL', 'error');
                 }
-                
+
             } catch (error) {
                 console.error('❌ Error opening login:', error);
                 showResult('❌ Error opening production login page: ' + error.message, 'error');
@@ -317,14 +317,14 @@
 
         async function submitRequestToken() {
             const requestToken = document.getElementById('request-token-input').value.trim();
-            
+
             if (!requestToken) {
                 showResult('⚠️ Please enter a request token', 'error');
                 return;
             }
-            
+
             console.log('🔄 Submitting request token to production...');
-            
+
             try {
                 const response = await fetch(`${API_BASE}/api/token/submit-token`, {
                     method: 'POST',
@@ -335,10 +335,10 @@
                         request_token: requestToken
                     })
                 });
-                
+
                 const data = await response.json();
                 console.log('🔄 Token submission response:', data);
-                
+
                 if (data.success) {
                     const resultHtml = `
                         <h4>🎉 Production Access Token Generated Successfully!</h4>
@@ -358,17 +358,17 @@
                         <p><strong>🚀 Production Status:</strong> Token ready for use!</p>
                     `;
                     showResult(resultHtml, 'success');
-                    
+
                     // Clear the input
                     document.getElementById('request-token-input').value = '';
-                    
+
                     // Refresh status after a moment
                     setTimeout(checkStatus, 3000);
-                    
+
                 } else {
                     showResult(`❌ Production token generation failed: ${data.detail || 'Unknown error'}`, 'error');
                 }
-                
+
             } catch (error) {
                 console.error('❌ Error submitting token:', error);
                 showResult('❌ Error submitting token to production: ' + error.message, 'error');
@@ -380,7 +380,7 @@
             resultBox.className = `result-box result-${type}`;
             resultBox.innerHTML = message;
             resultBox.style.display = 'block';
-            
+
             // Auto-hide success messages after 15 seconds
             if (type === 'success') {
                 setTimeout(() => {

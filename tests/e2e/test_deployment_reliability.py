@@ -17,22 +17,24 @@ Usage:
     pytest tests/e2e/test_deployment_reliability.py -v -k "contract"  # Data checks
 """
 
+import sys
+from datetime import datetime
+from pathlib import Path
+
 import pytest
 import pytest_asyncio
-import sys
-from pathlib import Path
-from datetime import datetime
 
-# Add src to path
+# Add src to path (must be before main import)
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from httpx import AsyncClient, ASGITransport
-from main import app
+from httpx import ASGITransport, AsyncClient  # noqa: E402
 
+from main import app  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest_asyncio.fixture
 async def client():
@@ -41,6 +43,7 @@ async def client():
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # Trigger lifespan startup manually
         from main import lifespan
+
         async with lifespan(app):
             yield ac
 
@@ -48,6 +51,7 @@ async def client():
 # ===========================================================================
 # 1. SMOKE TESTS — Must pass for ANY deployment
 # ===========================================================================
+
 
 class TestSmoke:
     """Minimal tests that must pass for any deployment to be valid."""
@@ -102,6 +106,7 @@ class TestSmoke:
 # 2. AUTH TESTS
 # ===========================================================================
 
+
 class TestAuth:
     """Authentication endpoint tests."""
 
@@ -124,16 +129,14 @@ class TestAuth:
     @pytest.mark.asyncio
     async def test_login_rejects_bad_token(self, client):
         """Login rejects an invalid request token."""
-        r = await client.post(
-            "/api/auth/login",
-            json={"request_token": "invalid_token_12345"}
-        )
+        r = await client.post("/api/auth/login", json={"request_token": "invalid_token_12345"})
         assert r.status_code in [401, 500]
 
 
 # ===========================================================================
 # 3. MARKET DATA ENDPOINT TESTS
 # ===========================================================================
+
 
 class TestMarketData:
     """Market data endpoint contract tests."""
@@ -172,8 +175,7 @@ class TestMarketData:
     async def test_market_quotes_contract(self, client):
         """Quotes endpoint returns correct structure."""
         r = await client.post(
-            "/api/market/quotes",
-            json={"symbols": ["NSE:RELIANCE"], "exchange": "NSE"}
+            "/api/market/quotes", json={"symbols": ["NSE:RELIANCE"], "exchange": "NSE"}
         )
         assert r.status_code == 200
         data = r.json()
@@ -187,19 +189,21 @@ class TestMarketData:
         """Market data endpoint handles quote data type."""
         r = await client.post(
             "/api/market/data",
-            json={"symbols": ["NSE:RELIANCE"], "data_type": "quote", "exchange": "NSE"}
+            json={"symbols": ["RELIANCE"], "data_type": "quote", "exchange": "NSE"},
         )
-        assert r.status_code == 200
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}"
         data = r.json()
-        assert "success" in data
+        assert data.get("success") is True
+        assert (
+            data.get("successful_symbols", 0) >= 1
+        ), f"Expected at least one successful quote: {data}"
         assert "processing_time_ms" in data
 
     @pytest.mark.asyncio
     async def test_market_data_rejects_invalid_type(self, client):
         """Market data rejects unsupported data_type."""
         r = await client.post(
-            "/api/market/data",
-            json={"symbols": ["NSE:RELIANCE"], "data_type": "invalid_type"}
+            "/api/market/data", json={"symbols": ["NSE:RELIANCE"], "data_type": "invalid_type"}
         )
         assert r.status_code == 400
 
@@ -207,10 +211,7 @@ class TestMarketData:
     async def test_quotes_max_symbols_limit(self, client):
         """Quotes endpoint enforces max symbols limit (model validation)."""
         symbols = [f"NSE:STOCK{i}" for i in range(200)]
-        r = await client.post(
-            "/api/market/quotes",
-            json={"symbols": symbols, "exchange": "NSE"}
-        )
+        r = await client.post("/api/market/quotes", json={"symbols": symbols, "exchange": "NSE"})
         # 422 from Pydantic model validation (max_length=50)
         # or 400 from explicit check in handler
         assert r.status_code in [400, 422]
@@ -219,6 +220,7 @@ class TestMarketData:
 # ===========================================================================
 # 4. ANALYSIS ENDPOINT TESTS
 # ===========================================================================
+
 
 class TestAnalysis:
     """Analysis endpoint contract tests."""
@@ -233,7 +235,7 @@ class TestAnalysis:
                 "include_indian": True,
                 "include_sentiment": True,
                 "include_technical": False,
-            }
+            },
         )
         assert r.status_code == 200
         data = r.json()
@@ -250,7 +252,7 @@ class TestAnalysis:
                 "symbol": "NSE:RELIANCE",
                 "analysis_type": "comprehensive",
                 "time_horizon": "intraday",
-            }
+            },
         )
         assert r.status_code == 200
         data = r.json()
@@ -268,7 +270,7 @@ class TestAnalysis:
                 "include_primary": True,
                 "include_detailed": False,
                 "include_style_specific": False,
-            }
+            },
         )
         assert r.status_code == 200
         data = r.json()
@@ -286,7 +288,7 @@ class TestAnalysis:
                 "include_primary": True,
                 "include_detailed": False,
                 "include_style_specific": False,
-            }
+            },
         )
         data = r.json()
         assert "data_quality" in data
@@ -298,6 +300,7 @@ class TestAnalysis:
 # ===========================================================================
 # 5. QUICK OPPORTUNITIES TESTS
 # ===========================================================================
+
 
 class TestQuickOpportunities:
     """Quick opportunities endpoint contract tests."""
@@ -311,14 +314,18 @@ class TestQuickOpportunities:
                 "symbols": ["NSE:NIFTY 50"],
                 "timeframe": "5minute",
                 "opportunity_types": ["breakout", "reversal", "momentum"],
-            }
+            },
         )
         assert r.status_code == 200
         data = r.json()
         assert data["success"] is True
         for key in [
-            "nifty_price", "nifty_5min_trend", "market_momentum",
-            "volatility", "opportunities", "rsi_5min",
+            "nifty_price",
+            "nifty_5min_trend",
+            "market_momentum",
+            "volatility",
+            "opportunities",
+            "rsi_5min",
         ]:
             assert key in data, f"Missing key: {key}"
 
@@ -326,6 +333,7 @@ class TestQuickOpportunities:
 # ===========================================================================
 # 6. TRADING STATUS TESTS
 # ===========================================================================
+
 
 class TestTrading:
     """Trading endpoint contract tests."""
@@ -347,6 +355,7 @@ class TestTrading:
 # 7. DATA CONTRACT TESTS — validate field types & ranges
 # ===========================================================================
 
+
 class TestDataContracts:
     """Validate response field types and value ranges."""
 
@@ -366,8 +375,7 @@ class TestDataContracts:
     async def test_quotes_decimal_fields(self, client):
         """Quote numeric fields are valid decimals."""
         r = await client.post(
-            "/api/market/quotes",
-            json={"symbols": ["NSE:RELIANCE"], "exchange": "NSE"}
+            "/api/market/quotes", json={"symbols": ["NSE:RELIANCE"], "exchange": "NSE"}
         )
         data = r.json()
         if data.get("stocks"):
@@ -392,7 +400,7 @@ class TestDataContracts:
                 "include_primary": True,
                 "include_detailed": False,
                 "include_style_specific": False,
-            }
+            },
         )
         data = r.json()
         if data.get("primary_context"):
@@ -403,6 +411,7 @@ class TestDataContracts:
 # ===========================================================================
 # 8. ERROR HANDLING TESTS
 # ===========================================================================
+
 
 class TestErrorHandling:
     """Verify graceful error handling."""

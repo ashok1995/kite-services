@@ -7,11 +7,13 @@ Your code has been pushed to `main` branch. The CI/CD pipeline is now running.
 ## View Pipeline Status
 
 ### Option 1: GitHub Web Interface
-1. Go to: https://github.com/ashok1995/kite-services/actions
+
+1. Go to: <https://github.com/ashok1995/kite-services/actions>
 2. Click on the latest workflow run
 3. See all stages and their status
 
 ### Option 2: GitHub CLI (if installed)
+
 ```bash
 gh run list --workflow=ci-cd.yml
 gh run watch
@@ -20,36 +22,43 @@ gh run watch
 ## Pipeline Stages (in order)
 
 ### ✅ Stage 1: Lint
+
 - Code quality checks
 - Duration: ~2 minutes
 
 ### ✅ Stage 2: Unit Tests
+
 - Component tests
 - Coverage check (70% minimum)
 - Duration: ~3-5 minutes
 
 ### ✅ Stage 3: Integration Tests
+
 - Service integration tests
 - Redis connectivity
 - Duration: ~5-10 minutes
 
 ### ✅ Stage 4: E2E Tests
+
 - End-to-end tests
 - Production config tests
 - Deployment reliability tests (27 tests)
 - Duration: ~10-15 minutes
 
 ### ✅ Stage 5: Build Docker Image
+
 - Builds Docker image
 - Pushes to GitHub Container Registry
 - Duration: ~5-10 minutes
 
 ### ✅ Stage 6: Deploy to Production
+
 - Only runs if ALL tests passed
 - Deploys to 203.57.85.72:8179
 - Duration: ~5 minutes
 
 ### ✅ Stage 7: Post-Deployment Tests
+
 - Smoke tests against production
 - Verifies deployment success
 - Duration: ~2 minutes
@@ -63,12 +72,14 @@ gh run watch
 ## What to Watch For
 
 ### ✅ Success Indicators
+
 - All stages show green checkmarks ✅
 - "Deploy to Production" stage completes
 - "Post-Deployment Tests" passes
-- Production endpoint responds: http://203.57.85.72:8179/health
+- Production endpoint responds: <http://203.57.85.72:8179/health>
 
 ### ❌ Failure Indicators
+
 - Any stage shows red X ❌
 - Pipeline stops at failed stage
 - Deployment is automatically blocked
@@ -105,6 +116,6 @@ curl -s http://203.57.85.72:8179/health | python3 -m json.tool
 
 ---
 
-**Pipeline URL**: https://github.com/ashok1995/kite-services/actions
+**Pipeline URL**: <https://github.com/ashok1995/kite-services/actions>
 
-**Production URL**: http://203.57.85.72:8179
+**Production URL**: <http://203.57.85.72:8179>
