@@ -11,21 +11,19 @@ Test changes here before deploying to prod on VM.
 | **Staging** | **8279** | <http://localhost:8279> |
 | Prod (VM) | 8179 | <http://203.57.85.72:8179> |
 
-## Run staging
+## Run staging (same process as prod — Docker)
 
-Uses `envs/staging.env` automatically when `ENVIRONMENT=staging`.
-
-```bash
-git pull origin main
-./scripts/run-staging.sh
-# or: ENVIRONMENT=staging poetry run python src/main.py
-```
-
-Or use the script:
+Staging uses Docker the same way as prod. From repo root, after merging to `develop`:
 
 ```bash
-./scripts/run-staging.sh
+./deploy_to_staging.sh
 ```
+
+This fetches/checks out `develop`, builds with `docker-compose.staging.yml`,
+runs containers on port 8279, and runs a health check.
+
+**Optional (without Docker):** `./scripts/run-staging.sh` — uses
+`envs/staging.env` and runs the app directly with Poetry.
 
 ## E2E tests against staging
 
@@ -45,6 +43,6 @@ Token saved to `~/.kite-services/kite_token.json` (survives git pull).
 
 ## Workflow
 
-1. Run staging locally → test changes → fix issues.
-2. When confident → commit, push, merge to main.
-3. Deploy to prod VM via `./deploy_to_prod.sh`.
+1. Merge feature/fix to `develop` → run `./deploy_to_staging.sh` (Docker staging).
+2. Test on <http://localhost:8279> → fix issues if needed.
+3. When confident → merge `develop` to `main` (Git UI) → run `./deploy_to_prod.sh`.

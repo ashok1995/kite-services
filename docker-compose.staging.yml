@@ -1,0 +1,43 @@
+# STAGING docker-compose — port 8279 (local only, same process as prod)
+services:
+  kite-services:
+    build: .
+    container_name: kite-services-staging
+    ports:
+      - "8279:8279"
+    environment:
+      - ENVIRONMENT=staging
+      - SERVICE_PORT=8279
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - REDIS_HOST=redis
+    env_file:
+      - envs/staging.env
+    volumes:
+      - ./logs:/app/logs
+      - staging_data:/app/data
+      - ./src:/app/src
+      - ./kite-credentials:/root/.kite-services
+    restart: unless-stopped
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8279/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: kite-services-redis-staging
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_staging_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_staging_data:
+  staging_data:

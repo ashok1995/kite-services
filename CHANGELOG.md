@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **VM checklist** in `docs/deployment/DEPLOY-PROD-VM.md` — kite-credentials path, resource checks (`df -h`, `free -m`, `docker stats`), branch/merge flow for deploy.
 - **Market Breadth Calculation** — Real market breadth from Nifty 50 constituents (advance/decline ratio) for Bayesian engine integration
 - **MarketBreadthService** — New service with 60-second caching for efficient breadth calculation
 - **Nifty 50 Constants** — `src/common/constants.py` with Nifty 50 constituent symbols
@@ -33,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Prod deploy** — Entrypoint recognizes token file (prod) vs `KITE_API_KEY`; health check wait extended to 60s with retry loop in `deploy_to_prod.sh`.
+- **Dockerfile** — `poetry install --no-root` to avoid project install and README.md requirement in image.
+- **Deploy doc** — Section 0 VM checklist, Section 5 branch/deploy flow (feature → develop → main → deploy).
+- **Git workflow rule** — Main receives only from develop; staging = run locally with develop (same rigor as prod); merge develop → main via Git UI then deploy.
+- **Staging = same process as prod (Docker)** — `docker-compose.staging.yml` and `./deploy_to_staging.sh` for local staging on port 8279; uses develop branch, build + compose + health check like prod.
 - **Market Context Breadth** — Market context now uses real Nifty 50 constituent data instead of sector-based approximation
 - **Batch Quote Configuration** — Default `QUOTES_MAX_SYMBOLS` changed from 50 to 200 across all environments
 - **Token file auto-create**: When missing, create template at `kite-credentials/kite_token.json`. No SCP; add api_key/api_secret via SSH edit after deploy.
