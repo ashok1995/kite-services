@@ -28,8 +28,12 @@ if [ "$(hostname)" != "vm488109385" ] && [ ! -f "/opt/kite-services" ]; then
         docker compose -f docker-compose.prod.yml build --no-cache
         docker compose -f docker-compose.prod.yml up -d --force-recreate
 
-        echo "⏳ Waiting for service to start..."
-        sleep 15
+        echo "⏳ Waiting for service to start (up to 60s)..."
+        for i in $(seq 1 12); do
+            sleep 5
+            if curl -sf http://localhost:8179/health > /dev/null 2>&1; then break; fi
+            [ "$i" -eq 12 ] && { echo "❌ Health check timed out"; docker compose -f docker-compose.prod.yml logs --tail=50; exit 1; }
+        done
 
         echo "🔍 Checking service health..."
         if curl -f http://localhost:8179/health > /dev/null 2>&1; then
@@ -67,8 +71,12 @@ else
     docker compose -f docker-compose.prod.yml build --no-cache
     docker compose -f docker-compose.prod.yml up -d --force-recreate
 
-    echo "⏳ Waiting for service to start..."
-    sleep 15
+    echo "⏳ Waiting for service to start (up to 60s)..."
+    for i in $(seq 1 12); do
+        sleep 5
+        if curl -sf http://localhost:$SERVICE_PORT/health > /dev/null 2>&1; then break; fi
+        [ "$i" -eq 12 ] && { echo "❌ Health check timed out"; docker compose -f docker-compose.prod.yml logs --tail=50; exit 1; }
+    done
 
     echo "🔍 Checking service health..."
     if curl -f http://localhost:$SERVICE_PORT/health > /dev/null 2>&1; then

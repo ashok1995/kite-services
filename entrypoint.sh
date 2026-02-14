@@ -13,9 +13,11 @@ echo "   Log Level: ${LOG_LEVEL:-INFO}"
 # Create required directories
 mkdir -p /app/logs /app/data
 
-# Validate Kite credentials
-if [ -z "${KITE_API_KEY}" ]; then
-    echo "⚠️  KITE_API_KEY not set — limited functionality"
+# Kite credentials: prefer token file (prod) over KITE_API_KEY (legacy)
+if [ -n "${KITE_TOKEN_FILE}" ] && [ -f "${KITE_TOKEN_FILE}" ]; then
+    echo "✅ Kite token file found: ${KITE_TOKEN_FILE}"
+elif [ -z "${KITE_API_KEY}" ]; then
+    echo "⚠️  No KITE_API_KEY and no token file — set KITE_TOKEN_FILE or mount kite-credentials"
 fi
 
 # Set Python path
