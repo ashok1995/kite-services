@@ -4,7 +4,7 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -25,9 +25,9 @@ COPY pyproject.toml poetry.lock* ./
 # Configure Poetry: Don't create virtual env, install to system
 RUN poetry config virtualenvs.create false
 
-# Install dependencies
-RUN poetry install --no-dev --no-interaction --no-ansi && \
-    pip install --no-cache-dir watchdog && \
+# Install dependencies only (no project install; avoids README.md in image)
+RUN poetry install --no-dev --no-interaction --no-ansi --no-root && \
+    pip install --no-cache-dir watchdog==3.0.0 && \
     rm -rf $POETRY_CACHE_DIR
 
 # Copy application code
