@@ -2,8 +2,12 @@
 
 **⭐ START HERE FOR INTEGRATION:**
 
-- **[Kite Service Integration Guide](integration/KITE-SERVICE-INTEGRATION-GUIDE.md)** - Complete guide for using this service
-- [Authentication Guide](integration/auth-curl-commands.md) - How to authenticate with Kite Connect
+- **[Kite Service Integration Guide](integration/KITE-SERVICE-INTEGRATION-GUIDE.md)**
+  — Complete guide
+- [Authentication Guide](integration/auth-curl-commands.md) -
+  How to authenticate with Kite Connect
+- [Production Integration Guide](integration/prod-integration-guide.md) -
+  Tested cURL examples for prod (health, auth, quotes, historical, trading)
 
 ---
 

@@ -145,12 +145,17 @@ class TestProdMarketData:
     def test_market_data_quote(self, base_url):
         r = httpx.post(
             f"{base_url}/api/market/data",
-            json={"symbols": ["NSE:RELIANCE"], "data_type": "quote", "exchange": "NSE"},
+            json={"symbols": ["RELIANCE"], "data_type": "quote", "exchange": "NSE"},
             timeout=TIMEOUT,
         )
-        assert r.status_code == 200
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
         d = r.json()
-        assert d.get("success") is True
+        assert d.get("success") is True, f"Expected success True: {d}"
+        ok = d.get("successful_symbols", 0) >= 1
+        assert ok, (
+            f"Expected ≥1 successful quote; got successful_symbols={d.get('successful_symbols')}, "
+            f"failed={d.get('failed_symbols', d.get('failed_symbols_list'))}"
+        )
         assert "processing_time_ms" in d
 
 

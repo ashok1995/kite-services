@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Deploy doc** — Section 0 VM checklist, Section 5 branch/deploy flow (feature → develop → main → deploy).
 - **Git workflow rule** — Main receives only from develop; staging = run locally with develop (same rigor as prod); merge develop → main via Git UI then deploy.
 - **Staging = same process as prod (Docker)** — `docker-compose.staging.yml` and `./deploy_to_staging.sh` for local staging on port 8279; uses develop branch, build + compose + health check like prod.
+- **Prod integration guide** — `docs/integration/prod-integration-guide.md` with tested cURL examples for health, auth, quotes, historical, market status, instruments, quick-context, trading status.
+- **POST /api/market/data (quote)** — Fixed quote lookup: use `EXCHANGE:SYMBOL` format for Kite API (was passing raw symbol; Kite returns keys as NSE:RELIANCE).
 - **Market Context Breadth** — Market context now uses real Nifty 50 constituent data instead of sector-based approximation
 - **Batch Quote Configuration** — Default `QUOTES_MAX_SYMBOLS` changed from 50 to 200 across all environments
 - **Token file auto-create**: When missing, create template at `kite-credentials/kite_token.json`. No SCP; add api_key/api_secret via SSH edit after deploy.
