@@ -2,6 +2,7 @@
 services:
   kite-services:
     build: .
+    image: kite-services:latest
     container_name: kite-services-prod
     ports:
       - "8179:8179"

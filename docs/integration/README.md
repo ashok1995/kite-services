@@ -1,13 +1,15 @@
-# Integration Guides
+# Integration
 
-Per-service integration docs with copy-paste ready cURL examples.
+**Single source:** [INTEGRATION.md](INTEGRATION.md)
 
-| Service | Doc | Endpoints |
-|---------|-----|-----------|
-| Auth    | [auth-integration.md](auth-integration.md) | login-url, login, status |
-| Market   | [market-data-integration.md](market-data-integration.md) | data, status, instruments |
-| Analysis | [analysis-integration.md](analysis-integration.md) | context, intelligence, stock, context/enhanced |
-| Trading  | [trading-integration.md](trading-integration.md) | status, opportunities/quick             |
-| **Prod** | [prod-integration-guide.md](prod-integration-guide.md) | Health, auth, quotes, historical, status  |
+That file is the only integration guide. It includes:
 
-For a single consolidated guide with all endpoints, see [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
+- Base URLs (dev, staging, prod)
+- Auth flow (credentials, login-url, login, status, token update)
+- Health and service info
+- Market data (status, quotes, data, historical, instruments)
+- Analysis (context, intelligence, stock, enhanced context)
+- Trading (status, quick opportunities)
+- Request-body reference table
+
+For request/response shapes, use [api/api-reference.md](../api/api-reference.md) and [html/request-response-models.html](../html/request-response-models.html).

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>API Reference – Kite Services</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --fg: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --orange: #d29922;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 0; line-height: 1.6; }
+    .wrap { max-width: 52rem; margin: 0 auto; padding: 2rem 1.5rem; }
+    .back { margin-bottom: 1.5rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1 { font-size: 1.75rem; font-weight: 600; margin: 0 0 0.5rem 0; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; }
+    h2 { font-size: 1.25rem; font-weight: 600; margin: 2.5rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--fg); }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem 0; color: var(--muted); }
+    .endpoint { font-family: ui-monospace, monospace; font-weight: 600; color: var(--accent); margin: 0.75rem 0 0.25rem 0; font-size: 0.95rem; }
+    .method { display: inline-block; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-right: 0.5rem; }
+    .method.get { background: var(--green); color: var(--bg); }
+    .method.post { background: var(--accent); color: var(--bg); }
+    .method.put { background: var(--orange); color: var(--bg); }
+    .label { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0 0.2rem 0; text-transform: uppercase; letter-spacing: 0.04em; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.5; margin: 0.25rem 0 1rem 0; }
+    code { font-family: ui-monospace, monospace; font-size: 0.85em; }
+    .meta { font-size: 0.85rem; color: var(--muted); margin: 0.25rem 0 0.75rem 0; }
+    nav { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-bottom: 2rem; font-size: 0.9rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="back"><a href="index.html">← Documentation index</a></div>
+    <h1>API Reference</h1>
+    <p class="sub">Complete endpoint list with request and response models. Single source: <code>docs/api/api-reference.md</code>.</p>
+    <nav>
+      <a href="#base">Base URLs</a>
+      <a href="#auth">Auth</a>
+      <a href="#health">Health</a>
+      <a href="#market">Market data</a>
+      <a href="#analysis">Analysis</a>
+      <a href="#trading">Trading</a>
+      <a href="#errors">Errors</a>
+    </nav>
+
+    <h2 id="base">Base URLs</h2>
+    <div class="card">
+      <strong>Development</strong> <code>http://localhost:8079</code><br />
+      <strong>Production</strong> <code>http://YOUR_HOST:8179</code>
+    </div>
+
+    <h2 id="auth">Authentication</h2>
+    <p class="meta">Token flow: GET login-url → open in browser → POST /api/auth/login with request_token.</p>
+
+    <div class="endpoint"><span class="method get">GET</span> /api/auth/login-url</div>
+    <div class="label">Response 200</div>
+    <pre>{
+  "login_url": "https://kite.zerodha.com/connect/login?api_key=...",
+  "message": "Open URL, login, copy request_token from redirect"
+}</pre>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/auth/login</div>
+    <div class="label">Request</div>
+    <!-- pragma: allowlist secret -->
+    <pre>{"request_token": "from_redirect_url", "api_secret": "optional_if_in_env"}</pre>
+    <div class="label">Response 200</div>
+    <pre>{
+  "status": "authenticated",
+  "access_token": "...",
+  "user_id": "AB1234",
+  "user_name": "User Name",
+  "message": "Authentication successful"
+}</pre>
+
+    <div class="endpoint"><span class="method get">GET</span> /api/auth/status</div>
+    <div class="label">Response 200</div>
+    <pre>{
+  "status": "authenticated",
+  "authenticated": true,
+  "token_valid": true,
+  "user_id": "AB1234",
+  "user_name": "User Name",
+  "message": "Token verified via Kite API (profile)"
+}</pre>
+
+    <div class="endpoint"><span class="method put">PUT</span> /api/auth/token</div>
+    <div class="label">Request</div>
+    <pre>{"access_token": "new_access_token", "user_id": "optional_user_id"}</pre>
+
+    <h2 id="health">Health &amp; status</h2>
+
+    <div class="endpoint"><span class="method get">GET</span> /health</div>
+    <div class="label">Response 200</div>
+    <pre>{
+  "status": "healthy",
+  "service": "kite-services",
+  "version": "1.0.0",
+  "environment": "production",
+  "services": { "kite_client": {"status": "running"}, "yahoo_service": {"status": "running"} }
+}</pre>
+
+    <div class="endpoint"><span class="method get">GET</span> /</div>
+    <div class="label">Response 200</div>
+    <pre>{
+  "service": "kite-services",
+  "version": "1.0.0",
+  "environment": "production",
+  "docs_url": "/docs",
+  "health_url": "/health",
+  "api_prefix": "/api"
+}</pre>
+
+    <h2 id="market">Market data</h2>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/market/data</div>
+    <p class="meta">Universal market data (quotes, historical, fundamentals).</p>
+    <div class="label">Request (quote)</div>
+    <pre>{"symbols": ["RELIANCE", "TCS"], "exchange": "NSE", "data_type": "quote"}</pre>
+    <div class="label">Request (historical) – also send from_date, to_date, interval</div>
+    <pre>{"symbols": ["RELIANCE"], "exchange": "NSE", "data_type": "historical",
+ "from_date": "2025-02-01", "to_date": "2025-02-14", "interval": "day"}</pre>
+    <div class="label">Response (quote)</div>
+    <pre>{"success": true, "data": {"RELIANCE": {"last_price": 2500, "ohlc": {...}, "volume": 1000000}, ...},
+ "successful_symbols": 2, "failed_symbols": [], "processing_time_ms": 120}</pre>
+
+    <div class="endpoint"><span class="method get">GET</span> /api/market/status</div>
+    <div class="label">Response 200 – market open/closed, exchange sessions</div>
+
+    <div class="endpoint"><span class="method get">GET</span> /api/market/instruments</div>
+    <p class="meta">Query: <code>?limit=10</code>, <code>?exchange=NSE</code></p>
+
+    <div class="endpoint"><span class="method get">GET</span> /api/market/historical/{symbol}</div>
+    <p class="meta">Historical OHLCV candles. Query: <code>interval</code> (minute, 5minute, 15minute, 30minute, hour, day), <code>from_date</code>, <code>to_date</code> (YYYY-MM-DD). Defaults: interval=5minute, to_date=today, from_date=7 days ago.</p>
+    <div class="label">Example</div>
+    <pre>GET /api/market/historical/RELIANCE?interval=day&from_date=2025-02-01&to_date=2025-02-14</pre>
+    <div class="label">Response 200</div>
+    <pre>{
+  "symbol": "RELIANCE",
+  "instrument_token": 738561,
+  "interval": "day",
+  "from_date": "2025-02-01",
+  "to_date": "2025-02-14",
+  "candles": [
+    { "date": "2025-02-01", "open": 2500.0, "high": 2520.0, "low": 2490.0, "close": 2510.0, "volume": 1000000 }
+  ],
+  "total_candles": 10,
+  "processing_time_ms": 450,
+  "timestamp": "2025-02-14T12:00:00"
+}</pre>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/market/quotes</div>
+    <p class="meta">Real-time quotes, up to 200 symbols.</p>
+    <div class="label">Request</div>
+    <pre>{"symbols": ["RELIANCE", "TCS", "INFY"], "exchange": "NSE"}</pre>
+    <div class="label">Response 200</div>
+    <pre>{
+  "success": true,
+  "total_symbols": 3,
+  "successful_symbols": 3,
+  "stocks": [...],
+  "processing_time_ms": 850
+}</pre>
+
+    <h2 id="analysis">Analysis</h2>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/analysis/context</div>
+    <div class="label">Request</div>
+    <pre>{"include_global_data": true, "include_sector_data": true}</pre>
+    <div class="label">Response (includes market breadth: advances, declines, advance_decline_ratio)</div>
+    <pre>{"market_context": {"indian_data": {"indices": {...}, "market_regime": "bullish",
+  "advances": 35, "declines": 15, "unchanged": 0, "advance_decline_ratio": "2.33", "timestamp": "..."}}}</pre>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/analysis/intelligence</div>
+    <div class="label">Request</div>
+    <pre>{"symbol": "RELIANCE", "time_horizon": "short"}</pre>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/analysis/stock</div>
+    <div class="label">Request</div>
+    <pre>{"symbol": "RELIANCE", "analysis_type": "comprehensive", "time_horizon": "intraday"}</pre>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/analysis/context/enhanced</div>
+    <div class="label">Request</div>
+    <pre>{"trading_styles": ["intraday"], "include_primary": true, "include_detailed": false, "include_style_specific": true}</pre>
+
+    <h2 id="trading">Trading</h2>
+
+    <div class="endpoint"><span class="method get">GET</span> /api/trading/status</div>
+    <p class="meta">Portfolio, positions, holdings, P&amp;L. Requires valid token.</p>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/opportunities/quick</div>
+    <div class="label">Request</div>
+    <pre>{"symbols": ["NSE:NIFTY 50"], "timeframe": "5minute"}</pre>
+
+    <h2 id="errors">Error responses</h2>
+    <div class="card">
+      <strong>400 Bad Request</strong> – ValidationError, invalid input, details in body.<br />
+      <strong>401 Unauthorized</strong> – Invalid or expired access token.<br />
+      <strong>404 Not Found</strong> – e.g. instrument not found for symbol.<br />
+      <strong>500 Internal Server Error</strong> – Unexpected error, type: ServerError.
+    </div>
+    <p class="meta">Rate limits: 100 req/min (configurable). Interactive docs: <code>$BASE/docs</code> (Swagger).</p>
+  </div>
+</body>
+</html>

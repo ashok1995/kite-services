@@ -352,7 +352,7 @@ def setup_routes(app: FastAPI):
     app.include_router(analysis.router, prefix="/api")
     app.include_router(
         quick_context.router, prefix="/api"
-    )  # Quick market context for Bayesian engine
+    )  # Quick market context for external consumers
     # app.include_router(analysis_enhanced.router, prefix="/api")  # Disabled - service removed
     app.include_router(
         quick_opportunities.router, prefix="/api"

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Single source of truth for docs** — One canonical doc per topic (API, integration, architecture, deployment, development). Rule: `.cursor/rules/docs-single-source.mdc`. No redundant or misleading docs.
+- **Single integration guide** — `docs/integration/INTEGRATION.md` is the only integration guide; auth, market, analysis, trading cURL examples and request-body reference live there.
+- **HTML docs** — `docs/html/` with `index.html`, `request-response-models.html`, `integration.html` for easy-to-read request/response models and integration steps.
 - **VM checklist** in `docs/deployment/DEPLOY-PROD-VM.md` — kite-credentials path, resource checks (`df -h`, `free -m`, `docker stats`), branch/merge flow for deploy.
 - **Market Breadth Calculation** — Real market breadth from Nifty 50 constituents (advance/decline ratio) for Bayesian engine integration
 - **MarketBreadthService** — New service with 60-second caching for efficient breadth calculation
@@ -32,8 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `StockAnalysisRequest` for POST `/analysis/stock` (body-based)
 - Extracted `analysis_enhanced_cache.py` (cache keys) and `analysis_enhanced_helpers.py` (scoring, quality)
 
+### Removed
+
+- **Root-level legacy / non-project docs** — Only project-related docs belong in the repo. Removed from root: `CI_CD_SUMMARY.md`, `FINAL-STATUS-REPORT.md`, `FINAL_SUMMARY.md`, `GAPS-FIXED-REPORT-2026-02-13.md`, `MONITOR_PIPELINE.md`, `PHASE1_PHASE2_SUMMARY.md`, `PUSH_TO_GIT.md`, `QUICK_START.md`, `TESTING_QUICK_REFERENCE.md`, `VERIFICATION-REPORT-2026-02-13.md`, `kite-service-requirements.md`. Root may contain only `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md` (plus allowlisted config/scripts). Rule updated: `.cursor/rules/docs-single-source.mdc` — root directory and "new requirements until implemented, then clean" policy.
+- **Bayesian-related docs and scripts** — This service is not a Bayesian learning service. Removed: all `docs/integration/bayesian-*.md` (gap analysis, implementation plan, phase guides, engine integration guide), `tests/integration/test_bayesian_endpoints.sh`, `tests/integration/BAYESIAN_TESTING_GUIDE.md`, `scripts/verify_bayesian_changes.sh`. Code and env comments that referred to "Bayesian engine" were reworded to neutral terms (e.g. external consumers, trading systems). Order management guide updated to say "trading/signal system" instead of "Bayesian engine".
+
 ### Changed
 
+- **Deploy speed** — Deploy no longer uses `build --no-cache` by default. Docker layer cache is used so only changed layers rebuild (typically 1–3 min for code-only deploys instead of 30–60 min). Use `FULL_REBUILD=1` when changing `pyproject.toml`/`poetry.lock`. After deploy, only **kite-services** dangling images are removed (Dockerfile label `project=kite-services`); other services on the same VM are unaffected. Added `.dockerignore` to shrink build context and speed up `docker build`. See `docs/deployment/README.md` (Deploy speed).
+- **Docs structure** — `docs/README.md` now links only to canonical docs. Redundant integration guides removed (auth-curl-commands, auth-integration, market-data-integration, analysis-integration, trading-integration, KITE-SERVICE-INTEGRATION-GUIDE, INTEGRATION_GUIDE, prod-integration-guide); content consolidated into `INTEGRATION.md`.
 - **Prod deploy** — Entrypoint recognizes token file (prod) vs `KITE_API_KEY`; health check wait extended to 60s with retry loop in `deploy_to_prod.sh`.
 - **Dockerfile** — `poetry install --no-root` to avoid project install and README.md requirement in image.
 - **Deploy doc** — Section 0 VM checklist, Section 5 branch/deploy flow (feature → develop → main → deploy).

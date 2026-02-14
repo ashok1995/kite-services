@@ -212,7 +212,7 @@ class ServiceConfig(BaseSettings):
     rate_limit_requests: int = Field(100, env="RATE_LIMIT_REQUESTS")
     rate_limit_window: int = Field(60, env="RATE_LIMIT_WINDOW")
 
-    # Quotes endpoint limits (increased to 200 for Bayesian engine)
+    # Quotes endpoint limits (max symbols per request)
     quotes_max_symbols: int = Field(200, env="QUOTES_MAX_SYMBOLS")
 
     # Market breadth configuration

@@ -2,6 +2,7 @@
 services:
   kite-services:
     build: .
+    image: kite-services:staging
     container_name: kite-services-staging
     ports:
       - "8279:8279"
