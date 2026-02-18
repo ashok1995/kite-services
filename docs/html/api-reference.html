@@ -106,7 +106,7 @@
   "service": "kite-services",
   "version": "1.0.0",
   "environment": "production",
-  "services": { "kite_client": {"status": "running"}, "yahoo_service": {"status": "running"} }
+  "services": { "kite_client": {"status": "running"}, "market_context_service": {"status": "running"} }
 }</pre>
 
     <div class="endpoint"><span class="method get">GET</span> /</div>
@@ -173,12 +173,8 @@
 
     <h2 id="analysis">Analysis</h2>
 
-    <div class="endpoint"><span class="method post">POST</span> /api/analysis/context</div>
-    <div class="label">Request</div>
-    <pre>{"include_global_data": true, "include_sector_data": true}</pre>
-    <div class="label">Response (includes market breadth: advances, declines, advance_decline_ratio)</div>
-    <pre>{"market_context": {"indian_data": {"indices": {...}, "market_regime": "bullish",
-  "advances": 35, "declines": 15, "unchanged": 0, "advance_decline_ratio": "2.33", "timestamp": "..."}}}</pre>
+    <div class="endpoint"><span class="method get">GET</span> /api/internal-market-context</div>
+    <p class="meta">Indian market context only (Kite). No body. Returns regime, VIX, breadth, Nifty 50, sectors.</p>
 
     <div class="endpoint"><span class="method post">POST</span> /api/analysis/intelligence</div>
     <div class="label">Request</div>

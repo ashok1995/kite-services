@@ -224,7 +224,7 @@ curl http://localhost:8179/health
   "services": {
     "cache_service": {"status": "running"},
     "kite_client": {"status": "running"},
-    "yahoo_service": {"status": "running"}
+    "market_context_service": {"status": "running"}
   },
   "timestamp": "2025-10-14T01:00:00"
 }

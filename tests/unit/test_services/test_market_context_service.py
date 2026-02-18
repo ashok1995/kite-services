@@ -2,7 +2,7 @@
 Unit Tests for Market Context Service
 =====================================
 
-Tests for market context service logic.
+Tests for market context service (Kite only; no Yahoo).
 """
 
 from unittest.mock import AsyncMock, Mock
@@ -13,41 +13,29 @@ from services.market_context_service import MarketContextService
 
 
 class TestMarketContextService:
-    """Tests for Market Context Service."""
+    """Tests for Market Context Service (Indian/Kite only)."""
 
     @pytest.fixture
     def mock_kite_client(self):
         """Create mock Kite client."""
         client = Mock()
-        client.get_quote = AsyncMock(
-            return_value={"NIFTY 50": {"last_price": 19500.0, "change_percent": 0.5}}
+        client.quote = AsyncMock(
+            return_value={
+                "NSE:NIFTY 50": {"last_price": 19500.0, "net_change": 100, "ohlc": {"close": 19400}}
+            }
         )
         return client
 
     @pytest.fixture
-    def mock_yahoo_service(self):
-        """Create mock Yahoo Finance service."""
-        service = Mock()
-        service.get_quote = AsyncMock(
-            return_value={"symbol": "^GSPC", "last_price": 4500.0, "change_percent": 0.3}
-        )
-        return service
-
-    @pytest.fixture
-    def service(self, mock_kite_client, mock_yahoo_service):
-        """Create Market Context service with mocks."""
-        return MarketContextService()
+    def service(self, mock_kite_client):
+        """Create Market Context service with Kite mock only."""
+        return MarketContextService(kite_client=mock_kite_client)
 
     def test_service_creation(self, service):
         """Test service can be instantiated."""
         assert service is not None
-        assert hasattr(service, "get_market_context")
-
-    @pytest.mark.asyncio
-    async def test_service_initialization(self, service):
-        """Test service initialization."""
-        await service.initialize()
-        # Verify initialization completed
+        assert hasattr(service, "get_market_breadth")
+        assert hasattr(service, "get_indian_market_data")
 
 
 if __name__ == "__main__":

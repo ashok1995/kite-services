@@ -11,7 +11,6 @@ tests/
 ├── unit/           # Unit tests for individual components
 │   ├── test_models.py
 │   └── test_services/
-│       ├── test_yahoo_finance_service.py
 │       └── test_market_context_service.py
 ├── integration/    # Integration tests for API endpoints
 │   ├── test_stock_data_service.py

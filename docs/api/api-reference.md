@@ -105,7 +105,7 @@ Health check endpoint
   "environment": "production",
   "services": {
     "kite_client": {"status": "running"},
-    "yahoo_service": {"status": "running"}
+    "market_context_service": {"status": "running"}
   }
 }
 ```
@@ -214,45 +214,18 @@ Real-time quotes for multiple symbols (up to 200).
 
 ## Analysis API
 
-### POST /api/analysis/context
+### GET /api/internal-market-context
 
-Market context with breadth data (global, Indian, sentiment, technicals).
+Indian market context only (Kite Connect). No request body. Global context is provided by a separate service.
 
-**Request:**
+**Response:**
 
-```json
-{
-  "include_global_data": true,
-  "include_sector_data": true
-}
-```
-
-**Response (Updated with Breadth Data)**:
-
-```json
-{
-  "market_context": {
-    "indian_data": {
-      "indices": {
-        "NIFTY 50": {"value": 21450.50, "change_percent": 0.75}
-      },
-      "market_regime": "bullish",
-      "advances": 35,
-      "declines": 15,
-      "unchanged": 0,
-      "advance_decline_ratio": "2.33",
-      "timestamp": "2026-02-13T14:30:00"
-    }
-  }
-}
-```
-
-**New Fields (market breadth)**:
-
-- `advances`: Number of advancing stocks (from Nifty 50)
-- `declines`: Number of declining stocks (from Nifty 50)
-- `unchanged`: Number of unchanged stocks
-- `advance_decline_ratio`: Advance/Decline ratio (cached for 60s)
+- `market_regime`: bullish / bearish / sideways
+- `volatility_regime`, `india_vix`, `vix_level`
+- `market_breadth`: advances, declines, advance_decline_ratio (Nifty 50, cached 60s)
+- `nifty_50`: price, change_percent
+- `sectors`: sector name → change_percent
+- `institutional_sentiment`, `confidence_score`, `processing_time_ms`
 
 ### POST /api/analysis/intelligence
 

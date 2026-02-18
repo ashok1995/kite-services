@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """
-Test Market Context Service - Market Level Intelligence Only
-============================================================
+Test Market Context Service - Market Level Intelligence Only (Kite only).
+===========================================================================
 
-Test the market context service that provides market-level intelligence
-WITHOUT stock-specific recommendations.
+Test the market context service: Indian market context via Kite Connect only.
+Global context is provided by a separate service.
 """
 
 import asyncio
@@ -18,7 +17,7 @@ try:
             if "=" in line and not line.strip().startswith("#"):
                 key, value = line.strip().split("=", 1)
                 os.environ[key] = value
-except:
+except OSError:
     pass
 
 # Add src to path
@@ -34,15 +33,9 @@ async def test_market_context_models():
 
     try:
         from models.market_context_data_models import (
-            GlobalMarketData,
             GlobalSentiment,
-            IndianMarketData,
-            MarketContextData,
             MarketContextRequest,
-            MarketContextResponse,
             MarketRegime,
-            QuickMarketContextResponse,
-            VolatilityData,
             VolatilityLevel,
         )
 
@@ -90,36 +83,24 @@ async def test_market_context_service():
     print("-" * 50)
 
     try:
-        from core.kite_client import KiteClient
-        from models.market_context_data_models import MarketContextRequest
         from services.market_context_service import MarketContextService
-        from services.yahoo_finance_service import YahooFinanceService
 
         print("✅ Service imports successful")
 
-        # Mock services for testing
         class MockKiteClient:
             def __init__(self):
                 self.kite = self
 
-        class MockYahooService:
-            async def get_sector_performance(self):
-                return {"Banking": 1.2, "IT": 0.8, "Auto": -0.3, "Pharma": -0.5}
-
-        # Create service
         mock_kite = MockKiteClient()
-        mock_yahoo = MockYahooService()
+        MarketContextService(kite_client=mock_kite)
 
-        service = MarketContextService(kite_client=mock_kite, yahoo_service=mock_yahoo)
-
-        print("✅ Market Context Service created")
-        print("   Scope: Market-level intelligence only")
-        print("   Exclusions: NO stock recommendations")
+        print("✅ Market Context Service created (Kite only)")
+        print("   Scope: Indian market context only")
+        print("   Exclusions: NO stock recommendations; global context = separate service")
 
         # Test service capabilities
         print(f"\n✅ Service Capabilities:")
-        print(f"   • Global market trends and sentiment")
-        print(f"   • Indian market regime and breadth")
+        print(f"   • Indian market regime and breadth (Nifty 50)")
         print(f"   • Volatility analysis and risk indicators")
         print(f"   • Sector rotation and performance")
         print(f"   • Institutional flow analysis")
@@ -144,9 +125,10 @@ async def test_api_structure():
     print("-" * 50)
 
     try:
-        from api.market_context_data_routes import router
+        from api.internal_market_context import router
 
         print("✅ API routes imported successfully")
+        assert len(router.routes) >= 1, "internal-market-context route should be registered"
 
         # Test endpoint structure
         endpoints = {
@@ -164,16 +146,16 @@ async def test_api_structure():
                     "Currency impact",
                 ],
             },
-            "quick_context": {
+            "internal_market_context": {
                 "method": "GET",
-                "path": "/quick-context",
-                "description": "Fast market environment assessment",
+                "path": "/internal-market-context",
+                "description": "Indian market context (Kite only)",
                 "response_time": "< 1 second",
                 "features": [
                     "Market regime",
-                    "Global sentiment",
-                    "Volatility level",
-                    "Key metrics",
+                    "India VIX",
+                    "Market breadth (Nifty 50)",
+                    "Sectors",
                 ],
             },
             "examples": {
@@ -356,8 +338,7 @@ async def main():
         print(f"   • NO stock price targets")
 
         print(f"\n🔗 **Ready Endpoints:**")
-        print(f"   POST /api/market-context-data/context")
-        print(f"   GET  /api/market-context-data/quick-context")
+        print(f"   GET  /api/internal-market-context")
         print(f"   GET  /api/market-context-data/examples")
         print(f"   GET  /api/market-context-data/health")
 

@@ -25,8 +25,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from api import (  # noqa: E402
     analysis,
     auth,
+    internal_market_context,
     market_data,
-    quick_context,
     quick_opportunities,
     trading,
 )
@@ -99,9 +99,8 @@ def create_app() -> FastAPI:
         - GET /api/market/status - Market status & health
         - GET /api/market/instruments - Available instruments
 
-        🧠 **Analysis** (2 endpoints)
-        - POST /api/analysis/context - Complete market context
-        - POST /api/analysis/intelligence - Stock intelligence
+        🧠 **Analysis** (1 endpoint)
+        - GET /api/internal-market-context - Indian market context (Kite only)
 
         💼 **Trading** (1 endpoint)
         - GET /api/trading/status - Portfolio & positions
@@ -350,9 +349,7 @@ def setup_routes(app: FastAPI):
     app.include_router(auth.router, prefix="/api")
     app.include_router(market_data.router, prefix="/api")
     app.include_router(analysis.router, prefix="/api")
-    app.include_router(
-        quick_context.router, prefix="/api"
-    )  # Quick market context for external consumers
+    app.include_router(internal_market_context.router, prefix="/api")
     # app.include_router(analysis_enhanced.router, prefix="/api")  # Disabled - service removed
     app.include_router(
         quick_opportunities.router, prefix="/api"

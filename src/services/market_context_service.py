@@ -45,14 +45,6 @@ class MarketContextService:
         # Initialize market breadth service for advance/decline data
         self.breadth_service = MarketBreadthService(kite_client, logger)
 
-        self.global_indices = {
-            "US": ["^GSPC", "^IXIC", "^DJI"],
-            "Europe": ["^FTSE", "^GDAXI", "^FCHI"],
-            "Asia": ["^N225", "^HSI", "000001.SS"],
-        }
-
-        self.indian_indices = ["^NSEI", "^NSEBANK", "^CNXIT"]
-
         self.logger.info(
             "MarketContextService initialized",
             extra={
@@ -271,7 +263,7 @@ class MarketContextService:
                 market_context=market_context,
                 market_summary=market_summary,
                 processing_time_ms=int((time.time() - start_time) * 1000),
-                data_sources=["kite_connect", "yahoo_finance"],
+                data_sources=["kite_connect"],
             )
 
             return response
@@ -317,12 +309,12 @@ class MarketContextService:
     # Helper methods (simplified for brevity)
 
     async def _get_global_market_data(self, request_id: str):
-        """Global market data not supported - use separate Yahoo service."""
-        self.logger.warning("Global market data requested but not supported by Kite service")
+        """Global market data not supported - use separate global context service."""
+        self.logger.debug("Global market data not provided by this service")
         return None
 
     async def _get_indian_market_data(self, request_id: str) -> IndianMarketData:
-        """Get Indian market data from Kite Connect and Yahoo Finance."""
+        """Get Indian market data from Kite Connect."""
         try:
             # Fetch Indian indices via Kite Connect quote API
             indian_symbols = ["NSE:NIFTY 50", "NSE:NIFTY BANK"]
@@ -443,7 +435,7 @@ class MarketContextService:
             )
 
     async def _get_sector_data(self, request_id: str) -> SectorData:
-        """Get sector data from Kite Connect (Indian sectors) with Yahoo fallback."""
+        """Get sector data from Kite Connect (Indian sectors)."""
         try:
             # Primary: Use Kite Connect for Indian Nifty sector indices
             sector_performance = await self.kite_client.get_sector_performance()
@@ -486,8 +478,8 @@ class MarketContextService:
         )
 
     async def _get_currency_data(self, request_id: str) -> CurrencyData:
-        """Currency and commodity data not supported - use separate Yahoo service."""
-        self.logger.warning("Currency/commodity data requested but not supported by Kite service")
+        """Currency and commodity data not supported - use separate service."""
+        self.logger.debug("Currency/commodity not provided by this service")
         return CurrencyData(
             timestamp=datetime.now(), currency_trend="unknown", commodity_impact="unknown"
         )

@@ -109,12 +109,10 @@ curl -s "$BASE/api/market/instruments?limit=10&exchange=NSE" | python3 -m json.t
 
 ## 4. Analysis
 
-### 4.1 Context
+### 4.1 Indian market context (internal)
 
 ```bash
-curl -s -X POST "$BASE/api/analysis/context" \
-  -H "Content-Type: application/json" \
-  -d '{"include_global_data": true, "include_sector_data": true}' | python3 -m json.tool
+curl -s "$BASE/api/internal-market-context" | python3 -m json.tool
 ```
 
 ### 4.2 Intelligence
@@ -172,10 +170,9 @@ curl -s -X POST "$BASE/api/opportunities/quick" \
 | PUT /api/auth/token | `{"access_token":"...", "user_id":"optional"}` |
 | POST /api/market/data | `{"symbols":["RELIANCE"], "exchange":"NSE", "data_type":"quote"}` |
 | POST /api/market/quotes | `{"symbols":["RELIANCE","TCS"], "exchange":"NSE"}` |
-| POST /api/analysis/context | `{"include_global_data": true, "include_sector_data": true}` |
+| GET /api/internal-market-context | (no body) |
 | POST /api/analysis/intelligence | `{"symbol":"RELIANCE", "time_horizon":"short"}` |
 | POST /api/analysis/stock | `{"symbol":"RELIANCE", "analysis_type":"comprehensive", "time_horizon":"intraday"}` |
-| POST /api/analysis/context/enhanced | `{"include_primary": true, "include_detailed": false}` |
 | POST /api/opportunities/quick | `{"symbols":["NSE:NIFTY 50"], "timeframe":"5minute"}` |
 
 Full request/response shapes: see **API Reference** (`docs/api/api-reference.md`) and **Request/Response models** (`docs/html/request-response-models.html`).
