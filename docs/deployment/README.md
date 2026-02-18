@@ -21,3 +21,12 @@
   changed `pyproject.toml`/`poetry.lock` or want a clean image. This runs `build --no-cache` (~30–60 min once).
 - **Cleanup (this service only):** After each deploy, the script removes only **kite-services** dangling images.
   Other services on the same VM are unaffected. Image is labeled `project=kite-services` in the Dockerfile.
+
+## Token persistence across deploys
+
+- **Yes — existing token is reused.** The token is stored in `kite-credentials/kite_token.json` on the VM
+  (mounted into the container as `/root/.kite-services/kite_token.json`). That directory is not in git and is
+  not overwritten by `git pull` or the deploy script.
+- On container start, the app loads the token from that file and verifies it via the Kite API (profile call).
+  If the token is valid, the web app shows "already authenticated" and GET `/api/auth/status` returns
+  `authenticated: true`, `token_valid: true`. No re-login is needed after a deploy unless the token has expired.

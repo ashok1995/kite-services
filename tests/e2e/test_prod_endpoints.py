@@ -63,10 +63,8 @@ class TestProdSmoke:
         expected = [
             "cache_service",
             "kite_client",
-            "yahoo_service",
             "market_context_service",
             "stock_data_service",
-            "market_intelligence_service",
         ]
         for svc in expected:
             assert svc in services

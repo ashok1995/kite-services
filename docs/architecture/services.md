@@ -23,40 +23,16 @@ All business logic is implemented in stateless services with dependency injectio
 ### MarketContextService
 
 **File**: `src/services/market_context_service.py`  
-**Purpose**: Market intelligence and analysis
+**Purpose**: Indian market context only (Kite Connect). Global context is provided by a separate service.
 
 **Methods**:
 
-- `get_market_context()` - Comprehensive market analysis
-- `get_quick_context()` - Fast market summary
+- `get_market_breadth()` - Nifty 50 advance/decline
+- `get_indian_market_data()` - Indian indices, regime
+- `_get_volatility_data()` - India VIX
+- `_get_sector_data()` - Indian sector performance
 
-**Dependencies**: KiteClient, YahooFinanceService
-
----
-
-### ConsolidatedMarketService
-
-**File**: `src/services/consolidated_market_service.py`  
-**Purpose**: Aggregates data from multiple sources
-
-**Methods**:
-
-- `get_consolidated_data(symbol, scope)` - Multi-source data aggregation
-
-**Dependencies**: KiteClient, YahooFinanceService, MarketContextService
-
----
-
-### YahooFinanceService
-
-**File**: `src/services/yahoo_finance_service.py`  
-**Purpose**: Global market data via Yahoo Finance
-
-**Methods**:
-
-- `get_quote(symbol)` - Get current quote
-- `get_historical_data(symbol, period, interval)` - Get history
-- `get_fundamentals(symbol)` - Company fundamentals
+**Dependencies**: KiteClient only (no Yahoo in this service)
 
 ---
 

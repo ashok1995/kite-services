@@ -86,16 +86,14 @@ class TestSmoke:
 
     @pytest.mark.asyncio
     async def test_all_services_initialised(self, client):
-        """All 6 core services are reported as running."""
+        """All 4 core services are reported as running (Kite/Indian only; no Yahoo)."""
         r = await client.get("/health")
         services = r.json()["services"]["services"]
         expected = [
             "cache_service",
             "kite_client",
-            "yahoo_service",
             "market_context_service",
             "stock_data_service",
-            "market_intelligence_service",
         ]
         for svc in expected:
             assert svc in services, f"Service {svc} not initialised"

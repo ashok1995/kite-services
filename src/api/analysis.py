@@ -1,15 +1,7 @@
 """
 Analysis API Module
 
-Consolidated market analysis endpoints for Kite Services.
-Provides comprehensive market context and stock intelligence.
-
-Endpoints:
-- POST /analysis/context - Complete market context analysis
-- POST /analysis/intelligence - Stock-specific intelligence
-
-Note: For enhanced hierarchical context with trading style optimization,
-see /analysis/context/enhanced endpoint (analysis_enhanced module)
+Stock analysis endpoints. Indian market context is at GET /api/internal-market-context.
 """
 
 import logging
@@ -21,157 +13,14 @@ from core.service_manager import get_service_manager
 from models.unified_api_models import (
     IntelligenceRequest,
     IntelligenceResponse,
-    MarketContextRequest,
-    MarketContextResponse,
     StockAnalysisRequest,
     StockAnalysisResponse,
     StockIntelligence,
+    TradingSignal,
 )
-from services.market_context_service import MarketContextService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-@router.post("/analysis/context", response_model=MarketContextResponse)
-async def get_market_context(request: MarketContextRequest):
-    """
-    Complete market context analysis.
-
-    Provides comprehensive market analysis including:
-    - Global market data (US, Europe, Asia)
-    - Indian market data (Nifty, Sensex, sector indices)
-    - Market sentiment indicators
-    - Technical analysis for specified symbols
-
-    Args:
-        symbols: Specific symbols to analyze (optional)
-        include_global: Include global market context
-        include_indian: Include Indian market context
-        include_sentiment: Include market sentiment analysis
-        include_technical: Include technical analysis
-    """
-    start_time = time.time()
-
-    try:
-        service_manager = await get_service_manager()
-        market_context_service = service_manager.market_context_service
-
-        logger.info(f"Generating market context analysis for {len(request.symbols or [])} symbols")
-
-        # Initialize response data
-        global_markets = []
-        indian_markets = []
-        market_breadth = None
-        market_sentiment = None
-        technical_analysis = []
-
-        # Get global market data
-        if request.include_global:
-            try:
-                global_data = await market_context_service.get_global_market_data()
-                if global_data:
-                    global_markets = [
-                        GlobalMarketData(
-                            market=market.get("market", ""),
-                            index=market.get("index", ""),
-                            last_price=market.get("last_price"),
-                            change=market.get("change"),
-                            change_percent=market.get("change_percent"),
-                            timestamp=market.get("timestamp"),
-                        )
-                        for market in global_data
-                    ]
-            except Exception as e:
-                logger.warning(f"Failed to get global market data: {str(e)}")
-
-        # Get Indian market data
-        if request.include_indian:
-            try:
-                indian_data = await market_context_service.get_indian_market_data()
-                if indian_data:
-                    indian_markets = [
-                        GlobalMarketData(
-                            market=market.get("market", ""),
-                            index=market.get("index", ""),
-                            last_price=market.get("last_price"),
-                            change=market.get("change"),
-                            change_percent=market.get("change_percent"),
-                            timestamp=market.get("timestamp"),
-                        )
-                        for market in indian_data
-                    ]
-            except Exception as e:
-                logger.warning(f"Failed to get Indian market data: {str(e)}")
-
-        # Get market breadth (Nifty 50 constituents)
-        try:
-            breadth_data = await market_context_service.get_market_breadth()
-            if breadth_data:
-                from models.unified_api_models import MarketBreadth
-
-                market_breadth = MarketBreadth(**breadth_data)
-        except Exception as e:
-            logger.warning(f"Failed to get market breadth: {str(e)}")
-
-        # Get market sentiment
-        if request.include_sentiment:
-            try:
-                sentiment_data = await market_context_service.get_market_sentiment()
-                if sentiment_data:
-                    market_sentiment = MarketSentiment(
-                        overall_sentiment=sentiment_data.get("overall_sentiment", "neutral"),
-                        fear_greed_index=sentiment_data.get("fear_greed_index"),
-                        vix=sentiment_data.get("vix"),
-                        put_call_ratio=sentiment_data.get("put_call_ratio"),
-                        advance_decline_ratio=sentiment_data.get("advance_decline_ratio"),
-                        timestamp=sentiment_data.get("timestamp"),
-                    )
-            except Exception as e:
-                logger.warning(f"Failed to get market sentiment: {str(e)}")
-
-        # Get technical analysis for specified symbols
-        if request.include_technical and request.symbols:
-            try:
-                for symbol in request.symbols:
-                    try:
-                        tech_data = await market_context_service.get_technical_analysis(symbol)
-                        if tech_data:
-                            technical_analysis.append(
-                                TechnicalAnalysis(
-                                    symbol=symbol,
-                                    trend=tech_data.get("trend"),
-                                    support_levels=tech_data.get("support_levels", []),
-                                    resistance_levels=tech_data.get("resistance_levels", []),
-                                    moving_averages=tech_data.get("moving_averages", {}),
-                                    rsi=tech_data.get("rsi"),
-                                    macd=tech_data.get("macd"),
-                                    bollinger_bands=tech_data.get("bollinger_bands"),
-                                    timestamp=tech_data.get("timestamp"),
-                                )
-                            )
-                    except Exception as e:
-                        logger.warning(f"Failed to get technical analysis for {symbol}: {str(e)}")
-            except Exception as e:
-                logger.warning(f"Failed to get technical analysis: {str(e)}")
-
-        processing_time = (time.time() - start_time) * 1000
-
-        return MarketContextResponse(
-            success=True,
-            global_markets=global_markets,
-            indian_markets=indian_markets,
-            market_breadth=market_breadth,
-            market_sentiment=market_sentiment,
-            technical_analysis=technical_analysis,
-            processing_time_ms=round(processing_time, 2),
-            message="Market context analysis completed successfully",
-        )
-
-    except Exception as e:
-        logger.error(f"Market context analysis failed: {str(e)}")
-        processing_time = (time.time() - start_time) * 1000
-        raise HTTPException(status_code=500, detail=f"Market context analysis failed: {str(e)}")
 
 
 # Endpoint disabled - depends on deleted market_intelligence_service
@@ -311,7 +160,7 @@ async def get_stock_analysis_DISABLED(request: StockAnalysisRequest):
     try:
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
-        intelligence_service = service_manager.market_intelligence_service
+        _ = getattr(service_manager, "market_intelligence_service", None)
 
         logger.info(
             f"Performing {request.analysis_type} analysis for {request.symbol} "
