@@ -8,9 +8,11 @@ Pydantic models for order management with validation and safety checks.
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
+
+from src.common.time_utils import now_ist_naive
 
 
 class OrderType(str, Enum):
@@ -148,7 +150,7 @@ class OrderResponse(BaseModel):
     price: Optional[Decimal] = None
     status: Optional[OrderStatus] = None
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class OrderDetails(BaseModel):
@@ -201,7 +203,7 @@ class OrderListResponse(BaseModel):
     orders: List[OrderDetails] = Field(default_factory=list, description="List of orders")
     total_orders: int = Field(0, description="Total number of orders")
     paper_trading: bool = Field(False, description="True if in paper trading mode")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class OrderHistoryItem(BaseModel):
@@ -223,4 +225,4 @@ class OrderHistoryResponse(BaseModel):
     order_id: str = Field(..., description="Order ID")
     history: List[OrderHistoryItem] = Field(default_factory=list, description="Order history")
     paper_trading: bool = Field(False, description="True if simulated order")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)

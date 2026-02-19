@@ -11,6 +11,8 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
 
+from src.common.time_utils import now_ist_naive
+
 
 class DataSource(str, Enum):
     """Source of data."""
@@ -38,7 +40,7 @@ class DataSourceInfo(BaseModel):
 
     source: DataSource
     quality: DataQualityLevel
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
     api_name: Optional[str] = None
     is_real: bool = Field(..., description="Is this real data (not fallback)?")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in data")
@@ -81,7 +83,7 @@ class ContextDataQuality(BaseModel):
 
     # Timestamps
     data_age_seconds: int = Field(..., description="Age of oldest data point")
-    generated_at: datetime = Field(default_factory=datetime.now)
+    generated_at: datetime = Field(default_factory=now_ist_naive)
 
 
 class ValidationResult(BaseModel):
@@ -125,4 +127,4 @@ class DataQualityReport(BaseModel):
     recommendations: List[str] = Field(default_factory=list)
 
     # Timestamp
-    generated_at: datetime = Field(default_factory=datetime.now)
+    generated_at: datetime = Field(default_factory=now_ist_naive)

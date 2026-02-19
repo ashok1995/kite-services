@@ -31,6 +31,7 @@ from models.data_models import (
     RealTimeResponse,
     RealTimeStockData,
 )
+from src.common.time_utils import now_ist_naive
 
 
 class StockDataService:
@@ -142,7 +143,7 @@ class StockDataService:
             processing_time = int((time.time() - start_time) * 1000)
 
             response = RealTimeResponse(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 request_id=request_id,
                 stocks=stocks_data,
                 total_symbols=len(request.symbols),
@@ -263,7 +264,7 @@ class StockDataService:
             processing_time = int((time.time() - start_time) * 1000)
 
             response = HistoricalResponse(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 request_id=request_id,
                 stocks=stocks_data,
                 total_symbols=len(request.symbols),
@@ -415,7 +416,7 @@ class StockDataService:
                 else None
             ),
             last_trade_time=quote.get("last_trade_time"),
-            timestamp=datetime.now(),
+            timestamp=now_ist_naive(),
         )
 
     async def _fetch_historical_data(
@@ -482,5 +483,5 @@ class StockDataService:
             to_date=datetime.combine(to_date, datetime.min.time()),
             candles=candles,
             total_candles=len(candles),
-            timestamp=datetime.now(),
+            timestamp=now_ist_naive(),
         )

@@ -12,7 +12,7 @@ Endpoints:
 
 import logging
 import time
-from datetime import datetime
+from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -29,6 +29,7 @@ from models.unified_api_models import (
     MarketStatusResponse,
     StockData,
 )
+from src.common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -418,7 +419,7 @@ async def get_quotes(request: RealTimeRequest):
 
         return RealTimeResponse(
             success=True,
-            timestamp=datetime.now(),
+            timestamp=now_ist_naive(),
             request_id=f"quotes_{int(time.time())}",
             stocks=stocks_data,
             total_symbols=len(request.symbols),
@@ -468,16 +469,14 @@ async def get_historical_data(
     GET /api/market/historical/RELIANCE?interval=5minute&from_date=2026-02-10&to_date=2026-02-13
     ```
     """
-    from datetime import datetime, timedelta
-
     start_time = time.time()
 
     try:
-        # Default date range (last 7 days)
+        # Default date range (last 7 days, IST)
         if not to_date:
-            to_date = datetime.now().strftime("%Y-%m-%d")
+            to_date = now_ist_naive().strftime("%Y-%m-%d")
         if not from_date:
-            from_dt = datetime.now() - timedelta(days=7)
+            from_dt = now_ist_naive() - timedelta(days=7)
             from_date = from_dt.strftime("%Y-%m-%d")
 
         service_manager = await get_service_manager()
@@ -519,7 +518,7 @@ async def get_historical_data(
             "candles": candles,
             "total_candles": len(candles),
             "processing_time_ms": int(processing_time),
-            "timestamp": datetime.now(),
+            "timestamp": now_ist_naive(),
         }
 
     except HTTPException:

@@ -9,7 +9,6 @@ position tracking, and stop-loss/target management.
 import asyncio
 import sys
 from contextlib import asynccontextmanager
-from datetime import datetime
 from pathlib import Path
 
 import uvicorn
@@ -34,6 +33,7 @@ from config.settings import get_settings  # noqa: E402
 from core.database import close_database, init_database  # noqa: E402
 from core.logging_config import get_logger, setup_logging  # noqa: E402
 from core.service_manager import ServiceManager, set_service_manager  # noqa: E402
+from src.common.time_utils import now_ist_naive  # noqa: E402
 
 # Initialize settings and logging
 settings = get_settings()
@@ -244,7 +244,7 @@ def setup_routes(app: FastAPI):
             "service": settings.service.name,
             "version": settings.service.version,
             "environment": settings.service.environment,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": now_ist_naive().isoformat(),
         }
 
         # Add service status
@@ -314,7 +314,7 @@ def setup_routes(app: FastAPI):
         health = await metrics.get_health()
 
         return {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": now_ist_naive().isoformat(),
             "uptime_seconds": round(health.uptime_seconds, 2),
             "status": health.status,
             "requests": {

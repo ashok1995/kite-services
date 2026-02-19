@@ -8,7 +8,6 @@ Supports updating token without service restart.
 
 import asyncio
 import json
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -16,6 +15,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from core.logging_config import get_logger
+from src.common.time_utils import now_ist_naive
 
 
 class TokenFileHandler(FileSystemEventHandler):
@@ -82,7 +82,7 @@ class TokenManager:
             "access_token": "",
             "user_id": "",
             "user_name": "",
-            "updated_at": datetime.now().isoformat(),
+            "updated_at": now_ist_naive().isoformat(),
         }
         try:
             with open(self.token_file, "w") as f:
@@ -169,7 +169,7 @@ class TokenManager:
 
             token_data = {
                 "access_token": access_token,
-                "updated_at": datetime.now().isoformat(),
+                "updated_at": now_ist_naive().isoformat(),
                 "api_key": existing.get("api_key", ""),
                 "api_secret": existing.get("api_secret", ""),
             }

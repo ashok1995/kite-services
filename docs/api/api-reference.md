@@ -5,6 +5,11 @@
 - **Development**: `http://localhost:8079`
 - **Production**: `http://localhost:8179`
 
+## Timestamps (IST)
+
+All `timestamp` fields use exact Indian clock time (e.g. `2026-02-13T15:45:00`)
+with no timezone suffix, for Indian market hours (9:15 AM–3:30 PM IST).
+
 ## Authentication
 
 Kite Connect OAuth token flow. Get access token in 3 steps:
@@ -68,9 +73,13 @@ Check current auth status. Verifies token via Kite API (profile call).
   "token_valid": true,
   "user_id": "AB1234",
   "user_name": "User Name",
+  "token_refreshed_at": "2026-02-19T16:30:00",
   "message": "Token verified via Kite API (profile)"
 }
 ```
+
+- `status`: Token status (`authenticated`, `expired`, `invalid`, `not_configured`)
+- `token_refreshed_at`: Last token refresh time in IST (exact Indian time, no suffix)
 
 #### PUT /api/auth/token
 

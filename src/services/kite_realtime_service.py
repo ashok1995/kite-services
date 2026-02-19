@@ -16,10 +16,12 @@ from typing import Callable, Dict, List, Optional
 import numpy as np
 from kiteconnect import KiteConnect, KiteTicker
 
-# Import configuration and credentials
 from config.settings import get_settings
 from core.logging_config import get_logger
 from services.kite_credentials_manager import get_kite_credentials_manager
+
+# Import configuration and credentials
+from src.common.time_utils import now_ist_naive
 
 # Configure logging
 logger = get_logger(__name__)
@@ -383,7 +385,7 @@ class KiteRealTimeService:
                 volume=tick.get("volume", 0),
                 change=tick.get("change", 0),
                 change_percent=tick.get("change_percent", 0),
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 bid_price=tick.get("best_bid_price", 0),
                 ask_price=tick.get("best_ask_price", 0),
                 bid_quantity=tick.get("best_bid_quantity", 0),
@@ -503,7 +505,7 @@ class KiteRealTimeService:
             # Create TechnicalIndicators object
             indicators = TechnicalIndicators(
                 symbol=symbol,
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 rsi=rsi,
                 sma_5=sma_5,
                 sma_20=sma_20,
@@ -631,7 +633,7 @@ class KiteRealTimeService:
                     target_price=target_price,
                     stop_loss=stop_loss,
                     risk_reward_ratio=risk_reward_ratio,
-                    timestamp=datetime.now(),
+                    timestamp=now_ist_naive(),
                 )
 
                 rankings.append(ranking)
@@ -932,7 +934,7 @@ class KiteRealTimeService:
                         volume=tick["volume"],
                         change=tick["change"],
                         change_percent=tick["change_percent"],
-                        timestamp=datetime.now(),
+                        timestamp=now_ist_naive(),
                         bid_price=tick["best_bid_price"],
                         ask_price=tick["best_ask_price"],
                         bid_quantity=tick["best_bid_quantity"],

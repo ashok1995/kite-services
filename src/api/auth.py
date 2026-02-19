@@ -10,7 +10,7 @@ Endpoints:
 """
 
 import logging
-from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from kiteconnect.exceptions import KiteException, TokenException
@@ -26,6 +26,7 @@ from models.unified_api_models import (
     LoginUrlResponse,
     UpdateTokenRequest,
 )
+from src.common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -99,6 +100,10 @@ async def authenticate(request: AuthRequest):
         # Validate margins/permissions (required for token validation)
         await kite_client.get_margins()
 
+        token_info = kite_client.token_manager.get_token_info()
+        token_refreshed_at = (
+            token_info.get("updated_at") if token_info else now_ist_naive().isoformat()
+        )
         return AuthResponse(
             status=AuthStatus.AUTHENTICATED,
             access_token=await kite_client.get_access_token(),
@@ -110,6 +115,7 @@ async def authenticate(request: AuthRequest):
             products=profile.get("products", []),
             order_types=profile.get("order_types", []),
             message="Authentication successful",
+            token_refreshed_at=token_refreshed_at,
         )
 
     except (TokenException, KiteException) as e:
@@ -125,7 +131,7 @@ async def authenticate(request: AuthRequest):
                 "success": False,
                 "error": "authentication_failed",
                 "message": f"Authentication failed: {str(e)}",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             },
         )
 
@@ -161,6 +167,10 @@ async def update_token(request: UpdateTokenRequest):
 
         logger.info(f"✅ Token updated successfully for user: {profile.get('user_id')}")
 
+        token_info = kite_client.token_manager.get_token_info()
+        token_refreshed_at = (
+            token_info.get("updated_at") if token_info else now_ist_naive().isoformat()
+        )
         return AuthResponse(
             status=AuthStatus.AUTHENTICATED,
             access_token=request.access_token,
@@ -172,6 +182,7 @@ async def update_token(request: UpdateTokenRequest):
             products=profile.get("products", []),
             order_types=profile.get("order_types", []),
             message="Token updated successfully",
+            token_refreshed_at=token_refreshed_at,
         )
 
     except HTTPException:
@@ -195,6 +206,11 @@ async def get_auth_status():
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
 
+        def _token_refreshed_at() -> Optional[str]:
+            """Get token refreshed time in IST from token file."""
+            token_info = kite_client.token_manager.get_token_info()
+            return token_info.get("updated_at") if token_info else None
+
         # Check if we have credentials configured (api_key from token file)
         if not kite_client.kite_config.api_key:
             return AuthStatusResponse(
@@ -204,7 +220,8 @@ async def get_auth_status():
                 message="Kite credentials not configured (create ~/.kite-services/kite_token.json)",
             )
 
-        # Check if we have an access token
+        # Check if we have an access token (load_token populates token_info)
+        kite_client.token_manager.load_token()
         access_token = await kite_client.get_access_token()
         if not access_token:
             return AuthStatusResponse(
@@ -212,6 +229,7 @@ async def get_auth_status():
                 authenticated=False,
                 token_valid=False,
                 message="No access token available",
+                token_refreshed_at=_token_refreshed_at(),
             )
 
         # Verify token via Kite API - only return valid when profile call succeeds
@@ -226,12 +244,14 @@ async def get_auth_status():
                     user_name=profile.get("user_name"),
                     broker=profile.get("broker"),
                     message="Token verified via Kite API (profile)",
+                    token_refreshed_at=_token_refreshed_at(),
                 )
             return AuthStatusResponse(
                 status=AuthStatus.INVALID,
                 authenticated=False,
                 token_valid=False,
                 message="Invalid or expired token",
+                token_refreshed_at=_token_refreshed_at(),
             )
         except Exception as e:
             logger.warning(f"Token validation failed: {str(e)}")
@@ -240,6 +260,7 @@ async def get_auth_status():
                 authenticated=False,
                 token_valid=False,
                 message=f"Token verification failed: {str(e)}",
+                token_refreshed_at=_token_refreshed_at(),
             )
 
     except Exception as e:
@@ -249,4 +270,5 @@ async def get_auth_status():
             authenticated=False,
             token_valid=False,
             message=f"Auth status check failed: {str(e)}",
+            token_refreshed_at=None,
         )

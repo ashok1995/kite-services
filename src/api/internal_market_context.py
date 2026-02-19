@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from core.logging_config import get_logger
 from core.service_manager import get_service_manager
+from src.common.time_utils import now_ist_naive
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -36,7 +37,10 @@ class InternalMarketContextResponse(BaseModel):
     sectors: Optional[Dict] = Field(None, description="Indian sector performance")
     institutional_sentiment: Optional[str] = Field(None, description="Derived sentiment")
     confidence_score: float = Field(0.85, description="Data confidence score")
-    timestamp: datetime = Field(default_factory=datetime.now, description="Response timestamp")
+    timestamp: datetime = Field(
+        default_factory=now_ist_naive,
+        description="Response timestamp (IST)",
+    )
     processing_time_ms: float = Field(..., description="Processing time in milliseconds")
 
 

@@ -21,6 +21,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from core.service_manager import get_service_manager
+from src.common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -93,7 +94,7 @@ class QuickOpportunityResponse(BaseModel):
     opportunities: List[OpportunitySignal]
 
     # Meta
-    scan_time: datetime = Field(default_factory=datetime.now)
+    scan_time: datetime = Field(default_factory=now_ist_naive)
     data_age_seconds: int  # How fresh is the data
     next_scan_in_seconds: int = 30  # When to scan next
 
