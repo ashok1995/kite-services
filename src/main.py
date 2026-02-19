@@ -109,8 +109,8 @@ def create_app() -> FastAPI:
         """,
         version=settings.service.version,
         lifespan=lifespan,
-        docs_url="/docs" if settings.service.debug else None,
-        redoc_url="/redoc" if settings.service.debug else None,
+        docs_url="/docs" if (settings.service.debug or settings.service.enable_docs) else None,
+        redoc_url="/redoc" if (settings.service.debug or settings.service.enable_docs) else None,
     )
 
     # Add middleware
@@ -339,7 +339,9 @@ def setup_routes(app: FastAPI):
             "service": settings.service.name,
             "version": settings.service.version,
             "environment": settings.service.environment,
-            "docs_url": "/docs" if settings.service.debug else None,
+            "docs_url": (
+                "/docs" if (settings.service.debug or settings.service.enable_docs) else None
+            ),
             "health_url": "/health",
             "metrics_url": "/metrics",
             "api_prefix": "/api",

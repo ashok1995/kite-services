@@ -178,6 +178,7 @@ class ServiceConfig(BaseSettings):
     # Environment
     environment: str = Field("development", env="ENVIRONMENT")
     debug: bool = Field(True, env="DEBUG")
+    enable_docs: bool = Field(False, env="ENABLE_DOCS")
 
     # CORS - store as Optional[str] to avoid JSON parsing, then convert via computed fields
     cors_origins_raw: Optional[str] = Field(default=None, env="CORS_ORIGINS")
