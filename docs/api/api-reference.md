@@ -73,9 +73,13 @@ Check current auth status. Verifies token via Kite API (profile call).
   "token_valid": true,
   "user_id": "AB1234",
   "user_name": "User Name",
+  "token_refreshed_at": "2026-02-19T16:30:00",
   "message": "Token verified via Kite API (profile)"
 }
 ```
+
+- `status`: Token status (`authenticated`, `expired`, `invalid`, `not_configured`)
+- `token_refreshed_at`: Last token refresh time in IST (exact Indian time, no suffix)
 
 #### PUT /api/auth/token
 

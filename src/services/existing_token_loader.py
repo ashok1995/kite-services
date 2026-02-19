@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 
 from config.settings import get_settings
 from core.logging_config import get_logger
+from src.common.time_utils import now_ist_naive
 
 
 class ExistingTokenLoader:
@@ -275,7 +276,6 @@ class ExistingTokenLoader:
         """
         try:
             import json
-            from datetime import datetime
 
             token_path = Path(os.path.expanduser("~/.kite-services/kite_token.json"))
             token_path.parent.mkdir(parents=True, exist_ok=True)
@@ -294,7 +294,7 @@ class ExistingTokenLoader:
                 "api_secret": credentials.get("api_secret", existing.get("api_secret", "")),
                 "access_token": credentials.get("access_token", existing.get("access_token", "")),
                 "user_id": credentials.get("user_id", existing.get("user_id", "")),
-                "updated_at": datetime.now().isoformat(),
+                "updated_at": now_ist_naive().isoformat(),
             }
             with open(token_path, "w") as f:
                 json.dump(data, f, indent=2)

@@ -87,6 +87,10 @@ class AuthResponse(BaseModel):
     products: Optional[List[str]] = Field(None, description="Enabled products")
     order_types: Optional[List[str]] = Field(None, description="Enabled order types")
     message: Optional[str] = Field(None, description="Status message")
+    token_refreshed_at: Optional[str] = Field(
+        None,
+        description="Token refreshed time in IST (e.g. 2026-02-19 16:30:00)",
+    )
     timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
@@ -102,6 +106,10 @@ class AuthStatusResponse(BaseModel):
     user_id: Optional[str] = None
     user_name: Optional[str] = None
     broker: Optional[str] = None
+    token_refreshed_at: Optional[str] = Field(
+        None,
+        description="Token last refreshed time (IST, e.g. 2026-02-19 16:30:00)",
+    )
     last_updated: Optional[datetime] = None
     token_expiry: Optional[datetime] = None
     message: Optional[str] = None
