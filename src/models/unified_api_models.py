@@ -10,7 +10,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from common.time_utils import now_ist_naive
 
@@ -127,10 +127,14 @@ class LoginUrlResponse(BaseModel):
 
 
 class UpdateTokenRequest(BaseModel):
-    """Request to update access token."""
+    """Paste request_token from login redirect (?request_token=xxx)."""
 
-    access_token: str = Field(..., min_length=1, description="New access token")
-    user_id: Optional[str] = Field(None, description="Optional user ID for metadata")
+    request_token: str = Field(..., min_length=1, description="From redirect URL")
+
+    @field_validator("request_token", mode="before")
+    @classmethod
+    def strip_token(cls, v: object) -> str:
+        return v.strip() if isinstance(v, str) else v
 
 
 # ============================================================================
