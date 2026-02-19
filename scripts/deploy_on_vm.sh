@@ -2,8 +2,8 @@
 # Run ON the VM: ssh root@203.57.85.72, then:
 #   cd /opt/kite-services && ./scripts/deploy_on_vm.sh
 #
-# Default: git pull + restart only (~10 sec). ./src is volume-mounted.
-# Use: BUILD=1 ./scripts/deploy_on_vm.sh when pyproject.toml/poetry.lock changed.
+# Image built in CI and pushed to ghcr.io. VM only pulls (~15–30 sec).
+# No build on VM; avoids 3hr+ builds on 4GB.
 
 set -e
 
@@ -13,14 +13,8 @@ echo "📥 Fetching latest from main..."
 git fetch origin main
 git checkout main
 git reset --hard origin/main
-
-if [ "${BUILD:-0}" = "1" ]; then
-  echo "🐳 Building (BUILD=1; RAM limit 2GB)..."
-  docker build --memory=2g --memory-swap=2g -t kite-services:latest .
-else
-  echo "⚡ Skipping build (code only; ./src mounted). BUILD=1 to rebuild."
-fi
-
+echo "📦 Pulling image from ghcr.io..."
+docker compose -f docker-compose.prod.yml pull
 echo "🔄 Restarting containers..."
 docker compose -f docker-compose.prod.yml up -d --force-recreate
 

@@ -312,22 +312,12 @@ ERROR: Cannot start service kite-services: ...
 
 ### Issue: Slow deployment or OOM on 4GB VM
 
-**Symptoms:** Build takes 30+ min, high CPU/RAM, `docker build` killed.
+**Status: Resolved.** The image is built in CI (GitHub Actions) and pushed to `ghcr.io/ashok1995/kite-services`.  
+The VM only pulls the pre-built image (~15–30 sec). No build runs on the VM.
 
-**Causes:** `poetry install` compiles numpy/pandas (CPU/RAM heavy). VM has limited memory.
+**Deploy:** Use `./deploy_to_prod.sh` or `./scripts/deploy_on_vm.sh` — both use `docker compose pull` only.
 
-**Solutions:**
-
-1. **Run deploy ON the VM** (limits build RAM to 2GB):
-
-   ```bash
-   ssh root@203.57.85.72
-   cd /opt/kite-services && ./scripts/deploy_on_vm.sh
-   ```
-
-2. **Dockerfile uses MAKEFLAGS=-j1** to limit parallel compilation and peak RAM.
-
-3. **First build** takes ~20–40 min. Subsequent builds use cache (~1–3 min).
+**If pull fails (401/403):** Make the GHCR package public, or run `docker login ghcr.io` on the VM with a PAT.
 
 ---
 

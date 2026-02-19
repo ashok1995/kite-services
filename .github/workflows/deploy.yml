@@ -4,10 +4,17 @@ on:
   push:
     branches: [main, master]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/ashok1995/kite-services
+
 jobs:
-  deploy:
-    name: Deploy to Production
+  test-and-push:
+    name: Test, Build & Push Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -23,8 +30,7 @@ jobs:
           virtualenvs-create: false
 
       - name: Add Poetry to PATH
-        run: |
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
@@ -35,12 +41,24 @@ jobs:
         run: |
           poetry run pytest tests/ -v --tb=short || exit 0
 
-      - name: Build Docker image
-        run: |
-          docker build -t kite-services:latest .
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:main
+            ${{ env.IMAGE_NAME }}:latest
 
       - name: Summary
         run: |
-          echo "✅ Build and tests completed successfully"
-          echo "📦 Docker image built: kite-services:latest"
-          echo "🚀 Deploy manually on VM using deploy_to_prod.sh script"
+          echo "✅ Build and push completed"
+          echo "📦 Image: ${{ env.IMAGE_NAME }}:main"
+          echo "🚀 VM: pull + restart via deploy_to_prod.sh (no build)"

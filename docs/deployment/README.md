@@ -15,12 +15,10 @@
 
 ## Deploy speed
 
-- **Default (with cache):** Deploy reuses Docker layers. Only changed layers rebuild (usually just `src/`),
-  so deploy typically takes **1–3 minutes** instead of 30–60.
-- **Full rebuild:** Use `FULL_REBUILD=1 ./deploy_to_prod.sh` or `FULL_REBUILD=1 ./deploy_to_staging.sh` when you
-  changed `pyproject.toml`/`poetry.lock` or want a clean image. This runs `build --no-cache` (~30–60 min once).
-- **Cleanup (this service only):** After each deploy, the script removes only **kite-services** dangling images.
-  Other services on the same VM are unaffected. Image is labeled `project=kite-services` in the Dockerfile.
+- **Prod (VM):** Image is built in CI and pushed to ghcr.io. VM only pulls and restarts (~15–30 sec). No build on VM.
+- **After merging to main:** Wait for [CI](https://github.com/ashok1995/kite-services/actions) to complete (~5–10 min), then deploy.
+- **Staging:** Still builds locally; use `./deploy_to_staging.sh`.
+- **Cleanup (prod only):** Script removes **kite-services** dangling images. Other services unaffected.
 
 ## Token persistence across deploys
 
