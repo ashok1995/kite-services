@@ -147,22 +147,44 @@ async def update_token(request: UpdateTokenRequest):
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
 
-        # Save token to file
+        # Ensure api_key/api_secret are preserved (from current config) when saving
+        api_key = kite_client.kite_config.api_key
+        api_secret = kite_client.kite_config.api_secret
+        if not api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="api_key not configured. Add api_key to ~/.kite-services/kite_token.json",
+            )
+
         success = kite_client.token_manager.update_token(
-            access_token=request.access_token, user_id=request.user_id
+            access_token=request.access_token,
+            user_id=request.user_id,
+            api_key=api_key,
+            api_secret=api_secret or "",
         )
 
         if not success:
             raise HTTPException(status_code=500, detail="Failed to save token to file")
 
-        # Update Kite client with new token
-        await kite_client.set_access_token(request.access_token)
-
-        # Get profile to verify token
-        profile = await kite_client.get_profile()
-        if not profile:
+        # Update Kite client and validate (set_access_token's _test_connection swallows errors)
+        try:
+            await kite_client.set_access_token(request.access_token)
+            profile = await kite_client.get_profile_or_raise()
+        except Exception as e:
+            err = str(e)
+            api_prefix = api_key[:8] + "..." if len(api_key) >= 8 else api_key
             raise HTTPException(
-                status_code=401, detail="Token saved but validation failed - token may be invalid"
+                status_code=401,
+                detail={
+                    "error": "token_validation_failed",
+                    "kite_error": err,
+                    "api_key_in_use": api_prefix,
+                    "hint": (
+                        "Kite tokens expire daily. Use POST /api/auth/login with request_token: "
+                        "1) GET /api/auth/login-url 2) Open URL, login 3) Copy request_token "
+                        "4) POST /api/auth/login with request_token"
+                    ),
+                },
             )
 
         logger.info(f"✅ Token updated successfully for user: {profile.get('user_id')}")

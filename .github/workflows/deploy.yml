@@ -53,12 +53,10 @@ jobs:
         with:
           context: .
           push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:main
-            ${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.IMAGE_NAME }}:latest
 
       - name: Summary
         run: |
           echo "✅ Build and push completed"
-          echo "📦 Image: ${{ env.IMAGE_NAME }}:main"
+          echo "📦 Image: ${{ env.IMAGE_NAME }}:latest"
           echo "🚀 VM: pull + restart via deploy_to_prod.sh (no build)"
