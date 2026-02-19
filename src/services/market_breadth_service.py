@@ -21,6 +21,7 @@ from common.constants import EXCHANGE_PREFIX, NIFTY_50_CONSTITUENTS
 from config.settings import get_settings
 from core.kite_client import KiteClient
 from core.logging_config import get_logger
+from src.common.time_utils import now_ist_naive
 
 
 class MarketBreadthService:
@@ -156,13 +157,13 @@ class MarketBreadthService:
                 "unchanged_stocks": unchanged,
                 "total_stocks": total,
                 "failed_symbols": failed,
-                "timestamp": datetime.now(),
+                "timestamp": now_ist_naive(),
                 "data_source": "nifty50_constituents",
             }
 
             # Update cache
             self._cache = breadth_data
-            self._cache_timestamp = datetime.now()
+            self._cache_timestamp = now_ist_naive()
 
             self.logger.info(
                 "Market breadth calculated successfully",
@@ -208,7 +209,7 @@ class MarketBreadthService:
         if not self._cache_timestamp:
             return float("inf")
 
-        return (datetime.now() - self._cache_timestamp).total_seconds()
+        return (now_ist_naive() - self._cache_timestamp).total_seconds()
 
     def _get_default_breadth(self, message: str = "Data unavailable") -> Dict:
         """Return default breadth data when calculation fails or is disabled.
@@ -228,7 +229,7 @@ class MarketBreadthService:
             "unchanged_stocks": 0,
             "total_stocks": 0,
             "failed_symbols": 0,
-            "timestamp": datetime.now(),
+            "timestamp": now_ist_naive(),
             "data_source": "default",
             "message": message,
         }

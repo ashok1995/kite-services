@@ -38,6 +38,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from src.common.time_utils import now_ist_naive
+
 # ============================================================================
 # VERSION METADATA
 # ============================================================================
@@ -508,7 +510,7 @@ class MarketContextResponseV1(BaseModel):
 
     # Timestamp (IMMUTABLE - REQUIRED)
     timestamp: datetime = Field(
-        default_factory=datetime.now, description="Response timestamp (ISO 8601)"
+        default_factory=now_ist_naive, description="Response timestamp (IST, ISO 8601)"
     )
 
 

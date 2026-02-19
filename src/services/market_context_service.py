@@ -29,6 +29,7 @@ from models.market_context_data_models import (
     VolatilityLevel,
 )
 from services.market_breadth_service import MarketBreadthService
+from src.common.time_utils import now_ist_naive
 
 
 class MarketContextService:
@@ -120,9 +121,9 @@ class MarketContextService:
                 "total_stocks": breadth_data.get("total_stocks", 0),
                 "data_source": breadth_data.get("data_source", "nifty50_constituents"),
                 "timestamp": (
-                    breadth_data.get("timestamp", datetime.now()).isoformat()
+                    breadth_data.get("timestamp", now_ist_naive()).isoformat()
                     if isinstance(breadth_data.get("timestamp"), datetime)
-                    else str(breadth_data.get("timestamp", datetime.now()))
+                    else str(breadth_data.get("timestamp", now_ist_naive()))
                 ),
             }
         except Exception as e:
@@ -149,7 +150,7 @@ class MarketContextService:
                 "advance_decline_ratio": (
                     float(indian.advance_decline_ratio) if indian.advance_decline_ratio else None
                 ),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
         except Exception as e:
             self.logger.warning(f"get_market_sentiment failed: {e}")
@@ -178,7 +179,7 @@ class MarketContextService:
                     "upper": round(price * 1.02, 2),
                     "lower": round(price * 0.98, 2),
                 },
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
         except Exception as e:
             self.logger.warning(f"get_technical_analysis failed for {symbol}: {e}")
@@ -233,7 +234,7 @@ class MarketContextService:
 
             # Build market context
             market_context = MarketContextData(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 request_id=request_id,
                 global_data=global_data,
                 indian_data=indian_data,
@@ -258,7 +259,7 @@ class MarketContextService:
             market_summary = self._generate_market_summary(market_context)
 
             response = MarketContextResponse(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 request_id=request_id,
                 market_context=market_context,
                 market_summary=market_summary,
@@ -287,7 +288,7 @@ class MarketContextService:
             global_influence = self._calculate_global_influence(global_data, indian_data)
 
             response = QuickMarketContextResponse(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 market_regime=indian_data.market_regime.value,
                 global_sentiment=global_data.global_sentiment.value,
                 volatility_level=volatility_data.volatility_level.value,
@@ -357,7 +358,7 @@ class MarketContextService:
             ad_ratio = breadth_data.get("advance_decline_ratio", Decimal("1.0"))
 
             return IndianMarketData(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 indices=indices,
                 market_regime=regime,
                 volatility_level=VolatilityLevel.NORMAL,
@@ -373,7 +374,7 @@ class MarketContextService:
         except Exception as e:
             self.logger.warning(f"Failed to get Indian market data: {e}")
             return IndianMarketData(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 indices={},
                 market_regime=MarketRegime.SIDEWAYS,
                 volatility_level=VolatilityLevel.NORMAL,
@@ -412,7 +413,7 @@ class MarketContextService:
             fear_greed = max(0, min(100, int(100 - float(vix_value) * 2.5)))
 
             return VolatilityData(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 india_vix=vix_value,
                 vix_change=Decimal("0"),
                 vix_trend="stable",
@@ -424,7 +425,7 @@ class MarketContextService:
         except Exception as e:
             self.logger.warning(f"Failed to get volatility data: {e}")
             return VolatilityData(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 india_vix=Decimal("18"),
                 vix_change=Decimal("0"),
                 vix_trend="unknown",
@@ -447,7 +448,7 @@ class MarketContextService:
             sorted_sectors = sorted(sector_performance.items(), key=lambda x: x[1], reverse=True)
 
             return SectorData(
-                timestamp=datetime.now(),
+                timestamp=now_ist_naive(),
                 sector_performance={k: Decimal(str(v)) for k, v in sector_performance.items()},
                 leading_sectors=[s[0] for s in sorted_sectors[:3] if s[1] > 0],
                 lagging_sectors=[s[0] for s in sorted_sectors[-3:] if s[1] < 0],
@@ -468,7 +469,7 @@ class MarketContextService:
             "Institutional flow data requires external data source - returning defaults"
         )
         return InstitutionalData(
-            timestamp=datetime.now(),
+            timestamp=now_ist_naive(),
             fii_flow=None,
             dii_flow=None,
             net_institutional_flow=None,
@@ -481,7 +482,7 @@ class MarketContextService:
         """Currency and commodity data not supported - use separate service."""
         self.logger.debug("Currency/commodity not provided by this service")
         return CurrencyData(
-            timestamp=datetime.now(), currency_trend="unknown", commodity_impact="unknown"
+            timestamp=now_ist_naive(), currency_trend="unknown", commodity_impact="unknown"
         )
 
     # Analysis methods
@@ -521,7 +522,7 @@ class MarketContextService:
 
     def _get_current_trading_session(self) -> TradingSession:
         """Get current trading session."""
-        hour = datetime.now().hour
+        hour = now_ist_naive().hour
         if 9 <= hour < 10:
             return TradingSession.OPENING
         elif 10 <= hour < 14:
@@ -587,12 +588,12 @@ class MarketContextService:
 
     def _create_empty_sector_data(self) -> SectorData:
         """Create empty sector data."""
-        return SectorData(timestamp=datetime.now(), rotation_stage="unknown")
+        return SectorData(timestamp=now_ist_naive(), rotation_stage="unknown")
 
     def _create_empty_institutional_data(self) -> InstitutionalData:
         """Create empty institutional data."""
         return InstitutionalData(
-            timestamp=datetime.now(),
+            timestamp=now_ist_naive(),
             fii_trend="neutral",
             dii_trend="neutral",
             institutional_sentiment="neutral",
@@ -601,5 +602,5 @@ class MarketContextService:
     def _create_empty_currency_data(self) -> CurrencyData:
         """Create empty currency data."""
         return CurrencyData(
-            timestamp=datetime.now(), currency_trend="stable", commodity_impact="neutral"
+            timestamp=now_ist_naive(), currency_trend="stable", commodity_impact="neutral"
         )

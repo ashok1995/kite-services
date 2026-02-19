@@ -18,6 +18,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from src.common.time_utils import now_ist_naive
+
 # ============================================================================
 # ENUMS
 # ============================================================================
@@ -90,7 +92,7 @@ class GlobalMarketPrimary(BaseModel):
     # Key drivers
     key_drivers: List[str] = Field(default_factory=list, description="Key market drivers today")
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class IndianMarketPrimary(BaseModel):
@@ -115,7 +117,7 @@ class IndianMarketPrimary(BaseModel):
     nifty_support: Optional[Decimal] = Field(None, description="Nifty immediate support")
     nifty_resistance: Optional[Decimal] = Field(None, description="Nifty immediate resistance")
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class PrimaryMarketContext(BaseModel):
@@ -148,7 +150,7 @@ class PrimaryMarketContext(BaseModel):
         default_factory=list, description="Market favorable for which trading styles"
     )
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 # ============================================================================
@@ -288,7 +290,7 @@ class DetailedMarketContext(BaseModel):
     total_volume: Optional[Decimal] = Field(None, description="Total market volume")
     volume_vs_avg: Optional[Decimal] = Field(None, description="Volume vs 20-day average %")
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 # ============================================================================
@@ -338,7 +340,7 @@ class IntradayContext(BaseModel):
         default_factory=list, description="Stocks showing reversal"
     )
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class SwingContext(BaseModel):
@@ -381,7 +383,7 @@ class SwingContext(BaseModel):
     risk_level: str = Field(..., description="low/medium/high")
     stop_loss_suggestion: str = Field(..., description="Suggested stop loss strategy")
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class LongTermContext(BaseModel):
@@ -423,7 +425,7 @@ class LongTermContext(BaseModel):
     systemic_risk_level: str = Field(..., description="low/medium/high")
     key_risks: List[str] = Field(default_factory=list, description="Key risks to watch")
 
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 # ============================================================================
@@ -503,7 +505,7 @@ class EnhancedMarketContextResponse(BaseModel):
 
     # Processing info
     processing_time_ms: float
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
     # Messages/Warnings
     message: Optional[str] = None

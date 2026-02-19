@@ -7,7 +7,6 @@ Provides graceful error responses and token expiry detection.
 """
 
 import logging
-from datetime import datetime
 from typing import Any, Dict, Optional
 
 from kiteconnect.exceptions import (
@@ -18,6 +17,8 @@ from kiteconnect.exceptions import (
     PermissionException,
     TokenException,
 )
+
+from src.common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ class KiteErrorHandler:
                     "requires_action": "token_refresh",
                     "token_expiry_note": "Kite tokens expire daily at 6:00 AM IST",  # noqa: E501
                 },
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
 
             if include_refresh_url:
@@ -120,7 +121,7 @@ class KiteErrorHandler:
                 "error_type": "PermissionDenied",
                 "message": "You don't have permission to perform this action.",
                 "details": {"context": context, "error_message": error_msg},
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
 
         elif isinstance(error, NetworkException):
@@ -134,7 +135,7 @@ class KiteErrorHandler:
                     "error_message": error_msg,
                     "retry_after": "30 seconds",
                 },
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
 
         elif isinstance(error, InputException):
@@ -144,7 +145,7 @@ class KiteErrorHandler:
                 "error_type": "InvalidInput",
                 "message": "Invalid input provided to the API.",
                 "details": {"context": context, "error_message": error_msg},
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
 
         elif isinstance(error, OrderException):
@@ -154,7 +155,7 @@ class KiteErrorHandler:
                 "error_type": "OrderError",
                 "message": "Order placement or modification failed.",
                 "details": {"context": context, "error_message": error_msg},
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
 
         # Generic Kite exception
@@ -165,7 +166,7 @@ class KiteErrorHandler:
                 "error_type": error_type,
                 "message": f"Kite API error: {error_msg}",
                 "details": {"context": context, "error_message": error_msg},
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
 
         # Unknown error
@@ -176,7 +177,7 @@ class KiteErrorHandler:
                 "error_type": error_type,
                 "message": "An unexpected error occurred.",
                 "details": {"context": context, "error_message": error_msg},
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             }
 
     @staticmethod

@@ -8,9 +8,10 @@
 
 set -e
 
+# VM: use IP 203.57.85.72 (hostname vm488109385.manageserver.in may not resolve from all networks)
 VM_HOST="${VM_HOST:-203.57.85.72}"
 VM_USER="${VM_USER:-root}"
-# Set VM_PASSWORD in env (or .env) - never commit passwords to repo
+# Set VM_PASSWORD in env - never commit passwords to repo
 VM_PASSWORD="${VM_PASSWORD:?Set VM_PASSWORD for SSH (e.g. export VM_PASSWORD=yourpass)}"
 PROJECT_DIR="/opt/kite-services"
 SERVICE_PORT="8179"
@@ -27,7 +28,7 @@ echo ""
 if [ "$(hostname)" != "vm488109385" ] && [ ! -f "/opt/kite-services" ]; then
     echo "📡 Connecting to VM and deploying..."
 
-    sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no env FULL_REBUILD="$USE_CACHE" "$VM_USER@$VM_HOST" 'bash -s' << 'ENDSSH'
+    sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "export FULL_REBUILD=$USE_CACHE; bash -s" << 'ENDSSH'
         BUILD_EXTRA=""
         [ "$FULL_REBUILD" = "1" ] && BUILD_EXTRA="--no-cache"
         cd /opt/kite-services || { git clone https://github.com/ashok1995/kite-services.git /opt/kite-services && cd /opt/kite-services; }

@@ -7,6 +7,7 @@ One canonical doc per topic. All docs are kept in sync with the codebase.
 | Topic | Canonical doc | HTML (easy read) |
 |-------|----------------|------------------|
 | **API endpoints** | [api/api-reference.md](api/api-reference.md) | [html/](html/index.html) → API Reference |
+| **Endpoints for UI** | [api/endpoints-for-ui.md](api/endpoints-for-ui.md) | List of all endpoints for UI integration |
 | **Integration** | [integration/INTEGRATION.md](integration/INTEGRATION.md) | [html/integration.html](html/integration.html) |
 | **Request/response models** | [api/data-models.md](api/data-models.md) | [html/api-reference.html](html/api-reference.html) (full; nothing missing) |
 | **External APIs used** | [api/apis-used.md](api/apis-used.md) | — |

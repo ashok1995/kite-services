@@ -10,7 +10,6 @@ Endpoints:
 """
 
 import logging
-from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 from kiteconnect.exceptions import KiteException, TokenException
@@ -26,6 +25,7 @@ from models.unified_api_models import (
     LoginUrlResponse,
     UpdateTokenRequest,
 )
+from src.common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -125,7 +125,7 @@ async def authenticate(request: AuthRequest):
                 "success": False,
                 "error": "authentication_failed",
                 "message": f"Authentication failed: {str(e)}",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": now_ist_naive().isoformat(),
             },
         )
 

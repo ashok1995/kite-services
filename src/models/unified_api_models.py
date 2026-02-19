@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from src.common.time_utils import now_ist_naive
+
 # ============================================================================
 # ENUMS
 # ============================================================================
@@ -85,7 +87,7 @@ class AuthResponse(BaseModel):
     products: Optional[List[str]] = Field(None, description="Enabled products")
     order_types: Optional[List[str]] = Field(None, description="Enabled order types")
     message: Optional[str] = Field(None, description="Status message")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class AuthStatusResponse(BaseModel):
@@ -103,7 +105,7 @@ class AuthStatusResponse(BaseModel):
     last_updated: Optional[datetime] = None
     token_expiry: Optional[datetime] = None
     message: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class LoginUrlResponse(BaseModel):
@@ -179,7 +181,7 @@ class MarketDataResponse(BaseModel):
     failed_symbols: int
     failed_symbols_list: List[str] = Field(default_factory=list)
     processing_time_ms: float
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
     message: Optional[str] = None
 
 
@@ -188,7 +190,7 @@ class MarketStatusResponse(BaseModel):
 
     market_status: MarketStatus
     market_open: bool
-    current_time: datetime = Field(default_factory=datetime.now)
+    current_time: datetime = Field(default_factory=now_ist_naive)
     next_open: Optional[datetime] = None
     next_close: Optional[datetime] = None
     exchanges: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
@@ -220,7 +222,7 @@ class InstrumentsResponse(BaseModel):
     total_count: int
     exchanges: List[str] = Field(default_factory=list)
     message: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 # ============================================================================
@@ -298,7 +300,7 @@ class MarketContextResponse(BaseModel):
     market_sentiment: Optional[MarketSentiment] = None
     technical_analysis: List[TechnicalAnalysis] = Field(default_factory=list)
     processing_time_ms: float
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
     message: Optional[str] = None
 
 
@@ -348,7 +350,7 @@ class IntelligenceResponse(BaseModel):
     success: bool
     intelligence: Optional[StockIntelligence] = None
     processing_time_ms: float
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
     message: Optional[str] = None
 
 
@@ -394,7 +396,7 @@ class StockAnalysisResponse(BaseModel):
     confidence: Optional[float] = None
     target_price: Optional[float] = None
     stop_loss: Optional[float] = None
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
     processing_time_ms: float
     message: str
 
@@ -471,7 +473,7 @@ class TradingStatusResponse(BaseModel):
     total_pnl: Optional[Decimal] = None
     day_pnl: Optional[Decimal] = None
     processing_time_ms: float
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
     message: Optional[str] = None
 
 
@@ -487,7 +489,7 @@ class ErrorResponse(BaseModel):
     error: str
     error_code: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
 class HealthResponse(BaseModel):
@@ -497,5 +499,5 @@ class HealthResponse(BaseModel):
     service: str
     version: str
     environment: str
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=now_ist_naive)
     services: Optional[Dict[str, Any]] = None

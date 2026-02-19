@@ -5,8 +5,6 @@ Service Manager
 Manages all services and their lifecycle.
 """
 
-import asyncio
-from datetime import datetime
 from typing import Any, Dict, Optional
 
 from core.cache_service import CacheService
@@ -14,6 +12,7 @@ from core.kite_client import KiteClient
 from core.logging_config import get_logger
 from services.market_context_service import MarketContextService
 from services.stock_data_service import StockDataService
+from src.common.time_utils import now_ist_naive
 
 
 class ServiceManager:
@@ -41,7 +40,7 @@ class ServiceManager:
             await self.cache_service.initialize()
             self.services_status["cache_service"] = {
                 "status": "running" if self.cache_service.enabled else "disabled",
-                "initialized_at": datetime.now(),
+                "initialized_at": now_ist_naive(),
             }
 
             # Initialize Kite client
@@ -49,7 +48,7 @@ class ServiceManager:
             await self.kite_client.initialize()
             self.services_status["kite_client"] = {
                 "status": "running",
-                "initialized_at": datetime.now(),
+                "initialized_at": now_ist_naive(),
             }
 
             # Initialize Market Context service with dependencies
@@ -57,14 +56,14 @@ class ServiceManager:
             # MarketContextService doesn't need async initialization
             self.services_status["market_context_service"] = {
                 "status": "running",
-                "initialized_at": datetime.now(),
+                "initialized_at": now_ist_naive(),
             }
 
             # Initialize Stock Data service
             self.stock_data_service = StockDataService(kite_client=self.kite_client)
             self.services_status["stock_data_service"] = {
                 "status": "running",
-                "initialized_at": datetime.now(),
+                "initialized_at": now_ist_naive(),
             }
 
             self.logger.info("✅ All services initialized successfully")
@@ -88,7 +87,7 @@ class ServiceManager:
 
     async def get_health_status(self) -> Dict[str, Any]:
         """Get health status of all services."""
-        return {"services": self.services_status, "timestamp": datetime.now()}
+        return {"services": self.services_status, "timestamp": now_ist_naive()}
 
 
 # Global service manager instance

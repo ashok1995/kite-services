@@ -5,6 +5,11 @@
 - **Development**: `http://localhost:8079`
 - **Production**: `http://localhost:8179`
 
+## Timestamps (IST)
+
+All `timestamp` fields use exact Indian clock time (e.g. `2026-02-13T15:45:00`)
+with no timezone suffix, for Indian market hours (9:15 AM–3:30 PM IST).
+
 ## Authentication
 
 Kite Connect OAuth token flow. Get access token in 3 steps:

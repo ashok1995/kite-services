@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from src.common.time_utils import now_ist_naive
+
 
 class MarketStatus(str, Enum):
     """Market status enumeration."""
@@ -44,7 +46,7 @@ class TechnicalIndicators(BaseModel):
         """Create default technical indicators."""
         return cls(
             symbol="",
-            timestamp=datetime.now(),
+            timestamp=now_ist_naive(),
             rsi=50.0,
             sma_20=0.0,
             ema_12=0.0,
