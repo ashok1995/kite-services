@@ -139,15 +139,13 @@ async def authenticate(request: AuthRequest):
 @router.put("/auth/token", response_model=AuthResponse)
 async def update_token(request: UpdateTokenRequest):
     """
-    Update access token in configured token file (e.g. ~/.kite-services/kite_token.json).
-
-    Saves token outside project so it survives git pull. Automatically reloaded by service.
+    Update token in token file. Accepts request_token (from login URL) or access_token.
+    Swagger: paste request_token from redirect URL.
     """
     try:
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
-
-        # Ensure api_key/api_secret are preserved (from current config) when saving
+        settings = get_settings()
         api_key = kite_client.kite_config.api_key
         api_secret = kite_client.kite_config.api_secret
         if not api_key:
@@ -156,46 +154,41 @@ async def update_token(request: UpdateTokenRequest):
                 detail="api_key not configured. Add api_key to ~/.kite-services/kite_token.json",
             )
 
+        try:
+            access_token = await kite_client.generate_access_token(
+                request_token=request.request_token,
+                api_secret=api_secret or settings.kite.api_secret,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Invalid request_token: {e}")
+        if not access_token:
+            raise HTTPException(status_code=401, detail="Failed to exchange request_token")
+
         success = kite_client.token_manager.update_token(
-            access_token=request.access_token,
-            user_id=request.user_id,
+            access_token=access_token,
             api_key=api_key,
             api_secret=api_secret or "",
         )
-
         if not success:
             raise HTTPException(status_code=500, detail="Failed to save token to file")
 
-        # Update Kite client and validate (set_access_token's _test_connection swallows errors)
         try:
-            await kite_client.set_access_token(request.access_token)
+            await kite_client.set_access_token(access_token)
             profile = await kite_client.get_profile_or_raise()
         except Exception as e:
-            err = str(e)
-            api_prefix = api_key[:8] + "..." if len(api_key) >= 8 else api_key
             raise HTTPException(
                 status_code=401,
-                detail={
-                    "error": "token_validation_failed",
-                    "kite_error": err,
-                    "api_key_in_use": api_prefix,
-                    "hint": (
-                        "Kite tokens expire daily. Use POST /api/auth/login with request_token: "
-                        "1) GET /api/auth/login-url 2) Open URL, login 3) Copy request_token "
-                        "4) POST /api/auth/login with request_token"
-                    ),
-                },
+                detail={"error": "token_validation_failed", "kite_error": str(e)},
             )
 
-        logger.info(f"✅ Token updated successfully for user: {profile.get('user_id')}")
-
+        logger.info(f"✅ Token updated for user: {profile.get('user_id')}")
         token_info = kite_client.token_manager.get_token_info()
         token_refreshed_at = (
             token_info.get("updated_at") if token_info else now_ist_naive().isoformat()
         )
         return AuthResponse(
             status=AuthStatus.AUTHENTICATED,
-            access_token=request.access_token,
+            access_token=access_token,
             user_id=profile.get("user_id"),
             user_name=profile.get("user_name"),
             email=profile.get("email"),

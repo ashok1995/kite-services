@@ -6,8 +6,8 @@ Manages Kite access token with file-based storage and automatic reloading.
 Supports updating token without service restart.
 """
 
-import asyncio
 import json
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -26,16 +26,12 @@ class TokenFileHandler(FileSystemEventHandler):
         self.logger = get_logger(__name__)
 
     def on_modified(self, event):
-        """Handle file modification event."""
+        """Handle file modification event (runs in watchdog thread)."""
         if not event.is_directory:
             self.logger.info(f"Token file modified: {event.src_path}")
-            # Small delay to ensure file write is complete
-            asyncio.create_task(self._delayed_callback())
-
-    async def _delayed_callback(self):
-        """Delayed callback to ensure file is fully written."""
-        await asyncio.sleep(0.5)
-        self.callback()
+            # Small delay so file write is complete; use sync sleep (watchdog runs in thread)
+            time.sleep(0.5)
+            self.callback()
 
 
 class TokenManager:
