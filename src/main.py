@@ -29,11 +29,11 @@ from api import (  # noqa: E402
     quick_opportunities,
     trading,
 )
+from common.time_utils import now_ist_naive  # noqa: E402
 from config.settings import get_settings  # noqa: E402
 from core.database import close_database, init_database  # noqa: E402
 from core.logging_config import get_logger, setup_logging  # noqa: E402
 from core.service_manager import ServiceManager, set_service_manager  # noqa: E402
-from src.common.time_utils import now_ist_naive  # noqa: E402
 
 # Initialize settings and logging
 settings = get_settings()

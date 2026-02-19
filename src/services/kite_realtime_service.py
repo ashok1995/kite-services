@@ -16,12 +16,11 @@ from typing import Callable, Dict, List, Optional
 import numpy as np
 from kiteconnect import KiteConnect, KiteTicker
 
+# Import configuration and credentials
+from common.time_utils import now_ist_naive
 from config.settings import get_settings
 from core.logging_config import get_logger
 from services.kite_credentials_manager import get_kite_credentials_manager
-
-# Import configuration and credentials
-from src.common.time_utils import now_ist_naive
 
 # Configure logging
 logger = get_logger(__name__)

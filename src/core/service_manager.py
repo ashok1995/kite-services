@@ -7,12 +7,12 @@ Manages all services and their lifecycle.
 
 from typing import Any, Dict, Optional
 
+from common.time_utils import now_ist_naive
 from core.cache_service import CacheService
 from core.kite_client import KiteClient
 from core.logging_config import get_logger
 from services.market_context_service import MarketContextService
 from services.stock_data_service import StockDataService
-from src.common.time_utils import now_ist_naive
 
 
 class ServiceManager:

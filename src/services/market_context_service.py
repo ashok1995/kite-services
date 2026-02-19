@@ -12,6 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Optional
 
+from common.time_utils import now_ist_naive
 from core.kite_client import KiteClient
 from core.logging_config import get_logger
 from models.market_context_data_models import (
@@ -29,7 +30,6 @@ from models.market_context_data_models import (
     VolatilityLevel,
 )
 from services.market_breadth_service import MarketBreadthService
-from src.common.time_utils import now_ist_naive
 
 
 class MarketContextService:

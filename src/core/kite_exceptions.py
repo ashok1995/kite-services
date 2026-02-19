@@ -18,7 +18,7 @@ from kiteconnect.exceptions import (
     TokenException,
 )
 
-from src.common.time_utils import now_ist_naive
+from common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 

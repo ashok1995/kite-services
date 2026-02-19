@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from src.common.time_utils import now_ist_naive
+from common.time_utils import now_ist_naive
 
 # ============================================================================
 # ENUMS

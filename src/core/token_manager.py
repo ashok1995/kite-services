@@ -14,8 +14,8 @@ from typing import Any, Callable, Dict, Optional
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+from common.time_utils import now_ist_naive
 from core.logging_config import get_logger
-from src.common.time_utils import now_ist_naive
 
 
 class TokenFileHandler(FileSystemEventHandler):

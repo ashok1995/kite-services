@@ -15,6 +15,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from kiteconnect.exceptions import KiteException, TokenException
 
+from common.time_utils import now_ist_naive
 from config.settings import get_settings
 from core.kite_exceptions import KiteErrorHandler
 from core.service_manager import get_service_manager
@@ -26,7 +27,6 @@ from models.unified_api_models import (
     LoginUrlResponse,
     UpdateTokenRequest,
 )
-from src.common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

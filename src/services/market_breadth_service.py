@@ -18,10 +18,10 @@ from decimal import Decimal
 from typing import Dict, Optional
 
 from common.constants import EXCHANGE_PREFIX, NIFTY_50_CONSTITUENTS
+from common.time_utils import now_ist_naive
 from config.settings import get_settings
 from core.kite_client import KiteClient
 from core.logging_config import get_logger
-from src.common.time_utils import now_ist_naive
 
 
 class MarketBreadthService:
