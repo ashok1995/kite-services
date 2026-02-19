@@ -2,7 +2,7 @@
 # Image built in CI and pushed to ghcr.io; VM only pulls (no build).
 services:
   kite-services:
-    image: ghcr.io/ashok1995/kite-services:main
+    image: ghcr.io/ashok1995/kite-services:latest
     container_name: kite-services-prod
     ports:
       - "8179:8179"

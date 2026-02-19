@@ -402,8 +402,8 @@ class KiteClient:
             # Update config
             self.kite_config.access_token = access_token
 
-            # Test connection
-            await self._test_connection()
+            # Test connection (raise so caller gets actual Kite API error)
+            await self._test_connection(raise_on_failure=True)
 
             self.logger.info("✅ Access token set successfully")
 
@@ -427,6 +427,12 @@ class KiteClient:
         except Exception as e:
             self.logger.error(f"Failed to get profile: {e}")
             return None
+
+    async def get_profile_or_raise(self) -> Dict:
+        """Get user profile; raise on failure with original error."""
+        if not self.kite:
+            raise ValueError("Kite client not initialized")
+        return await asyncio.to_thread(self.kite.profile)
 
     async def get_margins(self) -> Optional[Dict]:
         """Get user margins."""
@@ -605,20 +611,25 @@ class KiteClient:
         except Exception as e:
             self.logger.error(f"❌ Failed to update token: {e}", exc_info=True)
 
-    async def _test_connection(self):
-        """Test Kite API connection."""
+    async def _test_connection(self, raise_on_failure: bool = False):
+        """Test Kite API connection. If raise_on_failure, propagate errors."""
         try:
             if self.kite:
-                profile = self.kite.profile()
+                profile = await asyncio.to_thread(self.kite.profile)
                 if profile:
                     self.is_connected = True
                     self.logger.info(
                         f"Connected to Kite API as {profile.get('user_name', 'Unknown')}"
                     )
                 else:
-                    self.logger.warning("Failed to get profile from Kite API")
+                    msg = "Failed to get profile from Kite API"
+                    self.logger.warning(msg)
+                    if raise_on_failure:
+                        raise RuntimeError(msg)
         except Exception as e:
             self.logger.error(f"Kite API connection test failed: {e}")
+            if raise_on_failure:
+                raise
 
     def _get_mock_instruments(self) -> Dict[str, Dict]:
         """Get mock instruments for testing."""
@@ -790,7 +801,8 @@ class KiteClient:
         if self._is_paper_trading():
             # PAPER TRADING MODE - Simulate order
             self.logger.warning(
-                f"🧪 PAPER TRADING: Simulating {transaction_type} order for {symbol} (qty: {quantity})"
+                f"🧪 PAPER TRADING: Simulating {transaction_type} order "
+                f"for {symbol} (qty: {quantity})"
             )
 
             # Generate fake order ID
@@ -841,7 +853,8 @@ class KiteClient:
         else:
             # REAL TRADING MODE - Place actual order on Kite
             self.logger.critical(
-                f"🚨 REAL ORDER: Placing {transaction_type} order for {symbol} (qty: {quantity}) - REAL MONEY!"
+                f"🚨 REAL ORDER: Placing {transaction_type} order for {symbol} "
+                f"(qty: {quantity}) - REAL MONEY!"
             )
 
             if not self.kite:
@@ -950,7 +963,7 @@ class KiteClient:
 
             try:
                 loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
+                await loop.run_in_executor(
                     None,
                     lambda: self.kite.modify_order(
                         variety=self.kite.VARIETY_REGULAR,
@@ -1024,7 +1037,7 @@ class KiteClient:
 
             try:
                 loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
+                await loop.run_in_executor(
                     None,
                     lambda: self.kite.cancel_order(
                         variety=variety,
