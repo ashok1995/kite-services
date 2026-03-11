@@ -37,9 +37,11 @@ class TestAuthTokenFlow:
         r = httpx.get(f"{base_url}/api/auth/status", timeout=10)
         assert r.status_code == 200
         d = r.json()
-        assert d.get("status") in ("authenticated", "expired", "invalid", "not_configured")
-        assert "authenticated" in d
-        if "token_valid" in d and d.get("authenticated"):
+        assert "status" in d
+        assert isinstance(d["status"], bool)
+        assert "token_valid" in d
+        assert "credentials_configured" in d
+        if d.get("status"):
             assert d.get("token_valid") is True
 
     def test_login_url(self, base_url):
@@ -76,6 +78,7 @@ class TestAuthTokenFlow:
         )
         assert r.status_code == 200
         d = r.json()
-        assert d.get("status") == "authenticated"
+        assert d.get("status") is True
+        assert d.get("token_valid") is True
         assert d.get("access_token")
         assert d.get("user_id")
