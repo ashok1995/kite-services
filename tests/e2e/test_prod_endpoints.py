@@ -86,6 +86,15 @@ class TestProdAuth:
         assert d.get("status") in ("authenticated", "expired", "invalid", "not_configured")
         assert "authenticated" in d
 
+    def test_auth_login_url(self, base_url):
+        r = httpx.get(f"{base_url}/api/auth/login-url", timeout=TIMEOUT)
+        if r.status_code == 404:
+            pytest.skip("login-url not deployed")
+        assert r.status_code == 200
+        d = r.json()
+        assert "login_url" in d
+        assert "kite" in d["login_url"].lower() or "zerodha" in d["login_url"].lower()
+
     def test_auth_callback_requires_param(self, base_url):
         r = httpx.get(f"{base_url}/api/auth/callback", timeout=TIMEOUT)
         assert r.status_code in (422, 400)

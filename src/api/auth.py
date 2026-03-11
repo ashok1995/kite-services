@@ -1,12 +1,11 @@
 """
 Authentication API Module
 
-Credentials save, callback (Kite redirect), and token save. No login-url or login endpoint.
-
 Endpoints:
 - POST /auth/credentials - Save api_key and api_secret only (first-time)
+- GET /auth/login-url - Return Kite login URL (open in browser; Kite redirects to callback)
 - GET /auth/callback - Kite redirects here with ?request_token=xxx; we exchange and save
-- PUT /auth/token - Save token (request_token: exchange and save; or access_token: save only)
+- PUT /auth/token - Exchange request_token and save (body: request_token only)
 - GET /auth/status - Authentication status
 """
 
@@ -27,6 +26,7 @@ from models.unified_api_models import (
     AuthStatusResponse,
     CredentialsRequest,
     CredentialsResponse,
+    LoginUrlResponse,
     UpdateTokenRequest,
 )
 
@@ -75,6 +75,27 @@ async def _exchange_and_save_token(request_token: str, kite_client, settings) ->
     )
 
 
+@router.get("/auth/login-url", response_model=LoginUrlResponse)
+async def get_login_url():
+    """
+    Return Kite Connect login URL. Open this URL in browser to log in;
+    Kite redirects to callback with request_token, or copy request_token and call PUT /auth/token.
+    """
+    try:
+        service_manager = await get_service_manager()
+        kite_client = service_manager.kite_client
+        login_url = kite_client.get_login_url()
+        return LoginUrlResponse(login_url=login_url)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail="api_key not configured. Call POST /api/auth/credentials first.",
+        ) from e
+    except Exception as e:
+        logger.error(f"Login URL failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/auth/callback", response_class=HTMLResponse)
 async def auth_callback(
     request_token: str = Query(..., description="From Kite redirect after login"),
@@ -109,47 +130,14 @@ async def auth_callback(
 @router.put("/auth/token", response_model=AuthResponse)
 async def update_token(request: UpdateTokenRequest):
     """
-    Save token. Provide request_token (we exchange and save) or access_token (save only).
-    Use when callback URL is not your backend (e.g. frontend gets request_token and calls this).
+    Exchange request_token for access_token and save. Body: {"request_token": "..."}.
+    Use after opening login-url and getting request_token from Kite redirect.
     """
     try:
         service_manager = await get_service_manager()
         kite_client = service_manager.kite_client
         settings = get_settings()
-        if request.request_token:
-            return await _exchange_and_save_token(request.request_token, kite_client, settings)
-        if request.access_token:
-            api_key = kite_client.kite_config.api_key
-            api_secret = kite_client.kite_config.api_secret or getattr(
-                get_settings().kite, "api_secret", ""
-            )
-            success = kite_client.token_manager.update_token(
-                access_token=request.access_token,
-                api_key=api_key or "",
-                api_secret=api_secret or "",
-            )
-            if not success:
-                raise HTTPException(status_code=500, detail="Failed to save token")
-            await kite_client.set_access_token(request.access_token)
-            profile = await kite_client.get_profile_or_raise()
-            token_info = kite_client.token_manager.get_token_info()
-            token_refreshed_at = (
-                token_info.get("updated_at") if token_info else now_ist_naive().isoformat()
-            )
-            return AuthResponse(
-                status=AuthStatus.AUTHENTICATED,
-                access_token=request.access_token,
-                user_id=profile.get("user_id"),
-                user_name=profile.get("user_name"),
-                email=profile.get("email"),
-                broker=profile.get("broker"),
-                exchanges=profile.get("exchanges", []),
-                products=profile.get("products", []),
-                order_types=profile.get("order_types", []),
-                message="Token saved successfully",
-                token_refreshed_at=token_refreshed_at,
-            )
-        raise HTTPException(status_code=400, detail="Provide request_token or access_token")
+        return await _exchange_and_save_token(request.request_token, kite_client, settings)
     except HTTPException:
         raise
     except (TokenException, KiteException) as e:
@@ -169,7 +157,7 @@ async def save_credentials(request: CredentialsRequest):
 
     Then set redirect URL in Kite app to https://your-api-host:8179/api/auth/callback.
     After login on Kite, callback receives request_token and saves the token automatically.
-    Or call PUT /api/auth/token with request_token or access_token.
+    Or call PUT /api/auth/token with request_token.
     """
     try:
         service_manager = await get_service_manager()

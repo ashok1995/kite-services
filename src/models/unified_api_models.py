@@ -10,7 +10,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from common.time_utils import now_ist_naive
 
@@ -127,25 +127,18 @@ class LoginUrlResponse(BaseModel):
 
 
 class UpdateTokenRequest(BaseModel):
-    """Token save: request_token (exchange and save) or access_token (save only)."""
+    """Token save: request_token only (exchange with Kite and save)."""
 
-    request_token: Optional[str] = Field(
-        None, description="From Kite redirect; we exchange and save"
+    request_token: str = Field(
+        ..., min_length=1, description="From Kite redirect; we exchange and save"
     )
-    access_token: Optional[str] = Field(None, description="Direct access token to save")
 
-    @field_validator("request_token", "access_token", mode="before")
+    @field_validator("request_token", mode="before")
     @classmethod
-    def strip_str(cls, v: object) -> Optional[str]:
-        if v is None or v == "":
-            return None
-        return v.strip() if isinstance(v, str) else v
-
-    @model_validator(mode="after")
-    def require_one(self):
-        if not (self.request_token or self.access_token):
-            raise ValueError("Provide request_token or access_token")
-        return self
+    def strip_str(cls, v: object) -> str:
+        if v is None or (isinstance(v, str) and not v.strip()):
+            raise ValueError("request_token is required")
+        return v.strip() if isinstance(v, str) else str(v)
 
 
 class CredentialsRequest(BaseModel):

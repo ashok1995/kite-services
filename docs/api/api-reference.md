@@ -12,14 +12,14 @@ with no timezone suffix, for Indian market hours (9:15 AM–3:30 PM IST).
 
 ## Authentication
 
-Api key save, callback URL, and token save. No login-url or login endpoint.
+Credentials, login URL, callback, and token save.
 
 ### Flow
 
 1. **POST /api/auth/credentials** – Save `api_key` and `api_secret` only (first-time).
-2. Set redirect in Kite app to `.../api/auth/callback`. After login, callback gets
-   `request_token`; we exchange and save. Or call **PUT /api/auth/token** with
-   `request_token` or `access_token`.
+2. **GET /api/auth/login-url** – Returns `{"login_url": "https://kite.zerodha.com/..."}`. Open in browser to log in.
+3. After login, Kite redirects to callback (token saved) or copy request_token and call
+   **PUT /api/auth/token** with `{"request_token": "..."}`.
 
 #### POST /api/auth/credentials (first-time)
 
@@ -38,27 +38,32 @@ Save Kite API key and secret.
 
 **Response**: 200 OK – `{"success": true, "message": "..."}`
 
+#### GET /api/auth/login-url
+
+Returns the Kite Connect login URL. Open this URL in browser; after login, Kite redirects to your callback with `request_token`.
+
+**Response**: 200 OK
+
+```json
+{
+  "login_url": "https://kite.zerodha.com/connect/login?api_key=...&v=3",
+  "message": "Open URL, login, copy request_token from redirect"
+}
+```
+
 #### GET /api/auth/callback
 
 Callback URL for Kite redirect. Set this as redirect URL in Kite app. Query: `?request_token=xxx`. We exchange and save; return HTML success page.
 
 #### PUT /api/auth/token
 
-Save token. Either exchange `request_token` and save, or save `access_token` directly.
+Exchange `request_token` for access_token and save. Body: `request_token` only.
 
 **Request Body**:
 
 ```json
 {
   "request_token": "from_kite_redirect"
-}
-```
-
-or
-
-```json
-{
-  "access_token": "existing_access_token"
 }
 ```
 
