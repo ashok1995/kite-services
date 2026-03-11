@@ -23,7 +23,7 @@ All API routes are under `/api` unless noted.
 | GET | `/api/auth/login-url` | Return Kite login URL (open in browser; Kite redirects to callback with request_token). |
 | GET | `/api/auth/callback` | Kite redirect URL. Set in Kite app; we exchange `?request_token=xxx` and save. |
 | PUT | `/api/auth/token` | Exchange request_token and save. Body: `{"request_token": "..."}` only. |
-| GET | `/api/auth/status` | Current auth: `authenticated`, `token_valid`, `user_id`, `user_name`, `broker`. |
+| GET | `/api/auth/status` | `status`, `token_valid`, `credentials_configured`, `action_required` (when not auth), `user_id`, `broker`. |
 
 ---
 
@@ -117,6 +117,8 @@ POST /api/opportunities/quick
 - **Auth flow:** (1) `POST /api/auth/credentials` (first-time). (2) `GET /api/auth/login-url` to get
   login URL; open in browser. (3) After login, Kite redirects to callback (token saved) or copy
   request_token and call `PUT /api/auth/token` with `{"request_token": "..."}`.
+- **When to set API key:** Call `GET /api/auth/status`. If `credentials_configured` is false, call
+  `POST /api/auth/credentials` with api_key and api_secret.
 - **Auth for protected routes:** Use `GET /api/auth/status` to check token and user info.
 - **Content-Type:** Use `Content-Type: application/json` for all POST/PUT bodies.
 - **CORS:** Ensure UI origin is in `CORS_ORIGINS` if you see CORS errors.

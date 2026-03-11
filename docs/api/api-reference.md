@@ -71,15 +71,16 @@ Exchange `request_token` for access_token and save. Body: `request_token` only.
 
 #### GET /api/auth/status
 
-Check current auth status. Verifies token via Kite API (profile call).
+Check current auth status. Verifies token via Kite API (profile call). If
+`credentials_configured` is false, call POST /api/auth/credentials first.
 
 **Response**: 200 OK
 
 ```json
 {
-  "status": "authenticated",
-  "authenticated": true,
+  "status": true,
   "token_valid": true,
+  "credentials_configured": true,
   "user_id": "AB1234",
   "user_name": "User Name",
   "token_refreshed_at": "2026-02-19T16:30:00",
@@ -87,7 +88,10 @@ Check current auth status. Verifies token via Kite API (profile call).
 }
 ```
 
-- `status`: Token status (`authenticated`, `expired`, `invalid`, `not_configured`)
+- `status`: true if authenticated, false otherwise
+- `token_valid`: true if token verified via Kite API
+- `credentials_configured`: true if api_key and api_secret are set
+- `action_required`: when status is false: `set_credentials` or `login_and_set_token`; omit when authenticated
 - `token_refreshed_at`: Last token refresh time in IST (exact Indian time, no suffix)
 
 ---

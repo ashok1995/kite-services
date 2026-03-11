@@ -187,8 +187,11 @@ async def get_auth_status():
     Get current authentication status and user information.
 
     Returns:
-    - Authentication status (authenticated, expired, invalid, not_configured)
-    - User information if authenticated
+    - status: true if authenticated, false otherwise
+    - token_valid: true if token verified via Kite API
+    - credentials_configured: true if api_key/api_secret set
+    - action_required: when status false, "set_credentials" or "login_and_set_token"
+    - User information when authenticated
     - Token expiry information
     """
     try:
@@ -203,10 +206,11 @@ async def get_auth_status():
         # Check if we have credentials configured (api_key from token file)
         if not kite_client.kite_config.api_key:
             return AuthStatusResponse(
-                status=AuthStatus.NOT_CONFIGURED,
-                authenticated=False,
+                status=False,
                 token_valid=False,
-                message="Kite credentials not configured (create ~/.kite-services/kite_token.json)",
+                credentials_configured=False,
+                action_required="set_credentials",
+                message="API key not configured. Call POST /api/auth/credentials first.",
             )
 
         # Check if we have an access token (load_token populates token_info)
@@ -214,9 +218,10 @@ async def get_auth_status():
         access_token = await kite_client.get_access_token()
         if not access_token:
             return AuthStatusResponse(
-                status=AuthStatus.INVALID,
-                authenticated=False,
+                status=False,
                 token_valid=False,
+                credentials_configured=True,
+                action_required="login_and_set_token",
                 message="No access token available",
                 token_refreshed_at=_token_refreshed_at(),
             )
@@ -226,9 +231,9 @@ async def get_auth_status():
             profile = await kite_client.get_profile()
             if profile:
                 return AuthStatusResponse(
-                    status=AuthStatus.AUTHENTICATED,
-                    authenticated=True,
+                    status=True,
                     token_valid=True,
+                    credentials_configured=True,
                     user_id=profile.get("user_id"),
                     user_name=profile.get("user_name"),
                     broker=profile.get("broker"),
@@ -236,18 +241,20 @@ async def get_auth_status():
                     token_refreshed_at=_token_refreshed_at(),
                 )
             return AuthStatusResponse(
-                status=AuthStatus.INVALID,
-                authenticated=False,
+                status=False,
                 token_valid=False,
+                credentials_configured=True,
+                action_required="login_and_set_token",
                 message="Invalid or expired token",
                 token_refreshed_at=_token_refreshed_at(),
             )
         except Exception as e:
             logger.warning(f"Token validation failed: {str(e)}")
             return AuthStatusResponse(
-                status=AuthStatus.EXPIRED,
-                authenticated=False,
+                status=False,
                 token_valid=False,
+                credentials_configured=True,
+                action_required="login_and_set_token",
                 message=f"Token verification failed: {str(e)}",
                 token_refreshed_at=_token_refreshed_at(),
             )
@@ -255,9 +262,10 @@ async def get_auth_status():
     except Exception as e:
         logger.error(f"Auth status check failed: {str(e)}")
         return AuthStatusResponse(
-            status=AuthStatus.INVALID,
-            authenticated=False,
+            status=False,
             token_valid=False,
+            credentials_configured=False,
+            action_required="set_credentials",
             message=f"Auth status check failed: {str(e)}",
             token_refreshed_at=None,
         )

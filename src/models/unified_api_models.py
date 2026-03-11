@@ -95,13 +95,20 @@ class AuthResponse(BaseModel):
 
 
 class AuthStatusResponse(BaseModel):
-    """Authentication status response."""
+    """Authentication status response. No redundant fields."""
 
-    status: AuthStatus
-    authenticated: bool
+    status: bool = Field(..., description="True if authenticated, false otherwise")
     token_valid: bool = Field(
-        default=False,
-        description="True only when token verified via Kite API (profile call)",
+        ...,
+        description="True if token verified via Kite API (profile call), false otherwise",
+    )
+    credentials_configured: bool = Field(
+        ...,
+        description="True if api_key and api_secret are set, false otherwise",
+    )
+    action_required: Optional[str] = Field(
+        None,
+        description="When status false: 'set_credentials' or 'login_and_set_token'",
     )
     user_id: Optional[str] = None
     user_name: Optional[str] = None
