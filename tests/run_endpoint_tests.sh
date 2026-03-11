@@ -7,7 +7,7 @@ set -e
 PORT="${1:-prod}"
 
 if [ "$PORT" = "prod" ]; then
-  BASE="http://203.57.85.72:8179"
+  BASE="http://35.232.205.155:8179"
   echo "=== Testing PROD ($BASE) ==="
 elif [ "$PORT" = "dev" ]; then
   BASE="http://127.0.0.1:8079"

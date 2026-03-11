@@ -90,8 +90,11 @@ def create_app() -> FastAPI:
         description="""
         **Ultra-Minimal Trading API with 8 Endpoints**
 
-        🔐 **Authentication** (2 endpoints)
-        - POST /api/auth/login - Complete authentication flow
+        🔐 **Authentication**
+        - POST /api/auth/credentials - Save api_key and api_secret (first-time)
+        - GET /api/auth/login-url - Return Kite login URL (open in browser)
+        - GET /api/auth/callback - Kite redirect; exchange request_token and save
+        - PUT /api/auth/token - Exchange request_token and save (body: request_token only)
         - GET /api/auth/status - Authentication status
 
         📊 **Market Data** (3 endpoints)

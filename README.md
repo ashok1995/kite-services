@@ -48,7 +48,9 @@ docker compose -f docker-compose.prod.yml up -d
 
 ### Authentication
 
-- `POST /api/auth/login` - Login with request token
+- `POST /api/auth/credentials` - Save api_key and api_secret (first-time)
+- `GET /api/auth/callback` - Kite redirect URL; we exchange request_token and save
+- `PUT /api/auth/token` - Save token (request_token or access_token)
 - `GET /api/auth/status` - Authentication status
 
 ### Market Data
@@ -182,7 +184,7 @@ Production deployments are automated via GitHub Actions when code is pushed to `
 Manual deployment:
 
 ```bash
-ssh root@203.57.85.72
+ssh root@35.232.205.155
 cd /opt/kite-services
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
@@ -191,7 +193,7 @@ docker compose -f docker-compose.prod.yml up -d
 ### Environment URLs
 
 - **Development**: <http://localhost:8079>
-- **Production**: <http://203.57.85.72:8179>
+- **Production**: <http://35.232.205.155:8179>
 
 ## Documentation
 

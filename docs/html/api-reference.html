@@ -60,26 +60,31 @@
     </div>
 
     <h2 id="auth">Authentication</h2>
-    <p class="meta">Token flow: GET login-url → open in browser → POST /api/auth/login with request_token.</p>
+    <p class="meta">POST credentials → GET /api/auth/login-url (open in browser) → callback or PUT /api/auth/token with request_token.</p>
+
+    <div class="endpoint"><span class="method post">POST</span> /api/auth/credentials</div>
+    <div class="label">Request (first-time)</div>
+    <!-- pragma: allowlist secret -->
+    <pre>{"api_key": "your_kite_api_key", "api_secret": "your_kite_api_secret"}</pre>
 
     <div class="endpoint"><span class="method get">GET</span> /api/auth/login-url</div>
     <div class="label">Response 200</div>
-    <pre>{
-  "login_url": "https://kite.zerodha.com/connect/login?api_key=...",
-  "message": "Open URL, login, copy request_token from redirect"
-}</pre>
+    <pre>{"login_url": "https://kite.zerodha.com/connect/login?..."}</pre>
 
-    <div class="endpoint"><span class="method post">POST</span> /api/auth/login</div>
+    <div class="endpoint"><span class="method get">GET</span> /api/auth/callback</div>
+    <div class="label">Query</div>
+    <pre>?request_token=xxx (Kite redirects here after login)</pre>
+
+    <div class="endpoint"><span class="method put">PUT</span> /api/auth/token</div>
     <div class="label">Request</div>
-    <!-- pragma: allowlist secret -->
-    <pre>{"request_token": "from_redirect_url", "api_secret": "optional_if_in_env"}</pre>
+    <pre>{"request_token": "..."}</pre>
     <div class="label">Response 200</div>
     <pre>{
   "status": "authenticated",
   "access_token": "...",
   "user_id": "AB1234",
   "user_name": "User Name",
-  "message": "Authentication successful"
+  "message": "Token saved successfully"
 }</pre>
 
     <div class="endpoint"><span class="method get">GET</span> /api/auth/status</div>
@@ -92,10 +97,6 @@
   "user_name": "User Name",
   "message": "Token verified via Kite API (profile)"
 }</pre>
-
-    <div class="endpoint"><span class="method put">PUT</span> /api/auth/token</div>
-    <div class="label">Request</div>
-    <pre>{"access_token": "new_access_token", "user_id": "optional_user_id"}</pre>
 
     <h2 id="health">Health &amp; status</h2>
 

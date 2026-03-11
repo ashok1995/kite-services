@@ -48,12 +48,13 @@ curl -X POST "$BASE/api/auth/login" \
 curl -s "$BASE/api/auth/status" | python3 -m json.tool
 ```
 
-### 1.5 Update access token (e.g. after refresh)
+### 1.5 Complete login (after opening login-url)
 
 ```bash
-curl -X PUT "$BASE/api/auth/token" \
+# After opening GET /api/auth/login-url and copying request_token from redirect:
+curl -X POST "$BASE/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"access_token": "NEW_ACCESS_TOKEN", "user_id": "optional"}' | python3 -m json.tool
+  -d '{"request_token": "REQUEST_TOKEN_FROM_REDIRECT"}' | python3 -m json.tool
 ```
 
 ---
@@ -165,9 +166,8 @@ curl -s -X POST "$BASE/api/opportunities/quick" \
 
 | Endpoint | Request body |
 |----------|---------------|
-| POST /api/auth/credentials | `{"api_key":"...", "api_secret":"..."}` |
+| POST /api/auth/credentials | `{"api_key":"...", "api_secret":"..."}` (first-time) |
 | POST /api/auth/login | `{"request_token":"..."}` |
-| PUT /api/auth/token | `{"access_token":"...", "user_id":"optional"}` |
 | POST /api/market/data | `{"symbols":["RELIANCE"], "exchange":"NSE", "data_type":"quote"}` |
 | POST /api/market/quotes | `{"symbols":["RELIANCE","TCS"], "exchange":"NSE"}` |
 | GET /api/internal-market-context | (no body) |

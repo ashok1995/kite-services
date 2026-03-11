@@ -127,14 +127,32 @@ class LoginUrlResponse(BaseModel):
 
 
 class UpdateTokenRequest(BaseModel):
-    """Paste request_token from login redirect (?request_token=xxx)."""
+    """Token save: request_token only (exchange with Kite and save)."""
 
-    request_token: str = Field(..., min_length=1, description="From redirect URL")
+    request_token: str = Field(
+        ..., min_length=1, description="From Kite redirect; we exchange and save"
+    )
 
     @field_validator("request_token", mode="before")
     @classmethod
-    def strip_token(cls, v: object) -> str:
-        return v.strip() if isinstance(v, str) else v
+    def strip_str(cls, v: object) -> str:
+        if v is None or (isinstance(v, str) and not v.strip()):
+            raise ValueError("request_token is required")
+        return v.strip() if isinstance(v, str) else str(v)
+
+
+class CredentialsRequest(BaseModel):
+    """Save Kite API key and secret only (first-time use)."""
+
+    api_key: str = Field(..., min_length=1, description="Kite Connect API key")
+    api_secret: str = Field(..., min_length=1, description="Kite Connect API secret")
+
+
+class CredentialsResponse(BaseModel):
+    """Response after saving credentials."""
+
+    success: bool = Field(..., description="Whether credentials were saved")
+    message: str = Field(..., description="Status message")
 
 
 # ============================================================================

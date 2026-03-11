@@ -415,6 +415,23 @@ class KiteClient:
         """Get current access token."""
         return self.kite_config.access_token
 
+    def reload_credentials_from_file(self) -> bool:
+        """
+        Reload api_key and api_secret from token file (e.g. after POST /auth/credentials).
+        Call this so the running process picks up new credentials without restart.
+        """
+        creds = self.token_manager.load_credentials()
+        if not creds:
+            return False
+        api_key = (creds.get("api_key") or "").strip()
+        api_secret = (creds.get("api_secret") or "").strip()
+        if not api_key:
+            return False
+        object.__setattr__(self.kite_config, "api_key", api_key)
+        object.__setattr__(self.kite_config, "api_secret", api_secret)
+        self.logger.info("Reloaded api_key and api_secret from token file")
+        return True
+
     async def get_profile(self) -> Optional[Dict]:
         """Get user profile."""
         try:

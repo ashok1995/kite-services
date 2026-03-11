@@ -201,6 +201,44 @@ class TokenManager:
         """
         return self.save_token(access_token, **metadata)
 
+    def save_credentials(self, api_key: str, api_secret: str) -> bool:
+        """
+        Save only api_key and api_secret (first-time use). Leaves access_token empty.
+
+        Args:
+            api_key: Kite Connect API key
+            api_secret: Kite Connect API secret
+
+        Returns:
+            True if saved successfully
+        """
+        try:
+            existing = self.token_data or {}
+            if not existing and self.token_file.exists():
+                try:
+                    with open(self.token_file, "r") as f:
+                        existing = json.load(f)
+                except Exception:
+                    pass
+            token_data = {
+                "api_key": (api_key or "").strip(),
+                "api_secret": (api_secret or "").strip(),
+                "access_token": existing.get("access_token", ""),
+                "updated_at": now_ist_naive().isoformat(),
+            }
+            if existing.get("user_id"):
+                token_data["user_id"] = existing["user_id"]
+            if existing.get("user_name"):
+                token_data["user_name"] = existing["user_name"]
+            with open(self.token_file, "w") as f:
+                json.dump(token_data, f, indent=2)
+            self.token_data = token_data
+            self.logger.info("Credentials (api_key, api_secret) saved to token file")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error saving credentials: {e}", exc_info=True)
+            return False
+
     def start_watching(self, callback: Optional[Callable[[str], None]] = None):
         """
         Start watching token file for changes.

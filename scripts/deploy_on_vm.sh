@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run ON the VM: ssh root@203.57.85.72, then:
+# Run ON the VM: ssh root@35.232.205.155, then:
 #   cd /opt/kite-services && ./scripts/deploy_on_vm.sh
 #
 # Image built in CI and pushed to ghcr.io. VM only pulls (~15–30 sec).
