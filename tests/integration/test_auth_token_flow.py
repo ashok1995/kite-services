@@ -42,6 +42,15 @@ class TestAuthTokenFlow:
         if "token_valid" in d and d.get("authenticated"):
             assert d.get("token_valid") is True
 
+    def test_login_url(self, base_url):
+        r = httpx.get(f"{base_url}/api/auth/login-url", timeout=10)
+        if r.status_code == 404:
+            pytest.skip("login-url not deployed")
+        assert r.status_code == 200
+        d = r.json()
+        assert "login_url" in d
+        assert "kite" in d["login_url"].lower() or "zerodha" in d["login_url"].lower()
+
     def test_callback_requires_request_token(self, base_url):
         r = httpx.get(f"{base_url}/api/auth/callback", timeout=10)
         assert r.status_code in (422, 400)

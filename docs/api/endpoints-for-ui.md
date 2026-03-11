@@ -20,8 +20,9 @@ All API routes are under `/api` unless noted.
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/api/auth/credentials` | Save api_key and api_secret only (first-time). Body: `{"api_key": "...", "api_secret": "..."}`. |
+| GET | `/api/auth/login-url` | Return Kite login URL (open in browser; Kite redirects to callback with request_token). |
 | GET | `/api/auth/callback` | Kite redirect URL. Set in Kite app; we exchange `?request_token=xxx` and save. |
-| PUT | `/api/auth/token` | Save token. Body: `{"request_token": "..."}` (exchange and save) or `{"access_token": "..."}` (save only). |
+| PUT | `/api/auth/token` | Exchange request_token and save. Body: `{"request_token": "..."}` only. |
 | GET | `/api/auth/status` | Current auth: `authenticated`, `token_valid`, `user_id`, `user_name`, `broker`. |
 
 ---
@@ -84,8 +85,9 @@ All API routes are under `/api` unless noted.
 ```
 GET  /health
 POST /api/auth/credentials    Body: { "api_key": "...", "api_secret": "..." }  (first-time)
+GET  /api/auth/login-url      Returns { "login_url": "https://kite.zerodha.com/..." }
 GET  /api/auth/callback       Query: ?request_token=xxx (Kite redirect URL)
-PUT  /api/auth/token          Body: { "request_token": "..." } or { "access_token": "..." }
+PUT  /api/auth/token          Body: { "request_token": "..." }  (exchange and save)
 GET  /api/auth/status
 
 POST /api/market/quotes       Body: { "symbols": ["RELIANCE","TCS"], "exchange": "NSE" }
@@ -112,9 +114,9 @@ POST /api/opportunities/quick
 ## Notes for UI
 
 - **Timestamps (IST):** All `timestamp` fields use exact Indian clock time, no timezone suffix.
-- **Auth flow:** `POST /api/auth/credentials` (first-time) → set redirect in Kite app to
-  `.../api/auth/callback`. After login, token saved automatically. Or
-  `PUT /api/auth/token` with `request_token` or `access_token`.
+- **Auth flow:** (1) `POST /api/auth/credentials` (first-time). (2) `GET /api/auth/login-url` to get
+  login URL; open in browser. (3) After login, Kite redirects to callback (token saved) or copy
+  request_token and call `PUT /api/auth/token` with `{"request_token": "..."}`.
 - **Auth for protected routes:** Use `GET /api/auth/status` to check token and user info.
 - **Content-Type:** Use `Content-Type: application/json` for all POST/PUT bodies.
 - **CORS:** Ensure UI origin is in `CORS_ORIGINS` if you see CORS errors.

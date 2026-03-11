@@ -119,7 +119,7 @@ class TestAuth:
 
     @pytest.mark.asyncio
     async def test_token_rejects_empty_body(self, client):
-        """PUT /auth/token rejects request without request_token or access_token."""
+        """PUT /auth/token rejects request without request_token."""
         r = await client.put("/api/auth/token", json={})
         assert r.status_code in [400, 422]
 
