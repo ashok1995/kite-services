@@ -18,6 +18,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
+from common.time_utils import now_ist_naive
 from core.service_manager import get_service_manager
 from models.data_models import RealTimeRequest, RealTimeResponse
 from models.unified_api_models import (
@@ -29,7 +30,6 @@ from models.unified_api_models import (
     MarketStatusResponse,
     StockData,
 )
-from src.common.time_utils import now_ist_naive
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

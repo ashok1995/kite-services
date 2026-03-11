@@ -8,6 +8,8 @@
 
 ## 📋 TABLE OF CONTENTS
 
+<!-- markdownlint-disable MD051 -->
+
 1. [Prerequisites](#prerequisites)
 2. [Quick Start](#quick-start)
 3. [Configuration](#configuration)
@@ -15,6 +17,8 @@
 5. [Health Checks & Monitoring](#health-checks--monitoring)
 6. [Troubleshooting](#troubleshooting)
 7. [Maintenance](#maintenance)
+
+<!-- markdownlint-enable MD051 -->
 
 ---
 
@@ -303,6 +307,17 @@ ERROR: Cannot start service kite-services: ...
    ```bash
    cat .env | grep KITE_API_KEY
    ```
+
+---
+
+### Issue: Slow deployment or OOM on 4GB VM
+
+**Status: Resolved.** The image is built in CI (GitHub Actions) and pushed to `ghcr.io/ashok1995/kite-services`.  
+The VM only pulls the pre-built image (~15–30 sec). No build runs on the VM.
+
+**Deploy:** Use `./deploy_to_prod.sh` or `./scripts/deploy_on_vm.sh` — both use `docker compose pull` only.
+
+**If pull fails (401/403):** Make the GHCR package public, or run `docker login ghcr.io` on the VM with a PAT.
 
 ---
 

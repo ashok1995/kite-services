@@ -59,10 +59,10 @@ pytest tests/e2e/ -v
 pytest tests/e2e/test_prod_endpoints.py -v
 
 # Production VM
-TEST_BASE_URL=http://203.57.85.72:8179 pytest tests/e2e/test_prod_endpoints.py -v
+TEST_BASE_URL=http://35.232.205.155:8179 pytest tests/e2e/test_prod_endpoints.py -v
 
 # Smoke only
-TEST_BASE_URL=http://203.57.85.72:8179 pytest tests/e2e/test_prod_endpoints.py -v -k smoke
+TEST_BASE_URL=http://35.232.205.155:8179 pytest tests/e2e/test_prod_endpoints.py -v -k smoke
 ```
 
 ### Run All Functional + E2E (local + prod endpoint tests)

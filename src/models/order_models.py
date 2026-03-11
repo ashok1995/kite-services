@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from src.common.time_utils import now_ist_naive
+from common.time_utils import now_ist_naive
 
 
 class OrderType(str, Enum):

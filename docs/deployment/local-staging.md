@@ -9,7 +9,7 @@ Test changes here before deploying to prod on VM.
 |-----|------|----------|
 | Dev | 8079 | <http://localhost:8079> |
 | **Staging** | **8279** | <http://localhost:8279> |
-| Prod (VM) | 8179 | <http://203.57.85.72:8179> |
+| Prod (VM) | 8179 | <http://35.232.205.155:8179> |
 
 ## Run staging (same process as prod — Docker)
 

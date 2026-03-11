@@ -29,11 +29,11 @@ from api import (  # noqa: E402
     quick_opportunities,
     trading,
 )
+from common.time_utils import now_ist_naive  # noqa: E402
 from config.settings import get_settings  # noqa: E402
 from core.database import close_database, init_database  # noqa: E402
 from core.logging_config import get_logger, setup_logging  # noqa: E402
 from core.service_manager import ServiceManager, set_service_manager  # noqa: E402
-from src.common.time_utils import now_ist_naive  # noqa: E402
 
 # Initialize settings and logging
 settings = get_settings()
@@ -91,7 +91,9 @@ def create_app() -> FastAPI:
         **Ultra-Minimal Trading API with 8 Endpoints**
 
         🔐 **Authentication** (2 endpoints)
-        - POST /api/auth/login - Complete authentication flow
+        - POST /api/auth/credentials - Save api_key and api_secret (first-time)
+        - GET /api/auth/callback - Kite redirect; exchange request_token and save
+        - PUT /api/auth/token - Save token (request_token or access_token)
         - GET /api/auth/status - Authentication status
 
         📊 **Market Data** (3 endpoints)
@@ -109,8 +111,8 @@ def create_app() -> FastAPI:
         """,
         version=settings.service.version,
         lifespan=lifespan,
-        docs_url="/docs" if settings.service.debug else None,
-        redoc_url="/redoc" if settings.service.debug else None,
+        docs_url="/docs" if (settings.service.debug or settings.service.enable_docs) else None,
+        redoc_url="/redoc" if (settings.service.debug or settings.service.enable_docs) else None,
     )
 
     # Add middleware
@@ -339,7 +341,9 @@ def setup_routes(app: FastAPI):
             "service": settings.service.name,
             "version": settings.service.version,
             "environment": settings.service.environment,
-            "docs_url": "/docs" if settings.service.debug else None,
+            "docs_url": (
+                "/docs" if (settings.service.debug or settings.service.enable_docs) else None
+            ),
             "health_url": "/health",
             "metrics_url": "/metrics",
             "api_prefix": "/api",

@@ -11,6 +11,7 @@ services:
       - ENVIRONMENT=development
       - SERVICE_PORT=8079
       - DEBUG=true
+      - ENABLE_DOCS=true
       - LOG_LEVEL=DEBUG
     env_file:
       - envs/development.env

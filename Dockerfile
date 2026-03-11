@@ -27,6 +27,9 @@ COPY pyproject.toml poetry.lock* ./
 # Configure Poetry: Don't create virtual env, install to system
 RUN poetry config virtualenvs.create false
 
+# Limit parallel compilation to reduce peak RAM (helps 4GB VMs; numpy/pandas compile)
+ENV MAKEFLAGS="-j1"
+
 # Install dependencies only (no project install; avoids README.md in image)
 RUN poetry install --no-dev --no-interaction --no-ansi --no-root && \
     pip install --no-cache-dir watchdog==3.0.0 && \

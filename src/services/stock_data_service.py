@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional
 
+from common.time_utils import now_ist_naive
 from core.kite_client import KiteClient
 from core.logging_config import get_logger
 from models.data_models import (
@@ -31,7 +32,6 @@ from models.data_models import (
     RealTimeResponse,
     RealTimeStockData,
 )
-from src.common.time_utils import now_ist_naive
 
 
 class StockDataService:

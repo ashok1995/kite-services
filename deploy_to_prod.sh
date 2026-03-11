@@ -1,43 +1,33 @@
 #!/bin/bash
 # Deploy Kite Services to Production VM
-# Run this script on the production VM
 #
-# Speed: By default we use Docker cache so only code changes rebuild (~1–3 min).
-# The slow part is "poetry install" (~30–60 min); it is cached unless deps change.
-# Use FULL_REBUILD=1 when you change pyproject.toml/poetry.lock or want a clean image.
+# Image is built in CI and pushed to ghcr.io. VM only pulls (no build on VM).
+# ~15–30 sec deploy; no 3hr builds on 4GB VM.
 
 set -e
 
-# VM: use IP 203.57.85.72 (hostname vm488109385.manageserver.in may not resolve from all networks)
-VM_HOST="${VM_HOST:-203.57.85.72}"
+VM_HOST="${VM_HOST:-35.232.205.155}"
 VM_USER="${VM_USER:-root}"
-# Set VM_PASSWORD in env - never commit passwords to repo
-VM_PASSWORD="${VM_PASSWORD:?Set VM_PASSWORD for SSH (e.g. export VM_PASSWORD=yourpass)}"
+VM_PASSWORD="${VM_PASSWORD:?Set VM_PASSWORD for SSH}"
 PROJECT_DIR="/opt/kite-services"
 SERVICE_PORT="8179"
-# Use cache by default; set FULL_REBUILD=1 to force full rebuild (no cache)
-USE_CACHE="${FULL_REBUILD:-0}"
-BUILD_EXTRA=""
-[ "$USE_CACHE" = "1" ] && BUILD_EXTRA="--no-cache"
 
-echo "🚀 Deploying Kite Services to Production..."
-[ "$USE_CACHE" = "1" ] && echo "   (full rebuild: no cache)"
+echo "🚀 Deploying Kite Services to Production (pull-only, no build on VM)..."
 echo ""
 
 # Check if running on VM or locally
 if [ "$(hostname)" != "vm488109385" ] && [ ! -f "/opt/kite-services" ]; then
     echo "📡 Connecting to VM and deploying..."
 
-    sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "export FULL_REBUILD=$USE_CACHE; bash -s" << 'ENDSSH'
-        BUILD_EXTRA=""
-        [ "$FULL_REBUILD" = "1" ] && BUILD_EXTRA="--no-cache"
+    sshpass -p "$VM_PASSWORD" ssh -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "bash -s" << 'ENDSSH'
         cd /opt/kite-services || { git clone https://github.com/ashok1995/kite-services.git /opt/kite-services && cd /opt/kite-services; }
-        echo "📥 Fetching latest from main (hard reset to match remote)..."
+        echo "📥 Fetching latest from main..."
         git fetch origin main
         git checkout main
         git reset --hard origin/main
-        echo "🐳 Building image (using cache unless FULL_REBUILD=1) and recreating containers..."
-        docker compose -f docker-compose.prod.yml build $BUILD_EXTRA
+        echo "📦 Pulling image from ghcr.io (no build on VM)..."
+        docker compose -f docker-compose.prod.yml pull
+        echo "🔄 Restarting containers..."
         docker compose -f docker-compose.prod.yml up -d --force-recreate
 
         echo "⏳ Waiting for service to start (up to 60s)..."
@@ -64,7 +54,7 @@ if [ "$(hostname)" != "vm488109385" ] && [ ! -f "/opt/kite-services" ]; then
         done
         echo ""
         echo "✅ Deployment complete!"
-        echo "🌐 Service running on: http://203.57.85.72:8179"
+        echo "🌐 Service running on: http://35.232.205.155:8179"
 ENDSSH
 
 else
@@ -78,13 +68,13 @@ else
         cd "$PROJECT_DIR"
     }
 
-    echo "📥 Fetching latest from main (hard reset to match remote)..."
+    echo "📥 Fetching latest from main..."
     git fetch origin main
     git checkout main
     git reset --hard origin/main
-
-    echo "🐳 Building image (using cache unless FULL_REBUILD=1) and recreating containers..."
-    docker compose -f docker-compose.prod.yml build $BUILD_EXTRA
+    echo "📦 Pulling image from ghcr.io..."
+    docker compose -f docker-compose.prod.yml pull
+    echo "🔄 Restarting containers..."
     docker compose -f docker-compose.prod.yml up -d --force-recreate
 
     echo "⏳ Waiting for service to start (up to 60s)..."
@@ -111,5 +101,5 @@ else
     done
     echo ""
     echo "✅ Deployment complete!"
-    echo "🌐 Service running on: http://203.57.85.72:$SERVICE_PORT"
+    echo "🌐 Service running on: http://35.232.205.155:$SERVICE_PORT"
 fi

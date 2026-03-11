@@ -6,16 +6,16 @@ Manages Kite access token with file-based storage and automatic reloading.
 Supports updating token without service restart.
 """
 
-import asyncio
 import json
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+from common.time_utils import now_ist_naive
 from core.logging_config import get_logger
-from src.common.time_utils import now_ist_naive
 
 
 class TokenFileHandler(FileSystemEventHandler):
@@ -26,16 +26,12 @@ class TokenFileHandler(FileSystemEventHandler):
         self.logger = get_logger(__name__)
 
     def on_modified(self, event):
-        """Handle file modification event."""
+        """Handle file modification event (runs in watchdog thread)."""
         if not event.is_directory:
             self.logger.info(f"Token file modified: {event.src_path}")
-            # Small delay to ensure file write is complete
-            asyncio.create_task(self._delayed_callback())
-
-    async def _delayed_callback(self):
-        """Delayed callback to ensure file is fully written."""
-        await asyncio.sleep(0.5)
-        self.callback()
+            # Small delay so file write is complete; use sync sleep (watchdog runs in thread)
+            time.sleep(0.5)
+            self.callback()
 
 
 class TokenManager:
@@ -204,6 +200,44 @@ class TokenManager:
             True if updated successfully
         """
         return self.save_token(access_token, **metadata)
+
+    def save_credentials(self, api_key: str, api_secret: str) -> bool:
+        """
+        Save only api_key and api_secret (first-time use). Leaves access_token empty.
+
+        Args:
+            api_key: Kite Connect API key
+            api_secret: Kite Connect API secret
+
+        Returns:
+            True if saved successfully
+        """
+        try:
+            existing = self.token_data or {}
+            if not existing and self.token_file.exists():
+                try:
+                    with open(self.token_file, "r") as f:
+                        existing = json.load(f)
+                except Exception:
+                    pass
+            token_data = {
+                "api_key": (api_key or "").strip(),
+                "api_secret": (api_secret or "").strip(),
+                "access_token": existing.get("access_token", ""),
+                "updated_at": now_ist_naive().isoformat(),
+            }
+            if existing.get("user_id"):
+                token_data["user_id"] = existing["user_id"]
+            if existing.get("user_name"):
+                token_data["user_name"] = existing["user_name"]
+            with open(self.token_file, "w") as f:
+                json.dump(token_data, f, indent=2)
+            self.token_data = token_data
+            self.logger.info("Credentials (api_key, api_secret) saved to token file")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error saving credentials: {e}", exc_info=True)
+            return False
 
     def start_watching(self, callback: Optional[Callable[[str], None]] = None):
         """

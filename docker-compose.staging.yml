@@ -10,6 +10,7 @@ services:
       - ENVIRONMENT=staging
       - SERVICE_PORT=8279
       - DEBUG=true
+      - ENABLE_DOCS=true
       - LOG_LEVEL=INFO
       - REDIS_HOST=redis
     env_file:

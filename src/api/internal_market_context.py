@@ -3,7 +3,7 @@ Internal Market Context API
 ===========================
 
 Single endpoint for Indian market context only (Kite Connect).
-Global context is provided by a separate service.
+Global indices (Gift Nifty, S&P 500, etc.) are provided by a separate global service.
 """
 
 import time
@@ -13,9 +13,9 @@ from typing import Dict, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from common.time_utils import now_ist_naive
 from core.logging_config import get_logger
 from core.service_manager import get_service_manager
-from src.common.time_utils import now_ist_naive
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -50,7 +50,8 @@ async def get_internal_market_context():
     Indian market context only (Kite Connect).
 
     Returns: market regime, India VIX, Nifty 50 breadth, Nifty 50 index,
-    sector performance. Global context is provided by a separate service.
+    sector performance. Global indices (Gift Nifty, S&P 500, etc.) are
+    provided by a separate global service.
     """
     start_time = time.time()
 

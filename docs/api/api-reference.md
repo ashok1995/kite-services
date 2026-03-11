@@ -12,30 +12,18 @@ with no timezone suffix, for Indian market hours (9:15 AM–3:30 PM IST).
 
 ## Authentication
 
-Kite Connect OAuth token flow. Get access token in 3 steps:
+Api key save, callback URL, and token save. No login-url or login endpoint.
 
-### Token Flow
+### Flow
 
-1. **GET /api/auth/login-url** – Get Kite login URL  
-2. Open URL in browser, log in, copy `request_token` from redirect URL  
-3. **POST /api/auth/login** with `request_token` – Receive `access_token`
+1. **POST /api/auth/credentials** – Save `api_key` and `api_secret` only (first-time).
+2. Set redirect in Kite app to `.../api/auth/callback`. After login, callback gets
+   `request_token`; we exchange and save. Or call **PUT /api/auth/token** with
+   `request_token` or `access_token`.
 
-#### GET /api/auth/login-url
+#### POST /api/auth/credentials (first-time)
 
-Returns Kite Connect login URL.
-
-**Response**: 200 OK
-
-```json
-{
-  "login_url": "https://kite.zerodha.com/connect/login?api_key=...",
-  "message": "Open URL, login, copy request_token from redirect"
-}
-```
-
-#### POST /api/auth/login
-
-Generate access token from request token.
+Save Kite API key and secret.
 
 **Request Body**:
 
@@ -43,22 +31,38 @@ Generate access token from request token.
 
 ```json
 {
-  "request_token": "from_redirect_url",
-  "api_secret": "optional_if_in_env"
+  "api_key": "your_kite_api_key",
+  "api_secret": "your_kite_api_secret"
 }
 ```
 
-**Response**: 200 OK
+**Response**: 200 OK – `{"success": true, "message": "..."}`
+
+#### GET /api/auth/callback
+
+Callback URL for Kite redirect. Set this as redirect URL in Kite app. Query: `?request_token=xxx`. We exchange and save; return HTML success page.
+
+#### PUT /api/auth/token
+
+Save token. Either exchange `request_token` and save, or save `access_token` directly.
+
+**Request Body**:
 
 ```json
 {
-  "status": "authenticated",
-  "access_token": "...",
-  "user_id": "AB1234",
-  "user_name": "User Name",
-  "message": "Authentication successful"
+  "request_token": "from_kite_redirect"
 }
 ```
+
+or
+
+```json
+{
+  "access_token": "existing_access_token"
+}
+```
+
+**Response**: 200 OK – same shape as auth response (user_id, user_name, etc.).
 
 #### GET /api/auth/status
 
@@ -80,19 +84,6 @@ Check current auth status. Verifies token via Kite API (profile call).
 
 - `status`: Token status (`authenticated`, `expired`, `invalid`, `not_configured`)
 - `token_refreshed_at`: Last token refresh time in IST (exact Indian time, no suffix)
-
-#### PUT /api/auth/token
-
-Update access token (saved to KITE_TOKEN_FILE; survives git pull).
-
-**Request Body**:
-
-```json
-{
-  "access_token": "new_access_token",
-  "user_id": "optional_user_id"
-}
-```
 
 ---
 

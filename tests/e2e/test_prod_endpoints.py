@@ -7,7 +7,7 @@ Uses TEST_BASE_URL env var. Default: http://127.0.0.1:8079
 
 Usage:
   pytest tests/e2e/test_prod_endpoints.py -v
-  TEST_BASE_URL=http://203.57.85.72:8179 pytest tests/e2e/test_prod_endpoints.py -v
+  TEST_BASE_URL=http://35.232.205.155:8179 pytest tests/e2e/test_prod_endpoints.py -v
 """
 
 import os
@@ -86,18 +86,13 @@ class TestProdAuth:
         assert d.get("status") in ("authenticated", "expired", "invalid", "not_configured")
         assert "authenticated" in d
 
-    def test_auth_login_url(self, base_url):
-        r = httpx.get(f"{base_url}/api/auth/login-url", timeout=TIMEOUT)
-        if r.status_code == 404:
-            pytest.skip("login-url not deployed")
-        assert r.status_code == 200
-        d = r.json()
-        assert "login_url" in d
-        assert "kite" in d["login_url"].lower() or "zerodha" in d["login_url"].lower()
+    def test_auth_callback_requires_param(self, base_url):
+        r = httpx.get(f"{base_url}/api/auth/callback", timeout=TIMEOUT)
+        assert r.status_code in (422, 400)
 
-    def test_auth_login_rejects_invalid_token(self, base_url):
-        r = httpx.post(
-            f"{base_url}/api/auth/login",
+    def test_auth_token_rejects_invalid_request_token(self, base_url):
+        r = httpx.put(
+            f"{base_url}/api/auth/token",
             json={"request_token": "invalid_dummy_token"},
             timeout=TIMEOUT,
         )
