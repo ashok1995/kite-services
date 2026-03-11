@@ -91,7 +91,9 @@ def create_app() -> FastAPI:
         **Ultra-Minimal Trading API with 8 Endpoints**
 
         🔐 **Authentication** (2 endpoints)
-        - POST /api/auth/login - Complete authentication flow
+        - POST /api/auth/credentials - Save api_key and api_secret (first-time)
+        - GET /api/auth/callback - Kite redirect; exchange request_token and save
+        - PUT /api/auth/token - Save token (request_token or access_token)
         - GET /api/auth/status - Authentication status
 
         📊 **Market Data** (3 endpoints)

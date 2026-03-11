@@ -38,6 +38,9 @@ ENV/
 *~
 .DS_Store
 
+# Deploy secrets (GCP, VM credentials)
+deploy/.deploy.env
+
 # Environment (only envs/ is used; committed as templates)
 .env
 .env.local

@@ -56,10 +56,10 @@ TEST_BASE_URL=http://127.0.0.1:8079 poetry run pytest tests/integration/ tests/e
 
 ```bash
 # Full prod endpoint test suite
-TEST_BASE_URL=http://203.57.85.72:8179 poetry run pytest tests/e2e/test_prod_endpoints.py tests/integration/test_auth_token_flow.py -v
+TEST_BASE_URL=http://35.232.205.155:8179 poetry run pytest tests/e2e/test_prod_endpoints.py tests/integration/test_auth_token_flow.py -v
 
 # Quick smoke
-TEST_BASE_URL=http://203.57.85.72:8179 poetry run pytest tests/e2e/test_prod_endpoints.py -v -k "smoke"
+TEST_BASE_URL=http://35.232.205.155:8179 poetry run pytest tests/e2e/test_prod_endpoints.py -v -k "smoke"
 ```
 
 ### E2E In-Process (no live server)

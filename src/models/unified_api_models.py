@@ -10,7 +10,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from common.time_utils import now_ist_naive
 
@@ -127,14 +127,39 @@ class LoginUrlResponse(BaseModel):
 
 
 class UpdateTokenRequest(BaseModel):
-    """Paste request_token from login redirect (?request_token=xxx)."""
+    """Token save: request_token (exchange and save) or access_token (save only)."""
 
-    request_token: str = Field(..., min_length=1, description="From redirect URL")
+    request_token: Optional[str] = Field(
+        None, description="From Kite redirect; we exchange and save"
+    )
+    access_token: Optional[str] = Field(None, description="Direct access token to save")
 
-    @field_validator("request_token", mode="before")
+    @field_validator("request_token", "access_token", mode="before")
     @classmethod
-    def strip_token(cls, v: object) -> str:
+    def strip_str(cls, v: object) -> Optional[str]:
+        if v is None or v == "":
+            return None
         return v.strip() if isinstance(v, str) else v
+
+    @model_validator(mode="after")
+    def require_one(self):
+        if not (self.request_token or self.access_token):
+            raise ValueError("Provide request_token or access_token")
+        return self
+
+
+class CredentialsRequest(BaseModel):
+    """Save Kite API key and secret only (first-time use)."""
+
+    api_key: str = Field(..., min_length=1, description="Kite Connect API key")
+    api_secret: str = Field(..., min_length=1, description="Kite Connect API secret")
+
+
+class CredentialsResponse(BaseModel):
+    """Response after saving credentials."""
+
+    success: bool = Field(..., description="Whether credentials were saved")
+    message: str = Field(..., description="Status message")
 
 
 # ============================================================================

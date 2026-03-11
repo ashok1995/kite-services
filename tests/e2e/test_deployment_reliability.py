@@ -118,16 +118,15 @@ class TestAuth:
             assert key in data, f"Missing key: {key}"
 
     @pytest.mark.asyncio
-    async def test_login_rejects_empty_body(self, client):
-        """Login rejects request without token."""
-        r = await client.post("/api/auth/login", json={})
-        # Should still return a response (fail gracefully)
-        assert r.status_code in [200, 400, 401, 422, 500]
+    async def test_token_rejects_empty_body(self, client):
+        """PUT /auth/token rejects request without request_token or access_token."""
+        r = await client.put("/api/auth/token", json={})
+        assert r.status_code in [400, 422]
 
     @pytest.mark.asyncio
-    async def test_login_rejects_bad_token(self, client):
-        """Login rejects an invalid request token."""
-        r = await client.post("/api/auth/login", json={"request_token": "invalid_token_12345"})
+    async def test_token_rejects_bad_request_token(self, client):
+        """PUT /auth/token rejects an invalid request_token."""
+        r = await client.put("/api/auth/token", json={"request_token": "invalid_token_12345"})
         assert r.status_code in [401, 500]
 
 

@@ -6,7 +6,7 @@
 
 set -e
 
-VM_HOST="${VM_HOST:-203.57.85.72}"
+VM_HOST="${VM_HOST:-35.232.205.155}"
 VM_USER="${VM_USER:-root}"
 VM_PASSWORD="${VM_PASSWORD:?Set VM_PASSWORD for SSH}"
 PROJECT_DIR="/opt/kite-services"
@@ -54,7 +54,7 @@ if [ "$(hostname)" != "vm488109385" ] && [ ! -f "/opt/kite-services" ]; then
         done
         echo ""
         echo "✅ Deployment complete!"
-        echo "🌐 Service running on: http://203.57.85.72:8179"
+        echo "🌐 Service running on: http://35.232.205.155:8179"
 ENDSSH
 
 else
@@ -101,5 +101,5 @@ else
     done
     echo ""
     echo "✅ Deployment complete!"
-    echo "🌐 Service running on: http://203.57.85.72:$SERVICE_PORT"
+    echo "🌐 Service running on: http://35.232.205.155:$SERVICE_PORT"
 fi

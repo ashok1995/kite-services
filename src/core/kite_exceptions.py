@@ -100,13 +100,12 @@ class KiteErrorHandler:
                 response["action_required"] = {
                     "type": "token_refresh",
                     "steps": [
-                        "1. Open Kite login URL",
-                        "2. Complete login and get request_token",
-                        "3. Call POST /api/auth/login with request_token",
+                        "1. Call POST /api/auth/credentials with api_key and api_secret",
+                        "2. Set redirect to /api/auth/callback or PUT /api/auth/token",
                     ],
                     "endpoints": {
                         "check_status": "GET /api/auth/status",
-                        "refresh_token": "POST /api/auth/login",
+                        "refresh_token": "PUT /api/auth/token",
                     },
                     "ui_tool": "Open src/ui/token/simple_token_ui.html for refresh",
                 }
