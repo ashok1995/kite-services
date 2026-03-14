@@ -1,8 +1,8 @@
-# STAGING docker-compose — port 8279 (local only, same process as prod)
+# STAGING docker-compose — port 8279
+# Image built in CI and pushed to ghcr.io; local only pulls (no build).
 services:
   kite-services:
-    build: .
-    image: kite-services:staging
+    image: ghcr.io/ashok1995/kite-services:stage
     container_name: kite-services-staging
     ports:
       - "8279:8279"

@@ -25,10 +25,12 @@ if [ "$(hostname)" != "vm488109385" ] && [ ! -f "/opt/kite-services" ]; then
         git fetch origin main
         git checkout main
         git reset --hard origin/main
+        echo "🛑 Stopping old containers..."
+        docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
         echo "📦 Pulling image from ghcr.io (no build on VM)..."
         docker compose -f docker-compose.prod.yml pull
-        echo "🔄 Restarting containers..."
-        docker compose -f docker-compose.prod.yml up -d --force-recreate
+        echo "🔄 Starting containers..."
+        docker compose -f docker-compose.prod.yml up -d
 
         echo "⏳ Waiting for service to start (up to 60s)..."
         for i in $(seq 1 12); do
@@ -72,10 +74,12 @@ else
     git fetch origin main
     git checkout main
     git reset --hard origin/main
+    echo "🛑 Stopping old containers..."
+    docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
     echo "📦 Pulling image from ghcr.io..."
     docker compose -f docker-compose.prod.yml pull
-    echo "🔄 Restarting containers..."
-    docker compose -f docker-compose.prod.yml up -d --force-recreate
+    echo "🔄 Starting containers..."
+    docker compose -f docker-compose.prod.yml up -d
 
     echo "⏳ Waiting for service to start (up to 60s)..."
     for i in $(seq 1 12); do
