@@ -39,19 +39,10 @@ class InternalMarketContextResponse(BaseModel):
     volatility_regime: Optional[str] = Field(
         None, description="Volatility regime (low/normal/high)"
     )
-    india_vix: Optional[float] = Field(None, description="India VIX value")
-    vix_level: Optional[str] = Field(None, description="VIX level (low/normal/high/extreme)")
     market_breadth: Optional[Dict] = Field(None, description="Nifty 50 advance/decline data")
-    nifty_50: Optional[Dict] = Field(None, description="Nifty 50 index data")
-    bank_nifty: Optional[Dict] = Field(None, description="Bank Nifty index data")
-    india_vix_data: Optional[Dict] = Field(
-        None,
-        description="India VIX enriched data with multi-timeframe trends",
-    )
-    index_trends: Optional[Dict[str, Dict]] = Field(
-        None,
-        description="Per-index trend blocks (short_term/medium_term/long_term)",
-    )
+    nifty_50: Optional[Dict] = Field(None, description="Nifty 50 index data with trend")
+    bank_nifty: Optional[Dict] = Field(None, description="Bank Nifty index data with trend")
+    india_vix: Optional[Dict] = Field(None, description="India VIX data with trend")
     sectors: Optional[Dict] = Field(None, description="Indian sector performance")
     institutional_sentiment: Optional[str] = Field(None, description="Derived sentiment")
     confidence_score: float = Field(0.85, description="Data confidence score")
@@ -317,11 +308,12 @@ async def get_internal_market_context():
         if bank_nifty_data and trend_payload.get("bank_nifty"):
             bank_nifty_data["trend"] = trend_payload["bank_nifty"]
 
-        india_vix_data = None
+        india_vix_block = None
         if vol_data and vol_data.india_vix:
-            india_vix_data = {
+            india_vix_block = {
                 "value": float(vol_data.india_vix),
-                "vix_level": vix_level,
+                "change_percent": float(vol_data.india_vix_change_percent) if hasattr(vol_data, "india_vix_change_percent") and vol_data.india_vix_change_percent else None,
+                "level": vix_level,
                 "trend": trend_payload.get("india_vix"),
             }
 
@@ -345,13 +337,10 @@ async def get_internal_market_context():
         return InternalMarketContextResponse(
             market_regime=market_regime,
             volatility_regime=volatility_regime,
-            india_vix=float(vol_data.india_vix) if vol_data and vol_data.india_vix else None,
-            vix_level=vix_level,
             market_breadth=breadth_data if breadth_data else None,
             nifty_50=nifty_50_data,
             bank_nifty=bank_nifty_data,
-            india_vix_data=india_vix_data,
-            index_trends=trend_payload if trend_payload else None,
+            india_vix=india_vix_block,
             sectors=sectors if sectors else None,
             institutional_sentiment=institutional_sentiment,
             confidence_score=0.90 if breadth_data and nifty_50_data and trend_payload else 0.50,
