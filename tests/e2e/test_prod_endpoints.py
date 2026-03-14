@@ -83,8 +83,10 @@ class TestProdAuth:
         r = httpx.get(f"{base_url}/api/auth/status", timeout=TIMEOUT)
         assert r.status_code == 200
         d = r.json()
-        assert d.get("status") in ("authenticated", "expired", "invalid", "not_configured")
-        assert "authenticated" in d
+        assert "status" in d
+        assert isinstance(d["status"], bool)
+        assert "token_valid" in d
+        assert "credentials_configured" in d
 
     def test_auth_login_url(self, base_url):
         r = httpx.get(f"{base_url}/api/auth/login-url", timeout=TIMEOUT)

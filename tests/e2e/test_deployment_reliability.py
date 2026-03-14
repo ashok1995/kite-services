@@ -114,7 +114,7 @@ class TestAuth:
         r = await client.get("/api/auth/status")
         assert r.status_code == 200
         data = r.json()
-        for key in ["status", "authenticated", "timestamp"]:
+        for key in ["status", "token_valid", "credentials_configured", "timestamp"]:
             assert key in data, f"Missing key: {key}"
 
     @pytest.mark.asyncio
