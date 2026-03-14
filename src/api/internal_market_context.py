@@ -7,8 +7,9 @@ Global indices (Gift Nifty, S&P 500, etc.) are provided by a separate global ser
 """
 
 import time
+import asyncio
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -16,6 +17,7 @@ from pydantic import BaseModel, Field
 from common.time_utils import now_ist_naive
 from core.logging_config import get_logger
 from core.service_manager import get_service_manager
+from services.trend_analyzer import analyze_candles
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -34,6 +36,15 @@ class InternalMarketContextResponse(BaseModel):
     vix_level: Optional[str] = Field(None, description="VIX level (low/normal/high/extreme)")
     market_breadth: Optional[Dict] = Field(None, description="Nifty 50 advance/decline data")
     nifty_50: Optional[Dict] = Field(None, description="Nifty 50 index data")
+    bank_nifty: Optional[Dict] = Field(None, description="Bank Nifty index data")
+    india_vix_data: Optional[Dict] = Field(
+        None,
+        description="India VIX enriched data with multi-timeframe trends",
+    )
+    index_trends: Optional[Dict[str, Dict]] = Field(
+        None,
+        description="Per-index trend blocks (short_term/medium_term/long_term)",
+    )
     sectors: Optional[Dict] = Field(None, description="Indian sector performance")
     institutional_sentiment: Optional[str] = Field(None, description="Derived sentiment")
     confidence_score: float = Field(0.85, description="Data confidence score")
@@ -42,6 +53,72 @@ class InternalMarketContextResponse(BaseModel):
         description="Response timestamp (IST)",
     )
     processing_time_ms: float = Field(..., description="Processing time in milliseconds")
+
+
+class TrendData(BaseModel):
+    """Trend metrics for one horizon."""
+
+    roc: float
+    slope_per_day: float
+    r_squared: float
+    rsi: float
+    volatility_annualized: float
+    atr_pct: float
+    sma: float
+    sma_distance_pct: float
+    period_high: float
+    period_low: float
+    regime: str
+    volatility_regime: str
+    candles_used: int
+
+
+class TrendInfo(BaseModel):
+    """Multi-timeframe trend block."""
+
+    short_term: Optional[TrendData] = None
+    medium_term: Optional[TrendData] = None
+    long_term: Optional[TrendData] = None
+
+
+def _build_trend_info(raw: Optional[Dict[str, Any]]) -> Optional[TrendInfo]:
+    """Convert raw dict from trend_analyzer into a typed response model."""
+    if not raw:
+        return None
+    try:
+        return TrendInfo(
+            short_term=TrendData(**raw["short_term"]) if raw.get("short_term") else None,
+            medium_term=TrendData(**raw["medium_term"]) if raw.get("medium_term") else None,
+            long_term=TrendData(**raw["long_term"]) if raw.get("long_term") else None,
+        )
+    except Exception as exc:
+        logger.warning(f"Failed to parse trend payload: {exc}")
+        return None
+
+
+async def _fetch_symbol_trend(
+    service_manager: Any,
+    symbol: str,
+    current_price: float,
+) -> Optional[TrendInfo]:
+    """
+    Fetch 3-month daily candles from Kite and compute trend block.
+    Returns None on any failure (non-critical).
+    """
+    try:
+        historical = await service_manager.kite_client.get_historical_data(symbol, days=90)
+        if not historical:
+            return None
+
+        # Kite historical data shape is already open/high/low/close/volume
+        import pandas as pd
+
+        candles = pd.DataFrame(historical)
+        raw = analyze_candles(candles, float(current_price))
+        return _build_trend_info(raw)
+    except Exception as exc:
+        logger.warning(f"Trend fetch failed for {symbol}: {exc}")
+        return None
 
 
 @router.get("/internal-market-context", response_model=InternalMarketContextResponse)
@@ -67,6 +144,9 @@ async def get_internal_market_context():
         sector_data_raw = await market_context_service._get_sector_data("internal")
 
         nifty_50_data = None
+        bank_nifty_data = None
+        trend_payload: Dict[str, Dict] = {}
+
         if indian_data_raw and indian_data_raw.indices:
             for symbol, data in indian_data_raw.indices.items():
                 if "NIFTY 50" in symbol:
@@ -74,7 +154,11 @@ async def get_internal_market_context():
                         "price": float(data.get("value", 0)),
                         "change_percent": float(data.get("change_percent", 0)),
                     }
-                    break
+                elif "NIFTY BANK" in symbol:
+                    bank_nifty_data = {
+                        "price": float(data.get("value", 0)),
+                        "change_percent": float(data.get("change_percent", 0)),
+                    }
 
         market_regime = None
         if indian_data_raw and indian_data_raw.market_regime:
@@ -94,6 +178,47 @@ async def get_internal_market_context():
                     vix_level = "high"
                 else:
                     vix_level = "extreme"
+
+        # Fetch trends concurrently (non-critical)
+        trend_tasks = []
+        trend_keys = []
+
+        if nifty_50_data:
+            trend_tasks.append(
+                _fetch_symbol_trend(service_manager, "NSE:NIFTY 50", nifty_50_data["price"])
+            )
+            trend_keys.append("nifty_50")
+
+        if bank_nifty_data:
+            trend_tasks.append(
+                _fetch_symbol_trend(service_manager, "NSE:NIFTY BANK", bank_nifty_data["price"])
+            )
+            trend_keys.append("bank_nifty")
+
+        if vol_data and vol_data.india_vix:
+            trend_tasks.append(
+                _fetch_symbol_trend(service_manager, "NSE:INDIA VIX", float(vol_data.india_vix))
+            )
+            trend_keys.append("india_vix")
+
+        if trend_tasks:
+            trend_results = await asyncio.gather(*trend_tasks)
+            for key, trend in zip(trend_keys, trend_results):
+                if trend:
+                    trend_payload[key] = trend.model_dump()
+
+        if nifty_50_data and trend_payload.get("nifty_50"):
+            nifty_50_data["trend"] = trend_payload["nifty_50"]
+        if bank_nifty_data and trend_payload.get("bank_nifty"):
+            bank_nifty_data["trend"] = trend_payload["bank_nifty"]
+
+        india_vix_data = None
+        if vol_data and vol_data.india_vix:
+            india_vix_data = {
+                "value": float(vol_data.india_vix),
+                "vix_level": vix_level,
+                "trend": trend_payload.get("india_vix"),
+            }
 
         sectors = {}
         if sector_data_raw and hasattr(sector_data_raw, "sector_performance"):
@@ -119,9 +244,12 @@ async def get_internal_market_context():
             vix_level=vix_level,
             market_breadth=breadth_data if breadth_data else None,
             nifty_50=nifty_50_data,
+            bank_nifty=bank_nifty_data,
+            india_vix_data=india_vix_data,
+            index_trends=trend_payload if trend_payload else None,
             sectors=sectors if sectors else None,
             institutional_sentiment=institutional_sentiment,
-            confidence_score=0.85 if breadth_data and nifty_50_data else 0.50,
+            confidence_score=0.90 if breadth_data and nifty_50_data and trend_payload else 0.50,
             processing_time_ms=round(processing_time, 2),
         )
 
