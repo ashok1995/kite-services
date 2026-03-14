@@ -8,19 +8,26 @@ Global indices (Gift Nifty, S&P 500, etc.) are provided by a separate global ser
 
 import time
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+import pandas as pd
 
 from common.time_utils import now_ist_naive
 from core.logging_config import get_logger
 from core.service_manager import get_service_manager
-from services.trend_analyzer import analyze_candles
+from services.trend_analyzer import analyze_candles, analyze_horizon
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+
+# Trend cache TTLs (seconds): intraday changes fastest, long-term slowest.
+TREND_TTL_INTRADAY = 60
+TREND_TTL_SHORT_MEDIUM = 300
+TREND_TTL_LONG = 3600
 
 
 class InternalMarketContextResponse(BaseModel):
@@ -76,6 +83,7 @@ class TrendData(BaseModel):
 class TrendInfo(BaseModel):
     """Multi-timeframe trend block."""
 
+    intraday: Optional[TrendData] = None
     short_term: Optional[TrendData] = None
     medium_term: Optional[TrendData] = None
     long_term: Optional[TrendData] = None
@@ -87,6 +95,7 @@ def _build_trend_info(raw: Optional[Dict[str, Any]]) -> Optional[TrendInfo]:
         return None
     try:
         return TrendInfo(
+            intraday=TrendData(**raw["intraday"]) if raw.get("intraday") else None,
             short_term=TrendData(**raw["short_term"]) if raw.get("short_term") else None,
             medium_term=TrendData(**raw["medium_term"]) if raw.get("medium_term") else None,
             long_term=TrendData(**raw["long_term"]) if raw.get("long_term") else None,
@@ -106,19 +115,115 @@ async def _fetch_symbol_trend(
     Returns None on any failure (non-critical).
     """
     try:
-        historical = await service_manager.kite_client.get_historical_data(symbol, days=90)
-        if not historical:
-            return None
+        cache = getattr(service_manager, "cache_service", None)
+        cache_key_base = symbol.replace(":", "_")
+        key_fast = f"kite:internal_trend:fast:{cache_key_base}"      # short+medium
+        key_long = f"kite:internal_trend:long:{cache_key_base}"      # long
+        key_intraday = f"kite:internal_trend:intraday:{cache_key_base}"
 
-        # Kite historical data shape is already open/high/low/close/volume
-        import pandas as pd
+        cached_fast = await cache.get(key_fast) if cache else None
+        cached_long = await cache.get(key_long) if cache else None
+        cached_intraday = await cache.get(key_intraday) if cache else None
 
-        candles = pd.DataFrame(historical)
-        raw = analyze_candles(candles, float(current_price))
-        return _build_trend_info(raw)
+        # Compute daily horizons if either fast or long cache is missing.
+        if cached_fast is None or cached_long is None:
+            daily_df = await _fetch_candles_for_symbol(
+                service_manager=service_manager, symbol=symbol, lookback_days=90, interval="day"
+            )
+            daily = analyze_candles(daily_df, float(current_price)) if daily_df is not None else None
+            if daily:
+                cached_fast = {
+                    "short_term": daily.get("short_term"),
+                    "medium_term": daily.get("medium_term"),
+                }
+                cached_long = {"long_term": daily.get("long_term")}
+                if cache:
+                    await cache.set(key_fast, cached_fast, ttl=TREND_TTL_SHORT_MEDIUM)
+                    await cache.set(key_long, cached_long, ttl=TREND_TTL_LONG)
+
+        # Compute intraday trend separately on 5-minute candles.
+        if cached_intraday is None:
+            intraday_df = await _fetch_candles_for_symbol(
+                service_manager=service_manager, symbol=symbol, lookback_days=2, interval="5minute"
+            )
+            intraday = None
+            if intraday_df is not None:
+                intraday = analyze_horizon(intraday_df, n_days=21, current_price=float(current_price))
+                if "error" in intraday:
+                    intraday = None
+            cached_intraday = {"intraday": intraday}
+            if cache:
+                await cache.set(key_intraday, cached_intraday, ttl=TREND_TTL_INTRADAY)
+
+        merged = {
+            "intraday": (cached_intraday or {}).get("intraday"),
+            "short_term": (cached_fast or {}).get("short_term"),
+            "medium_term": (cached_fast or {}).get("medium_term"),
+            "long_term": (cached_long or {}).get("long_term"),
+        }
+        return _build_trend_info(merged)
     except Exception as exc:
         logger.warning(f"Trend fetch failed for {symbol}: {exc}")
         return None
+
+
+async def _fetch_candles_for_symbol(
+    service_manager: Any,
+    symbol: str,
+    lookback_days: int,
+    interval: str,
+) -> Optional[pd.DataFrame]:
+    """
+    Fetch candles for indices/instruments using instrument token route first.
+    Falls back to get_historical_data() for daily candles.
+    """
+    kite_client = service_manager.kite_client
+    from_date = (datetime.now() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
+    to_date = datetime.now().strftime("%Y-%m-%d")
+
+    # Preferred path: quote -> instrument_token -> historical_data(interval)
+    token = None
+    try:
+        quote_data = await kite_client.quote([symbol])
+        payload = quote_data.get(symbol, {}) if isinstance(quote_data, dict) else {}
+        token = payload.get("instrument_token")
+    except Exception as exc:
+        logger.debug(f"Token lookup failed for {symbol}: {exc}")
+
+    rows = None
+    if token:
+        rows = await kite_client.historical_data(int(token), from_date, to_date, interval)
+
+    # Fallback for daily only (legacy helper needs tradingsymbol keys).
+    if not rows and interval == "day":
+        candidates = [symbol]
+        if ":" in symbol:
+            candidates.append(symbol.split(":", 1)[1])
+        for candidate in dict.fromkeys(candidates):
+            hist = await kite_client.get_historical_data(candidate, days=lookback_days)
+            if hist:
+                rows = hist
+                break
+
+    if not rows:
+        return None
+
+    normalized = []
+    for r in rows:
+        normalized.append(
+            {
+                "open": float(r.get("open", 0)),
+                "high": float(r.get("high", 0)),
+                "low": float(r.get("low", 0)),
+                "close": float(r.get("close", 0)),
+                "volume": float(r.get("volume", 0)),
+            }
+        )
+    df = pd.DataFrame(normalized)
+    required = {"open", "high", "low", "close"}
+    if df.empty or not required.issubset(df.columns):
+        return None
+    return df
 
 
 @router.get("/internal-market-context", response_model=InternalMarketContextResponse)
