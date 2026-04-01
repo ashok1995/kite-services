@@ -7,6 +7,7 @@ Provides unified interface for market data, orders, and portfolio management.
 """
 
 import asyncio
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -106,7 +107,10 @@ class KiteClient:
         """Get instruments list."""
         try:
             if not self.kite:
-                return self._get_mock_instruments()
+                cached_instruments = self._load_instruments_json_cache(exchange)
+                if cached_instruments:
+                    return cached_instruments
+                return {}
 
             # Check cache first
             cache_key = f"instruments_{exchange}"
@@ -139,12 +143,51 @@ class KiteClient:
             if self.cache_service and self.cache_service.enabled:
                 await self.cache_service.set(cache_key, instrument_dict, ttl=86400)  # 24 hours
 
+            self._save_instruments_json_cache(exchange, instrument_dict)
+
             self.logger.info(f"Retrieved {len(instrument_dict)} instruments from {exchange}")
             return instrument_dict
 
         except Exception as e:
             self.logger.error(f"Error getting instruments: {e}")
-            return self._get_mock_instruments()
+            cached_instruments = self._load_instruments_json_cache(exchange)
+            if cached_instruments:
+                self.logger.warning(
+                    f"Using official cached instruments JSON for {exchange}: "
+                    f"{len(cached_instruments)} symbols"
+                )
+                return cached_instruments
+            return {}
+
+    def _get_instruments_cache_file(self, exchange: str) -> Path:
+        """Official instruments JSON cache, stored next to the token file."""
+        return self.token_manager.token_file.parent / f"instruments_{exchange.lower()}.json"
+
+    def _save_instruments_json_cache(self, exchange: str, instruments: Dict[str, Dict]) -> None:
+        """Persist official Kite instruments to a local JSON cache."""
+        try:
+            cache_file = self._get_instruments_cache_file(exchange)
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(cache_file, "w") as f:
+                json.dump(instruments, f)
+            self.logger.info(f"Saved official instruments JSON cache for {exchange}: {cache_file}")
+        except Exception as e:
+            self.logger.warning(f"Failed to save instruments JSON cache for {exchange}: {e}")
+
+    def _load_instruments_json_cache(self, exchange: str) -> Dict[str, Dict]:
+        """Load previously saved official Kite instruments JSON cache."""
+        try:
+            cache_file = self._get_instruments_cache_file(exchange)
+            if not cache_file.exists():
+                return {}
+            with open(cache_file, "r") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                return data
+            return {}
+        except Exception as e:
+            self.logger.warning(f"Failed to load instruments JSON cache for {exchange}: {e}")
+            return {}
 
     async def quote(self, symbols: List[str]) -> Dict[str, Dict]:
         """

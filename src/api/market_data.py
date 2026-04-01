@@ -445,6 +445,52 @@ async def get_quotes(request: RealTimeRequest):
                             else None
                         ),
                         "turnover": None,  # Not available in basic quote
+                        "bid_price": (
+                            Decimal(
+                                str(quote_data.get("depth", {}).get("buy", [{}])[0].get("price"))
+                            )
+                            if quote_data.get("depth", {}).get("buy")
+                            else None
+                        ),
+                        "ask_price": (
+                            Decimal(
+                                str(quote_data.get("depth", {}).get("sell", [{}])[0].get("price"))
+                            )
+                            if quote_data.get("depth", {}).get("sell")
+                            else None
+                        ),
+                        "bid_quantity": (
+                            quote_data.get("depth", {}).get("buy", [{}])[0].get("quantity")
+                            if quote_data.get("depth", {}).get("buy")
+                            else None
+                        ),
+                        "ask_quantity": (
+                            quote_data.get("depth", {}).get("sell", [{}])[0].get("quantity")
+                            if quote_data.get("depth", {}).get("sell")
+                            else None
+                        ),
+                        "depth_buy": (
+                            [
+                                {
+                                    "price": Decimal(str(level["price"])),
+                                    "quantity": level["quantity"],
+                                }
+                                for level in quote_data.get("depth", {}).get("buy", [])
+                            ]
+                            if request.include_depth
+                            else None
+                        ),
+                        "depth_sell": (
+                            [
+                                {
+                                    "price": Decimal(str(level["price"])),
+                                    "quantity": level["quantity"],
+                                }
+                                for level in quote_data.get("depth", {}).get("sell", [])
+                            ]
+                            if request.include_depth
+                            else None
+                        ),
                         "timestamp": quote_data.get("timestamp"),
                     }
 
