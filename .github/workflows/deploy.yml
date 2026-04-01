@@ -59,4 +59,4 @@ jobs:
         run: |
           echo "✅ Build and push completed"
           echo "📦 Image: ${{ env.IMAGE_NAME }}:latest"
-          echo "🚀 VM: pull + restart via deploy_to_prod.sh (no build)"
+          echo "🚀 VM: run ./deploy/deploy-prod.sh to pull and restart"

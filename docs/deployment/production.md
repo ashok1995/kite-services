@@ -315,7 +315,7 @@ ERROR: Cannot start service kite-services: ...
 **Status: Resolved.** The image is built in CI (GitHub Actions) and pushed to `ghcr.io/ashok1995/kite-services`.  
 The VM only pulls the pre-built image (~15–30 sec). No build runs on the VM.
 
-**Deploy:** Use `./deploy_to_prod.sh` or `./scripts/deploy_on_vm.sh` — both use `docker compose pull` only.
+**Deploy:** Use `./deploy/deploy-prod.sh` (gcloud; pull and restart on VM).
 
 **If pull fails (401/403):** Make the GHCR package public, or run `docker login ghcr.io` on the VM with a PAT.
 

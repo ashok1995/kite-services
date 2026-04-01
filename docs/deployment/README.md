@@ -11,13 +11,13 @@
 
 - **Commit and push first.** Staging deploy pulls from `origin/develop`. The script will **fail** if there are
   uncommitted changes or if local `develop` is ahead of `origin/develop`. Fix: commit and push, then run
-  `./deploy_to_staging.sh`.
+  `./deploy/deploy-staging.sh`.
 
 ## Deploy speed
 
 - **Prod (VM):** Image is built in CI and pushed to ghcr.io. VM only pulls and restarts (~15–30 sec). No build on VM.
 - **After merging to main:** Wait for [CI](https://github.com/ashok1995/kite-services/actions) to complete (~5–10 min), then deploy.
-- **Staging:** Still builds locally; use `./deploy_to_staging.sh`.
+- **Staging:** Still builds locally; use `./deploy/deploy-staging.sh`.
 - **Cleanup (prod only):** Script removes **kite-services** dangling images. Other services unaffected.
 
 ## Token persistence across deploys

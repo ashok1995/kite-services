@@ -262,6 +262,39 @@ class InstrumentsResponse(BaseModel):
     timestamp: datetime = Field(default_factory=now_ist_naive)
 
 
+class InstrumentTokenLookupRequest(BaseModel):
+    """Batch instrument token lookup request."""
+
+    symbols: List[str] = Field(..., min_length=1, max_length=200, description="Stock symbols")
+    exchange: Exchange = Field(default=Exchange.NSE, description="Exchange to search in")
+
+    @field_validator("symbols", mode="before")
+    @classmethod
+    def normalize_symbols(cls, v: object) -> object:
+        if not isinstance(v, list):
+            return v
+        return [item.strip().upper() if isinstance(item, str) else item for item in v]
+
+
+class InstrumentTokenLookupItem(BaseModel):
+    """Instrument token lookup result for one symbol."""
+
+    symbol: str
+    instrument_token: Optional[int] = None
+
+
+class InstrumentTokenLookupResponse(BaseModel):
+    """Batch instrument token lookup response."""
+
+    success: bool
+    exchange: Exchange
+    results: List[InstrumentTokenLookupItem] = Field(default_factory=list)
+    matched_count: int = 0
+    unmatched_count: int = 0
+    message: Optional[str] = None
+    timestamp: datetime = Field(default_factory=now_ist_naive)
+
+
 # ============================================================================
 # ANALYSIS MODULE MODELS
 # ============================================================================

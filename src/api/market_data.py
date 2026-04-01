@@ -24,6 +24,9 @@ from models.data_models import RealTimeRequest, RealTimeResponse
 from models.unified_api_models import (
     InstrumentInfo,
     InstrumentsResponse,
+    InstrumentTokenLookupItem,
+    InstrumentTokenLookupRequest,
+    InstrumentTokenLookupResponse,
     MarketDataRequest,
     MarketDataResponse,
     MarketStatus,
@@ -313,6 +316,48 @@ async def get_instruments(
             exchanges=[],
             message=f"Instruments fetch failed: {str(e)}",
         )
+
+
+@router.post("/market/instrument-tokens", response_model=InstrumentTokenLookupResponse)
+async def get_instrument_tokens(request: InstrumentTokenLookupRequest):
+    """
+    Batch lookup of instrument tokens by stock symbol.
+
+    Returns one entry per requested symbol. If a symbol is not found,
+    instrument_token is returned as null.
+    """
+    try:
+        service_manager = await get_service_manager()
+        kite_client = service_manager.kite_client
+
+        logger.info(
+            "Looking up instrument tokens for "
+            f"{len(request.symbols)} symbols on {request.exchange.value}"
+        )
+
+        instruments_data = await kite_client.get_instruments(request.exchange.value)
+        results = []
+        matched_count = 0
+
+        for symbol in request.symbols:
+            instrument = instruments_data.get(symbol)
+            token = instrument.get("instrument_token") if instrument else None
+            if token is not None:
+                matched_count += 1
+            results.append(InstrumentTokenLookupItem(symbol=symbol, instrument_token=token))
+
+        unmatched_count = len(results) - matched_count
+        return InstrumentTokenLookupResponse(
+            success=True,
+            exchange=request.exchange,
+            results=results,
+            matched_count=matched_count,
+            unmatched_count=unmatched_count,
+            message=f"Resolved {matched_count} of {len(results)} symbols",
+        )
+    except Exception as e:
+        logger.error(f"Instrument token lookup failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Instrument token lookup failed: {str(e)}")
 
 
 @router.post("/market/quotes", response_model=RealTimeResponse)
