@@ -21,7 +21,7 @@
 ### Deploy
 
 ```bash
-./deploy_to_prod.sh
+./deploy/deploy-prod.sh
 ```
 
 ### E2E tests against prod

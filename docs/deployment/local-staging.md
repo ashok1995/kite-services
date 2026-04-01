@@ -16,14 +16,13 @@ Test changes here before deploying to prod on VM.
 Staging uses Docker the same way as prod. From repo root, after merging to `develop`:
 
 ```bash
-./deploy_to_staging.sh
+./deploy/deploy-staging.sh
 ```
 
 This fetches/checks out `develop`, builds with `docker-compose.staging.yml`,
 runs containers on port 8279, and runs a health check.
 
-**Optional (without Docker):** `./scripts/run-staging.sh` — uses
-`envs/staging.env` and runs the app directly with Poetry.
+**Optional (without Docker):** `./scripts/run-staging.sh` — uses `envs/staging.env` and runs the app directly with Poetry.
 
 ## E2E tests against staging
 
@@ -43,6 +42,6 @@ Token saved to `~/.kite-services/kite_token.json` (survives git pull).
 
 ## Workflow
 
-1. Merge feature/fix to `develop` → run `./deploy_to_staging.sh` (Docker staging).
+1. Merge feature/fix to `develop` → run `./deploy/deploy-staging.sh` (Docker staging).
 2. Test on <http://localhost:8279> → fix issues if needed.
-3. When confident → merge `develop` to `main` (Git UI) → run `./deploy_to_prod.sh`.
+3. When confident → merge `develop` to `main` (Git UI) → run `./deploy/deploy-prod.sh`.

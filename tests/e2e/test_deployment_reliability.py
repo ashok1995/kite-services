@@ -169,6 +169,26 @@ class TestMarketData:
             assert inst["exchange"] == "NSE"
 
     @pytest.mark.asyncio
+    async def test_market_instrument_tokens_batch_lookup(self, client):
+        """Instrument token lookup returns one result per symbol, including misses."""
+        r = await client.post(
+            "/api/market/instrument-tokens",
+            json={"symbols": ["RELIANCE", "TCS", "NOT_A_REAL_SYMBOL"], "exchange": "NSE"},
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert data["exchange"] == "NSE"
+        assert len(data["results"]) == 3
+
+        by_symbol = {item["symbol"]: item["instrument_token"] for item in data["results"]}
+        assert by_symbol["RELIANCE"] is not None
+        assert by_symbol["TCS"] is not None
+        assert by_symbol["NOT_A_REAL_SYMBOL"] is None
+        assert data["matched_count"] == 2
+        assert data["unmatched_count"] == 1
+
+    @pytest.mark.asyncio
     async def test_market_quotes_contract(self, client):
         """Quotes endpoint returns correct structure."""
         r = await client.post(

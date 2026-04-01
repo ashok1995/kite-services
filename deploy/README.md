@@ -1,57 +1,38 @@
-# Deployment — Single source of truth
+# Deploy Kite Services
 
-## Environments
+Two scripts only: **prod** (GCP VM) and **staging** (local).
 
-| Env        | Port | Image tag | Where it runs | How to deploy |
-|------------|------|-----------|---------------|---------------|
-| **Dev**    | 8079 | —         | Local (no Docker) | `poetry run python src/main.py` |
-| **Staging**| 8279 | `:stage`  | Local laptop  | `./deploy_to_staging.sh` |
-| **Prod**   | 8179 | `:latest` | GCP VM `35.232.205.155` | `./deploy_to_prod.sh` (or run directly on VM) |
+## Production — `deploy/deploy-prod.sh`
 
-## Image flow
+Deploys to GCP VM. Uses `gcloud`; image from ghcr.io (CI builds on push to main). VM pulls only (no build).
 
-```
-feature branch ──PR──> develop ──merge──> main
-                          │                  │
-                    CI: build+push      CI: build+push
-                    :stage tag          :latest tag
-                          │                  │
-                   staging pull         prod pull
-```
+**Config:** Create `deploy/.deploy.env` (gitignored) with:
 
-## CI/CD (GitHub Actions)
+- `GCP_INSTANCE` – VM name (e.g. `stocks-vm`)
+- `GCP_ZONE` – e.g. `us-central1-a`
+- `GCP_PROJECT` – GCP project ID
+- `VM_HOST` – VM external IP (e.g. `35.232.205.155`)
+- `GITHUB_TOKEN` – GitHub PAT with `read:packages` (for ghcr.io pull)
+- `KITE_API_KEY`, `KITE_API_SECRET` – optional; if set, writes kite_token.json on VM
 
-- **Push to `develop`** → `.github/workflows/deploy-stage.yml` → builds + pushes `ghcr.io/ashok1995/kite-services:stage`
-- **Push to `main`** → `.github/workflows/deploy-prod.yml` → builds + pushes `ghcr.io/ashok1995/kite-services:latest`
-- **No Docker builds on PRs or feature branches**
+**Run from repo root:**
 
-## Deploy commands
-
-### Staging (any laptop)
 ```bash
-./deploy_to_staging.sh
+./deploy/deploy-prod.sh
 ```
-Pulls `:stage` from GHCR, runs on port 8279.
 
-### Production (from laptop via SSH, or directly on VM)
+## Staging — `deploy/deploy-staging.sh`
+
+Deploys locally (port 8279). Uses `develop` branch; builds image and runs `docker-compose.staging.yml`.
+
+**Run from repo root:**
+
 ```bash
-# From laptop (needs VM_PASSWORD set):
-VM_PASSWORD=xxx ./deploy_to_prod.sh
-
-# Or SSH into VM and run:
-cd /opt/kite-services && git pull origin main
-docker compose -f docker-compose.prod.yml down --remove-orphans
-docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml up -d
+./deploy/deploy-staging.sh
 ```
-Pulls `:latest` from GHCR, runs on port 8179.
 
-## Files
+Requires: no uncommitted changes; local `develop` in sync with `origin/develop`. Use `FULL_REBUILD=1` for a no-cache build.
 
-| File | Purpose |
-|------|---------|
-| `docker-compose.staging.yml` | Staging compose (GHCR `:stage` image) |
-| `docker-compose.prod.yml` | Production compose (GHCR `:latest` image) |
-| `deploy_to_staging.sh` | One-command staging deploy (local) |
-| `deploy_to_prod.sh` | One-command prod deploy (SSH to VM) |
-| `Dockerfile` | Image definition (used by CI only) |
+## Without Docker (staging)
+
+To run staging as a single process (no Docker): `./scripts/run-staging.sh` (port 8279, uses `envs/staging.env`).

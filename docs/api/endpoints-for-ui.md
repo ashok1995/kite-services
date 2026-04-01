@@ -31,6 +31,7 @@ All API routes are under `/api` unless noted.
 
 | Method | Path | Purpose |
 |--------|------|---------|
+| POST | `/api/market/instrument-tokens` | Batch symbol to instrument-token lookup. Unmatched symbols return `instrument_token: null`. |
 | POST | `/api/market/quotes` | Real-time quotes. Body: `{"symbols": [...], "exchange": "NSE"}`. |
 | POST | `/api/market/data` | Universal data: quote / historical / fundamentals. |
 | GET | `/api/market/historical/{symbol}` | OHLCV candles. Query: `interval`, `from_date`, `to_date`. |
@@ -91,6 +92,7 @@ PUT  /api/auth/token          Body: { "request_token": "..." }  (exchange and sa
 GET  /api/auth/status
 
 POST /api/market/quotes       Body: { "symbols": ["RELIANCE","TCS"], "exchange": "NSE" }
+POST /api/market/instrument-tokens Body: { "symbols": ["RELIANCE","TCS"], "exchange": "NSE" }
 POST /api/market/data         Body: { "symbols": [...], "exchange": "NSE", "data_type": "quote" }
 GET  /api/market/historical/{symbol}?interval=day&from_date=YYYY-MM-DD&to_date=YYYY-MM-DD
 GET  /api/market/status

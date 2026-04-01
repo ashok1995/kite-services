@@ -134,6 +134,19 @@ class TestProdMarketData:
         assert "total_count" in d
         assert isinstance(d["instruments"], list)
 
+    def test_market_instrument_tokens(self, base_url):
+        r = httpx.post(
+            f"{base_url}/api/market/instrument-tokens",
+            json={"symbols": ["RELIANCE", "TCS", "NOT_A_REAL_SYMBOL"], "exchange": "NSE"},
+            timeout=TIMEOUT,
+        )
+        assert r.status_code == 200
+        d = r.json()
+        assert d.get("success") is True
+        assert d.get("exchange") == "NSE"
+        assert isinstance(d.get("results"), list)
+        assert len(d["results"]) == 3
+
     def test_market_quotes(self, base_url):
         r = httpx.post(
             f"{base_url}/api/market/quotes",
