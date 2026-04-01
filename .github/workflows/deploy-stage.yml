@@ -1,6 +1,7 @@
+---
 name: Build & Push Staging
 
-on:
+'on':
   push:
     branches: [develop]
 
@@ -38,7 +39,9 @@ jobs:
       - name: Validate imports
         run: |
           python -c "import fastapi, kiteconnect, pandas, numpy; print('Deps OK')"
-          python -c "import sys; sys.path.append('src'); from api.internal_market_context import router; print('Internal context route OK')"
+          python -c "import sys; sys.path.append('src'); \
+          from api.internal_market_context import router; \
+          print('Internal context route OK')"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

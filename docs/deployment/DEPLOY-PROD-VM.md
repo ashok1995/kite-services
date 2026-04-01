@@ -110,7 +110,7 @@ Service keeps running; no restart needed.
 
   ```bash
   export VM_PASSWORD=your_vm_password
-  ./deploy_to_prod.sh
+  ./deploy/deploy-prod.sh
   ```
 
 - **Never** push directly to `main`; merge via Git UI only. Agent will remind:
