@@ -9,7 +9,7 @@ No analysis, no intelligence - just rich market data.
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -43,6 +43,13 @@ class Interval(str, Enum):
 # =============================================================================
 
 
+class MarketDepthLevel(BaseModel):
+    """Single market depth level."""
+
+    price: Decimal = Field(..., description="Order book price at this level")
+    quantity: int = Field(..., ge=0, description="Aggregate quantity at this level")
+
+
 class RealTimeStockData(BaseModel):
     """Real-time stock data - no analysis, just data."""
 
@@ -74,8 +81,12 @@ class RealTimeStockData(BaseModel):
     ask_quantity: Optional[int] = Field(None, description="Best ask quantity")
 
     # Market depth (top 5 levels)
-    depth_buy: Optional[List[Dict[str, Decimal]]] = Field(None, description="Buy depth")
-    depth_sell: Optional[List[Dict[str, Decimal]]] = Field(None, description="Sell depth")
+    depth_buy: Optional[List[MarketDepthLevel]] = Field(
+        None, description="Top buy-side market depth levels"
+    )
+    depth_sell: Optional[List[MarketDepthLevel]] = Field(
+        None, description="Top sell-side market depth levels"
+    )
 
     # Circuit limits
     upper_circuit: Optional[Decimal] = Field(None, description="Upper circuit limit")
